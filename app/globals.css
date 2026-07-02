@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --color-cream: #fbf7f0;
+  --color-ink: #2f3e46;
+  --color-ink-soft: #5b6b72;
+  --color-teal: #00a6a8;
+  --color-teal-bright: #00c6c8;
+  --color-teal-dark: #067a7c;
+  --color-teal-ink: #063a40;
+  --color-sky: #d6eef6;
+  --color-sky-deep: #b9e2ef;
+  --color-orange: #f49d37;
+  --color-orange-soft: #fdeed8;
+  --color-coral: #e76f51;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-display: var(--font-bricolage), sans-serif;
+  --font-body: var(--font-figtree), sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-drift: drift 9s ease-in-out infinite alternate;
+  --animate-drift-slow: drift 15s ease-in-out infinite alternate;
+  --animate-float: float 3.5s ease-in-out infinite alternate;
+
+  @keyframes drift {
+    from { transform: translateX(-38%) translateY(-6px); }
+    to { transform: translateX(38%) translateY(8px); }
+  }
+  @keyframes float {
+    from { transform: translateY(-12px) rotate(-4deg); }
+    to { transform: translateY(14px) rotate(5deg); }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(22px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
   }
 }
 
+.rise-in {
+  animation: rise 0.8s var(--ease-out-expo) both;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-teal-bright);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+::selection {
+  background: var(--color-teal-bright);
+  color: var(--color-teal-ink);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s var(--ease-out-expo), transform 0.7s var(--ease-out-expo);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
 }
