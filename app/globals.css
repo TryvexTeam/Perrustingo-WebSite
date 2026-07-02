@@ -53,12 +53,25 @@
 
 html {
   scroll-behavior: smooth;
+  color-scheme: only light;
 }
 
 body {
   background: var(--color-cream);
   color: var(--color-ink);
   font-family: var(--font-body);
+}
+
+/* Compositor: promueve las animaciones decorativas a su propia capa GPU
+   para que ningún navegador las corte durante el render/scroll. */
+.animate-drift,
+.animate-drift-slow,
+.animate-float,
+.rise-in,
+.reveal {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 ::selection {

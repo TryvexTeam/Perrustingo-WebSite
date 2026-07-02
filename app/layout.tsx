@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import "./globals.css";
 
@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   title: "Perrustingo — Peluquería Canina en Renca",
   description:
     "Bañamos, cortamos y consentimos a tu perro en Renca, Santiago. 4.6★ en Google con más de 135 opiniones. Agenda tu cita por WhatsApp.",
+};
+
+export const viewport: Viewport = {
+  colorScheme: "only light",
+  themeColor: "#b6dfea",
 };
 
 export default function RootLayout({
