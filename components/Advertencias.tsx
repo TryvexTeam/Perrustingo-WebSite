@@ -37,7 +37,7 @@ export function Advertencias() {
         <div className="mt-10 grid gap-5 md:grid-cols-3">
           {AVISOS.map((aviso, i) => (
             <Reveal key={aviso.titulo} delay={i * 70}>
-              <div className="flex h-full flex-col items-center gap-4 overflow-hidden rounded-3xl bg-white p-7 pt-0 text-center shadow-sm transition-transform duration-200 ease-[var(--ease-out-expo)] hover:-translate-y-1">
+              <div className="tilt-card flex h-full flex-col items-center gap-4 overflow-hidden rounded-3xl bg-white p-7 pt-0 text-center shadow-sm">
                 <Image
                   src={aviso.foto}
                   alt=""

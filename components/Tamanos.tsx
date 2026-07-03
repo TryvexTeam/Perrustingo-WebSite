@@ -103,7 +103,7 @@ export function Tamanos() {
           {TAMANOS.map((t, i) => (
             <Reveal key={t.nombre} delay={i * 60} className="h-full">
               <div
-                className={`flex h-full flex-col items-center gap-3 overflow-hidden rounded-3xl ${t.bg} p-6 pt-0 text-center transition-transform duration-200 ease-[var(--ease-out-expo)] hover:-translate-y-1`}
+                className={`tilt-card flex h-full flex-col items-center gap-3 overflow-hidden rounded-3xl ${t.bg} p-6 pt-0 text-center`}
               >
                 <Image
                   src={t.foto}

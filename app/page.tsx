@@ -5,6 +5,8 @@ import { Beneficios } from "@/components/Beneficios";
 import { ComoTrabajamos } from "@/components/ComoTrabajamos";
 import { Footer } from "@/components/Footer";
 import { Hero } from "@/components/Hero";
+import { HuellitasScroll } from "@/components/HuellitasScroll";
+import { TiltCards } from "@/components/TiltCards";
 import { InfoInteres } from "@/components/InfoInteres";
 import { Precios } from "@/components/Precios";
 import { Proximamente } from "@/components/Proximamente";
@@ -22,6 +24,8 @@ export default function Home() {
     <>
       <SiteMenu />
       <QuickAccess />
+      <HuellitasScroll />
+      <TiltCards />
       <main className="flex-1">
         <Hero />
         <Servicios />
