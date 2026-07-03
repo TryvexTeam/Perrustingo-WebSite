@@ -1,8 +1,9 @@
+﻿import Image from "next/image";
 import { Flotantes } from "./Flotantes";
 import { Reveal } from "./Reveal";
 
 interface Tamano {
-  emoji: string;
+  foto: string;
   bg: string;
   nombre: string;
   rango: string;
@@ -12,7 +13,7 @@ interface Tamano {
 
 const TAMANOS: Tamano[] = [
   {
-    emoji: "🐁",
+    foto: "/cards/card-mini.png",
     bg: "bg-[#fdeaf1]",
     nombre: "Mini / Toy",
     rango: "hasta 5 kg",
@@ -27,7 +28,7 @@ const TAMANOS: Tamano[] = [
     nota: "Baño y corte rápidos, con extrema delicadeza y cuidados.",
   },
   {
-    emoji: "🐕",
+    foto: "/cards/card-pequeno.png",
     bg: "bg-[#e3f1fb]",
     nombre: "Pequeños",
     rango: "6 a 10 kg",
@@ -41,7 +42,7 @@ const TAMANOS: Tamano[] = [
     nota: "Su manto suele requerir mantenimiento frecuente.",
   },
   {
-    emoji: "🦴",
+    foto: "/cards/card-mediano.png",
     bg: "bg-[#ece4f7]",
     nombre: "Medianos",
     rango: "11 a 25 kg",
@@ -55,7 +56,7 @@ const TAMANOS: Tamano[] = [
     nota: "Más producto, más tiempo de secado y sus cortes de raza.",
   },
   {
-    emoji: "🦮",
+    foto: "/cards/card-grande.png",
     bg: "bg-[#fde4c8]",
     nombre: "Grandes",
     rango: "26 a 45 kg",
@@ -70,7 +71,7 @@ const TAMANOS: Tamano[] = [
     nota: "El cepillado y desenredado toma más tiempo.",
   },
   {
-    emoji: "🐻",
+    foto: "/cards/card-gigante.png",
     bg: "bg-[#d8f0e3]",
     nombre: "Gigantes",
     rango: "más de 45 kg",
@@ -102,14 +103,16 @@ export function Tamanos() {
           {TAMANOS.map((t, i) => (
             <Reveal key={t.nombre} delay={i * 60} className="h-full">
               <div
-                className={`flex h-full flex-col items-center gap-3 rounded-3xl ${t.bg} p-6 text-center transition-transform duration-200 ease-[var(--ease-out-expo)] hover:-translate-y-1`}
+                className={`flex h-full flex-col items-center gap-3 overflow-hidden rounded-3xl ${t.bg} p-6 pt-0 text-center transition-transform duration-200 ease-[var(--ease-out-expo)] hover:-translate-y-1`}
               >
-                <span
+                <Image
+                  src={t.foto}
+                  alt=""
                   aria-hidden="true"
-                  className="flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-white bg-white/70 text-2xl shadow-sm"
-                >
-                  {t.emoji}
-                </span>
+                  width={640}
+                  height={480}
+                  className="-mx-6 w-[calc(100%+3rem)] max-w-none object-cover"
+                />
                 <div>
                   <h3 className="font-display text-base font-extrabold">{t.nombre}</h3>
                   <p className="text-xs font-bold uppercase tracking-wide text-teal-dark">{t.rango}</p>
