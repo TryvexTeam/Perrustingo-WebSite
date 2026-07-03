@@ -1,21 +1,21 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import { Reveal } from "./Reveal";
 
 const AVISOS = [
   {
-    foto: "/cards/card-precio.png",
+    foto: "/cards/foto-precio.png",
     titulo: "Precio según tamaño y estado",
     detalle:
       "Calculamos el valor final según el tamaño, el peso y el estado del pelo de tu perro. Te confirmamos el precio antes de empezar.",
   },
   {
-    foto: "/cards/card-conducta.png",
+    foto: "/cards/foto-conducta.png",
     titulo: "Conducta del perro",
     detalle:
       "Si tu perro se pone nervioso o difícil durante la sesión, podemos aplicar un recargo. Siempre te avisamos con el motivo.",
   },
   {
-    foto: "/cards/card-tiempos.png",
+    foto: "/cards/foto-tiempos.png",
     titulo: "Tiempos de trabajo",
     detalle:
       "Nos tomamos entre 2 y 3 horas en promedio por sesión completa. Trabajamos con calma para que tu perro no lo pase mal.",

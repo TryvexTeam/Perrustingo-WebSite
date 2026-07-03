@@ -13,7 +13,7 @@ interface Tamano {
 
 const TAMANOS: Tamano[] = [
   {
-    foto: "/cards/card-mini.png",
+    foto: "/cards/foto-mini.png",
     bg: "bg-[#fdeaf1]",
     nombre: "Mini / Toy",
     rango: "hasta 5 kg",
@@ -28,7 +28,7 @@ const TAMANOS: Tamano[] = [
     nota: "Baño y corte rápidos, con extrema delicadeza y cuidados.",
   },
   {
-    foto: "/cards/card-pequeno.png",
+    foto: "/cards/foto-pequeno.png",
     bg: "bg-[#e3f1fb]",
     nombre: "Pequeños",
     rango: "6 a 10 kg",
@@ -42,7 +42,7 @@ const TAMANOS: Tamano[] = [
     nota: "Su manto suele requerir mantenimiento frecuente.",
   },
   {
-    foto: "/cards/card-mediano.png",
+    foto: "/cards/foto-mediano.png",
     bg: "bg-[#ece4f7]",
     nombre: "Medianos",
     rango: "11 a 25 kg",
@@ -56,7 +56,7 @@ const TAMANOS: Tamano[] = [
     nota: "Más producto, más tiempo de secado y sus cortes de raza.",
   },
   {
-    foto: "/cards/card-grande.png",
+    foto: "/cards/foto-grande.png",
     bg: "bg-[#fde4c8]",
     nombre: "Grandes",
     rango: "26 a 45 kg",
@@ -71,7 +71,7 @@ const TAMANOS: Tamano[] = [
     nota: "El cepillado y desenredado toma más tiempo.",
   },
   {
-    foto: "/cards/card-gigante.png",
+    foto: "/cards/foto-gigante.png",
     bg: "bg-[#d8f0e3]",
     nombre: "Gigantes",
     rango: "más de 45 kg",
