@@ -4,10 +4,13 @@ import { StaggeredMenu, type StaggeredMenuItem, type StaggeredMenuSocialItem } f
 const ITEMS: StaggeredMenuItem[] = [
   { label: "Inicio", ariaLabel: "Ir al inicio", link: "/#inicio" },
   { label: "Servicios", ariaLabel: "Ver nuestros servicios", link: "/#servicios" },
+  { label: "Tarifas", ariaLabel: "Ver precios y tarifas", link: "/#precios" },
   { label: "Antes / Después", ariaLabel: "Ver transformaciones", link: "/#antes-despues" },
   { label: "Opiniones", ariaLabel: "Leer opiniones de clientes", link: "/#opiniones" },
+  { label: "Próximamente", ariaLabel: "Ver lo que viene", link: "/#proximamente" },
   { label: "Visítanos", ariaLabel: "Cómo llegar y contacto", link: "/#visita" },
-  { label: "Agenda tu cita", ariaLabel: "Agendar cita por WhatsApp", link: BOOKING_URL, external: true },
+  { label: "Agenda tu cita", ariaLabel: "Agendar cita — formulario inteligente", link: "/reserva" },
+  { label: "Mi cuenta", ariaLabel: "Ver mi perfil y mis citas", link: "/perfil" },
 ];
 
 const SOCIALS: StaggeredMenuSocialItem[] = [

@@ -1,13 +1,29 @@
 import { Flotantes } from "./Flotantes";
 import { Reveal } from "./Reveal";
 
-const TAMANOS = [
+interface Tamano {
+  emoji: string;
+  bg: string;
+  nombre: string;
+  rango: string;
+  razas: string[];
+  nota: string;
+}
+
+const TAMANOS: Tamano[] = [
   {
     emoji: "🐁",
     bg: "bg-[#fdeaf1]",
     nombre: "Mini / Toy",
     rango: "hasta 5 kg",
-    ejemplos: "Chihuahua, Pomerania, Yorkshire, Poodle Toy",
+    razas: [
+      "Chihuahua",
+      "Pomerania",
+      "Yorkshire",
+      "Poodle Toy",
+      "Dachshund Miniatura",
+      "Fox Terrier Pelo Liso",
+    ],
     nota: "Baño y corte rápidos, con extrema delicadeza y cuidados.",
   },
   {
@@ -15,7 +31,13 @@ const TAMANOS = [
     bg: "bg-[#e3f1fb]",
     nombre: "Pequeños",
     rango: "6 a 10 kg",
-    ejemplos: "Bichón Frisé, Shih Tzu, Poodle",
+    razas: [
+      "Bichón Frisé",
+      "Shih Tzu",
+      "Poodle",
+      "Terrier Chileno",
+      "Dachshund",
+    ],
     nota: "Su manto suele requerir mantenimiento frecuente.",
   },
   {
@@ -23,7 +45,13 @@ const TAMANOS = [
     bg: "bg-[#ece4f7]",
     nombre: "Medianos",
     rango: "11 a 25 kg",
-    ejemplos: "Beagle, Cocker Spaniel, Schnauzer",
+    razas: [
+      "Beagle",
+      "Cocker Spaniel",
+      "Schnauzer",
+      "Bulldog Francés",
+      "Dogo Chileno",
+    ],
     nota: "Más producto, más tiempo de secado y sus cortes de raza.",
   },
   {
@@ -31,7 +59,14 @@ const TAMANOS = [
     bg: "bg-[#fde4c8]",
     nombre: "Grandes",
     rango: "26 a 45 kg",
-    ejemplos: "Golden Retriever, Labrador, Pastor Alemán",
+    razas: [
+      "Golden Retriever",
+      "Labrador",
+      "Pastor Alemán",
+      "Pastor Inglés",
+      "Samoyedo",
+      "Ovejero Magallánico",
+    ],
     nota: "El cepillado y desenredado toma más tiempo.",
   },
   {
@@ -39,7 +74,7 @@ const TAMANOS = [
     bg: "bg-[#d8f0e3]",
     nombre: "Gigantes",
     rango: "más de 45 kg",
-    ejemplos: "San Bernardo, Terranova",
+    razas: ["San Bernardo", "Terranova", "Mestizo / Quiltro"],
     nota: "Requieren instalaciones y mesas adaptadas a su peso.",
   },
 ];
@@ -79,7 +114,16 @@ export function Tamanos() {
                   <h3 className="font-display text-base font-extrabold">{t.nombre}</h3>
                   <p className="text-xs font-bold uppercase tracking-wide text-teal-dark">{t.rango}</p>
                 </div>
-                <p className="text-xs font-semibold text-ink">{t.ejemplos}</p>
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {t.razas.map((raza) => (
+                    <span
+                      key={raza}
+                      className="rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold text-ink"
+                    >
+                      {raza}
+                    </span>
+                  ))}
+                </div>
                 <p className="text-xs leading-relaxed text-ink-soft">{t.nota}</p>
               </div>
             </Reveal>
