@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { LangSwitcher } from "./LangSwitcher";
 import { SITE } from "@/lib/site";
 
 export function Footer() {
@@ -60,13 +61,16 @@ export function Footer() {
             </a>
           </div>
         </div>
-        <p className="mt-6 text-center text-sm text-teal-ink/60">
-          Atendemos a familias de{" "}
-          <span aria-label="Chile">🇨🇱</span>{" "}
-          <span aria-label="Brasil">🇧🇷</span>{" "}
-          <span aria-label="Alemania">🇩🇪</span>{" "}
-          <span aria-label="y el mundo">🌎</span>
-        </p>
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <p className="text-center text-sm text-teal-ink/60">
+            Atendemos a familias de{" "}
+            <span aria-label="Chile">🇨🇱</span>{" "}
+            <span aria-label="Brasil">🇧🇷</span>{" "}
+            <span aria-label="Alemania">🇩🇪</span>{" "}
+            <span aria-label="y el mundo">🌎</span>
+          </p>
+          <LangSwitcher />
+        </div>
         <p className="mt-3 text-center text-xs text-teal-ink/70">
           © {new Date().getFullYear()} {SITE.name} · {SITE.tagline} · {SITE.address}
         </p>
