@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { BOOKING_URL } from "@/lib/site";
 import { HeroClouds } from "./HeroClouds";
 
@@ -87,12 +88,41 @@ export function Hero() {
             >
               Agenda por WhatsApp
             </a>
+            <Link
+              href="/reserva"
+              className="rounded-full bg-teal-dark px-7 py-3.5 font-display text-base font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.4)] transition-[background-color,transform,box-shadow] duration-150 hover:bg-teal hover:shadow-[0_5px_0_rgba(6,58,64,.4)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.4)]"
+            >
+              Reserva inteligente →
+            </Link>
             <a
               href="#servicios"
               className="font-bold text-teal-dark underline-offset-4 transition-colors hover:text-teal-ink hover:underline"
             >
               Ver servicios ↓
             </a>
+          </div>
+
+          {/* Accesos rápidos — cuenta nueva o iniciar sesión */}
+          <div className="rise-in mt-5 flex flex-wrap items-center gap-3 [animation-delay:320ms]">
+            <span className="text-sm font-medium text-teal-ink/60">¿Ya eres cliente?</span>
+            <Link
+              href="/login"
+              className="flex items-center gap-1.5 rounded-full border-2 border-teal-dark/30 bg-white/60 px-4 py-1.5 text-sm font-bold text-teal-dark backdrop-blur-sm transition hover:border-teal-dark hover:bg-white"
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className="h-3.5 w-3.5">
+                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM1.5 14.5a6.5 6.5 0 0 1 13 0H1.5Z" />
+              </svg>
+              Iniciar sesión
+            </Link>
+            <Link
+              href="/registro"
+              className="flex items-center gap-1.5 rounded-full border-2 border-orange/40 bg-white/60 px-4 py-1.5 text-sm font-bold text-orange backdrop-blur-sm transition hover:border-orange hover:bg-white"
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className="h-3.5 w-3.5">
+                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM1.5 14.5a6.5 6.5 0 0 1 13 0H1.5ZM13.5 5.5v-2h-2V2h2V0h1.5v2h2v1.5h-2v2H13.5Z" />
+              </svg>
+              Crear cuenta gratis
+            </Link>
           </div>
         </div>
 
