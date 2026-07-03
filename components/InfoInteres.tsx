@@ -64,11 +64,12 @@ export function InfoInteres() {
         <Reveal delay={100}>
           <div className="overflow-hidden rounded-3xl border border-ink/10 shadow-sm">
             <iframe
-              title="Mapa de Peluquería Canina Perrustingo"
-              src="https://maps.google.com/maps?q=Peluqueria%20Canina%20Perrustingo%2C%20Arturo%20Prat%204556%2C%20Renca&z=16&output=embed"
+              title="Mapa Perrustingo — Arturo Prat 4556, Renca"
+              src="https://maps.google.com/maps?q=-33.4035606,-70.7133999&z=16&output=embed&hl=es"
               className="h-full min-h-[380px] w-full"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
             />
           </div>
         </Reveal>

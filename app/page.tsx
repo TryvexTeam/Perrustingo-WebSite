@@ -11,6 +11,8 @@ import { Proximamente } from "@/components/Proximamente";
 import { Publicidad } from "@/components/Publicidad";
 import { QuickAccess } from "@/components/QuickAccess";
 import { SiteMenu } from "@/components/SiteMenu";
+import { StatsBar } from "@/components/StatsBar";
+import { FAQ } from "@/components/FAQ";
 import { Resenas } from "@/components/Resenas";
 import { Servicios } from "@/components/Servicios";
 import { Tamanos } from "@/components/Tamanos";
@@ -27,12 +29,14 @@ export default function Home() {
         <Banner />
         <ComoTrabajamos />
         <Resenas />
+        <StatsBar />
         <Advertencias />
         <Tamanos />
         <Precios />
         <InfoInteres />
         <Beneficios />
         <Proximamente />
+        <FAQ />
         <Publicidad />
       </main>
       <Footer />
