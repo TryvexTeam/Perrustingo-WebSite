@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { PawIcon } from "./PawIcon";
 
 const PUNTOS = [
-  { left: "5vw", top: "24vh", rot: "-14deg" },
-  { left: "90vw", top: "38vh", rot: "10deg" },
-  { left: "7vw", top: "56vh", rot: "8deg" },
-  { left: "88vw", top: "72vh", rot: "-8deg" },
-  { left: "9vw", top: "86vh", rot: "12deg" },
+  { left: "5vw", top: "24vh", rot: "-18deg", color: "fill-teal-dark/50" },
+  { left: "90vw", top: "38vh", rot: "12deg", color: "fill-orange/60" },
+  { left: "7vw", top: "56vh", rot: "8deg", color: "fill-[#7dc3e8]/60" },
+  { left: "88vw", top: "72vh", rot: "-10deg", color: "fill-teal-dark/50" },
+  { left: "9vw", top: "86vh", rot: "14deg", color: "fill-orange/60" },
 ];
 
 /** Huellitas fijas que van apareciendo a medida que se scrollea la página. */
@@ -23,10 +24,10 @@ export function HuellitasScroll() {
       const progreso = window.scrollY / max;
       huellas.forEach((h, i) => {
         const visible = progreso > (i + 1) / (huellas.length + 1) - 0.12;
-        h.style.opacity = visible ? "0.45" : "0";
+        h.style.opacity = visible ? "1" : "0";
         h.style.transform = visible
           ? `scale(1) rotate(${h.dataset.rot})`
-          : `scale(0.4) rotate(-20deg)`;
+          : `scale(0.4) rotate(-25deg)`;
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -37,13 +38,10 @@ export function HuellitasScroll() {
   return (
     <div ref={ref} aria-hidden="true" className="pointer-events-none">
       {PUNTOS.map((p, i) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <div
           key={i}
-          src="/decor/huella.png"
-          alt=""
           data-rot={p.rot}
-          className="fixed z-[5] h-8 w-auto opacity-0"
+          className="fixed z-[5] opacity-0"
           style={{
             left: p.left,
             top: p.top,
@@ -51,7 +49,9 @@ export function HuellitasScroll() {
               "opacity .8s ease, transform .8s cubic-bezier(.34,1.56,.64,1)",
             transitionDelay: `${(i % 3) * 120}ms`,
           }}
-        />
+        >
+          <PawIcon className={`h-9 w-9 ${p.color}`} />
+        </div>
       ))}
     </div>
   );
