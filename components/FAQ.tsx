@@ -22,7 +22,7 @@ const PREGUNTAS = [
   },
   {
     q: "¿Puedo quedarme durante el servicio?",
-    a: "Preferimos que los papás esperen afuera — los perros suelen comportarse mejor cuando el dueño no está presente. Puedes esperar en la sala o volver a buscarlo, te avisamos por WhatsApp.",
+    a: "Preferimos que los papás esperen afuera — los perros suelen comportarse mejor cuando el dueño no está presente. Puedes esperar en un lugar cercano y nosotros te avisamos por WhatsApp para que lo vengas a buscar.",
   },
   {
     q: "¿Atienden perros con problemas de salud?",

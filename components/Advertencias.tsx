@@ -18,7 +18,7 @@ const AVISOS = [
     foto: "/cards/card-tiempos.png",
     titulo: "Tiempos de trabajo",
     detalle:
-      "Nos tomamos entre 2 y 3 horas en promedio por sesión completa. Trabajamos con calma para que tu perro no lo pase mal.",
+      "Nos tomamos entre 2 y 3 horas en promedio por sesión completa. Trabajamos con calma para que tu perro se sienta seguro.",
   },
 ];
 

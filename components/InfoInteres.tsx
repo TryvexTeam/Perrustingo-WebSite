@@ -29,6 +29,15 @@ export function InfoInteres() {
                 </dd>
               </div>
               <div>
+                <dt className="font-extrabold">🚗 Cómo llegar</dt>
+                <dd className="mt-1 text-ink-soft">
+                  Estamos a 3–4 minutos en vehículo de la Plaza Mayor de Renca
+                  y a 13–15 minutos caminando. A pasos del Liceo El Señor de
+                  Renca, a un costado de Nelas Pizza (ex-Telepizza), donde
+                  también hay paradas de locomoción colectiva a pocos metros.
+                </dd>
+              </div>
+              <div>
                 <dt className="font-extrabold">🕘 Horario</dt>
                 <dd className="mt-1 text-ink-soft">
                   {SITE.hours}. Los miércoles son nuestro día de más demanda:

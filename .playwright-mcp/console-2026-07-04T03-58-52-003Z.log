@@ -1,0 +1,7 @@
+[     482ms] [LOG] %c Console Ninja extension is connected to Next.js browser, background: rgb(30,30,30); color: rgb(255,213,92) see https://tinyurl.com/2vt8jxzw for more info. @ :0
+[     497ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[     590ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[    1615ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[    1864ms] [LOG] [Fast Refresh] done in 351ms @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[   14568ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/terranova.png:0
+[   14617ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/quiltro.png:0

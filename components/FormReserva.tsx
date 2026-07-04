@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FORM_INITIAL,
   PELO_LABELS,
-  RAZAS,
   SERVICIOS,
   TAMANO_LABELS,
   TamanoKey,
@@ -101,6 +100,82 @@ function Chip({
   );
 }
 
+/* Mini-calendario de fechas disponibles — domingos y días pasados
+   deshabilitados. Cuando exista la agenda real, este componente marcará la
+   disponibilidad verdadera del equipo. */
+function MiniCalendario({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const [mesOffset, setMesOffset] = useState(0);
+
+  const base = new Date(hoy.getFullYear(), hoy.getMonth() + mesOffset, 1);
+  const diasEnMes = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  const offset = (base.getDay() + 6) % 7; // lunes = 0
+  const celdas: (Date | null)[] = [
+    ...Array.from({ length: offset }, () => null),
+    ...Array.from({ length: diasEnMes }, (_, i) => new Date(base.getFullYear(), base.getMonth(), i + 1)),
+  ];
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`;
+  const nombreMes = base.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
+
+  return (
+    <div className="rounded-2xl bg-cream/70 p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <button
+          type="button"
+          aria-label="Mes anterior"
+          onClick={() => setMesOffset((m) => Math.max(m - 1, 0))}
+          disabled={mesOffset === 0}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold text-ink-soft transition-colors hover:bg-ink/5 disabled:opacity-30"
+        >
+          ‹
+        </button>
+        <p className="text-sm font-extrabold capitalize text-ink">{nombreMes}</p>
+        <button
+          type="button"
+          aria-label="Mes siguiente"
+          onClick={() => setMesOffset((m) => Math.min(m + 1, 2))}
+          disabled={mesOffset === 2}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold text-ink-soft transition-colors hover:bg-ink/5 disabled:opacity-30"
+        >
+          ›
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center">
+        {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
+          <span key={i} className="text-[11px] font-bold text-ink/40">{d}</span>
+        ))}
+        {celdas.map((dia, i) => {
+          if (!dia) return <span key={i} />;
+          const esDomingo = dia.getDay() === 0;
+          const esPasado = dia < hoy;
+          const deshabilitado = esDomingo || esPasado;
+          const seleccionado = value === iso(dia);
+          return (
+            <button
+              key={i}
+              type="button"
+              disabled={deshabilitado}
+              onClick={() => onChange(iso(dia))}
+              aria-pressed={seleccionado}
+              className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-[background-color,color,transform] duration-150 active:scale-90 ${
+                seleccionado
+                  ? "bg-teal text-white"
+                  : deshabilitado
+                    ? "cursor-not-allowed text-ink/20"
+                    : "text-ink hover:bg-sky/60"
+              }`}
+            >
+              {dia.getDate()}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Definición de micro-pasos ─────────────────────────────────────────────
 
 type PasoId =
@@ -175,7 +250,8 @@ export function FormReserva({
   );
 
   const peso = parseFloat(data.pesoKg);
-  const pesoValido = !isNaN(peso) && peso > 0;
+  const pesoValido = !isNaN(peso) && peso > 0.4 && peso <= 120;
+  const pesoInvalido = data.pesoKg !== "" && !pesoValido;
   const tamanoAuto = pesoValido ? detectarTamanoPorPeso(peso) : null;
   const esManual = !!(data.tamanoDeclarado && pesoValido && hayConflicto(data.tamanoDeclarado as TamanoKey, peso));
   const precio = pesoValido ? precioDe(peso) : null;
@@ -183,11 +259,23 @@ export function FormReserva({
   const paso = PASOS[step];
   const pct = ((step + 1) / PASOS.length) * 100;
   const esUltimo = step === PASOS.length - 1;
+  const bloqueaAvance = paso.id === "peso" && pesoInvalido;
+
+  /* El perrito acompaña todo el formulario: raza elegida > tamaño declarado */
+  const razaSel = CATALOGO_RAZAS.find((r) => r.nombre === data.raza);
+  const acompanante = razaSel
+    ? { src: razaImagen(razaSel.slug), nombre: razaSel.nombre }
+    : data.tamanoDeclarado
+      ? { src: TAMANO_IMAGEN[data.tamanoDeclarado as TamanoKey], nombre: TAMANO_LABELS[data.tamanoDeclarado as TamanoKey] }
+      : null;
 
   return (
     <div className="mx-auto w-full max-w-lg">
-      {/* Progreso minimalista */}
+      {/* Progreso minimalista — con tu perrito acompañando */}
       <div className="mb-6 flex items-center gap-3">
+        {acompanante && step > 0 && (
+          <BreedAvatar src={acompanante.src} nombre={acompanante.nombre} size="sm" />
+        )}
         <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink/10">
           <div
             className="h-full rounded-full bg-teal transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
@@ -234,30 +322,45 @@ export function FormReserva({
           )}
 
           {paso.id === "raza" && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                {(() => {
-                  const razaSel = CATALOGO_RAZAS.find((r) => r.nombre === data.raza);
-                  return razaSel ? (
-                    <BreedAvatar src={razaImagen(razaSel.slug)} nombre={razaSel.nombre} size="lg" />
-                  ) : null;
-                })()}
-                <select
-                  id="raza"
-                  value={data.raza}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (v && v !== "Otro") updYAvanzar("raza", v);
-                    else upd("raza", v);
-                  }}
-                  className="w-full rounded-2xl border-2 border-ink/10 bg-white px-4 py-3.5 text-base font-semibold text-ink focus:border-teal focus:outline-none"
+            <div className="space-y-4">
+              {/* Picker visual de razas — sin auto-avance para que puedas
+                  ver a tu perrito antes de continuar */}
+              <div className="grid max-h-72 grid-cols-3 gap-2 overflow-y-auto rounded-2xl bg-cream/60 p-3 sm:grid-cols-4">
+                {CATALOGO_RAZAS.map((r) => (
+                  <button
+                    key={r.slug}
+                    type="button"
+                    onClick={() => upd("raza", r.nombre)}
+                    aria-pressed={data.raza === r.nombre}
+                    className={`flex flex-col items-center gap-1.5 rounded-2xl border-2 px-1.5 py-2.5 transition-[border-color,background-color,transform] duration-150 active:scale-95 ${
+                      data.raza === r.nombre
+                        ? "border-teal bg-sky/50"
+                        : "border-transparent bg-white hover:border-teal/30"
+                    }`}
+                  >
+                    <BreedAvatar src={razaImagen(r.slug)} nombre={r.nombre} size="md" />
+                    <span className="text-center text-[10.5px] font-semibold leading-tight text-ink">
+                      {r.nombre}
+                    </span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => upd("raza", "Otro")}
+                  aria-pressed={data.raza === "Otro"}
+                  className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 px-1.5 py-2.5 transition-[border-color,background-color,transform] duration-150 active:scale-95 ${
+                    data.raza === "Otro"
+                      ? "border-teal bg-sky/50"
+                      : "border-transparent bg-white hover:border-teal/30"
+                  }`}
                 >
-                  <option value="">Selecciona una raza…</option>
-                  {RAZAS.map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
+                  <span className="flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-white bg-white/70 text-xl shadow-sm" aria-hidden="true">
+                    ✨
+                  </span>
+                  <span className="text-[10.5px] font-semibold text-ink">Otra raza</span>
+                </button>
               </div>
+
               {data.raza === "Otro" && (
                 <Input
                   value={data.razaOtro}
@@ -266,6 +369,24 @@ export function FormReserva({
                   autoFocus
                   onEnter={avanzar}
                 />
+              )}
+
+              {/* Tu perrito, en grande */}
+              {data.raza && data.raza !== "Otro" && (
+                <div className="rise-in flex items-center gap-4 rounded-2xl bg-sky/40 px-5 py-4">
+                  {(() => {
+                    const razaSel = CATALOGO_RAZAS.find((r) => r.nombre === data.raza);
+                    return razaSel ? (
+                      <BreedAvatar src={razaImagen(razaSel.slug)} nombre={razaSel.nombre} size="lg" />
+                    ) : null;
+                  })()}
+                  <p className="text-sm font-semibold text-teal-ink">
+                    ¡Un{" "}
+                    <strong>{data.raza}</strong>
+                    {data.nombrePerro ? ` como ${data.nombrePerro}` : ""}! Nos
+                    encantan. Cuando estés listo, sigue con el botón de abajo.
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -297,7 +418,16 @@ export function FormReserva({
                   <Input id="alturaCmd" type="number" min="0" max="100" value={data.alturaCmd} onChange={(v) => upd("alturaCmd", v)} placeholder="Ej: 30" onEnter={avanzar} />
                 </div>
               </div>
-              {precio !== null && tamanoAuto && (
+              {pesoInvalido && (
+                <div className="rise-in flex items-center gap-3 rounded-2xl bg-[#fde4c8] px-5 py-4 text-sm font-semibold text-[#a34d00]">
+                  <span aria-hidden="true">⚠</span>
+                  <span>
+                    Ese peso no parece válido — usa un valor entre 0,5 y 120 kg
+                    para poder estimar el precio.
+                  </span>
+                </div>
+              )}
+              {precio !== null && tamanoAuto && !pesoInvalido && (
                 <div className="rise-in flex items-center gap-4 rounded-2xl bg-[#d8f0e3] px-5 py-4 text-sm font-semibold text-teal-ink">
                   <BreedAvatar src={TAMANO_IMAGEN[tamanoAuto]} nombre={TAMANO_LABELS[tamanoAuto]} size="lg" />
                   <span>
@@ -418,8 +548,14 @@ export function FormReserva({
           {paso.id === "cita" && (
             <div className="space-y-5">
               <div>
-                <label htmlFor="fechaDeseada" className="mb-1 block text-sm font-bold text-ink">Fecha deseada</label>
-                <Input id="fechaDeseada" type="date" value={data.fechaDeseada} onChange={(v) => upd("fechaDeseada", v)} />
+                <p className="mb-1 text-sm font-bold text-ink">Fechas disponibles</p>
+                <p className="mb-2 text-xs text-ink-soft">
+                  Referencial — confirmamos la hora exacta por WhatsApp.{" "}
+                  <a href="/agenda" className="font-bold text-teal-dark underline-offset-2 hover:underline">
+                    Ver agenda semanal →
+                  </a>
+                </p>
+                <MiniCalendario value={data.fechaDeseada} onChange={(v) => upd("fechaDeseada", v)} />
               </div>
 
               <div>
@@ -480,7 +616,8 @@ export function FormReserva({
           <button
             type="button"
             onClick={avanzar}
-            className="flex-1 rounded-full bg-teal py-3.5 font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,box-shadow] hover:bg-teal-dark hover:shadow-[0_5px_0_rgba(6,58,64,.25)]"
+            disabled={bloqueaAvance}
+            className="flex-1 rounded-full bg-teal py-3.5 font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,box-shadow,opacity] hover:bg-teal-dark hover:shadow-[0_5px_0_rgba(6,58,64,.25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-teal"
           >
             {paso.id === "zonas" || paso.id === "salud" ? "Continuar →" : "Siguiente →"}
           </button>
