@@ -25,7 +25,7 @@ export function QuickAccess() {
         className="flex items-center gap-1.5 rounded-full bg-teal-dark/90 px-3.5 py-2 text-[12px] font-bold text-white shadow-md backdrop-blur-sm transition-all duration-150 hover:bg-teal-dark hover:shadow-lg active:scale-95 sm:text-[13px] sm:px-4"
       >
         <IconCalendar />
-        <span>Reserva</span>
+        <span className="hidden min-[430px]:inline">Reserva</span>
       </Link>
     </div>
   );
