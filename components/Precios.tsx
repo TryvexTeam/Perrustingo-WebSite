@@ -2,14 +2,15 @@ import Link from "next/link";
 import { Flotantes } from "./Flotantes";
 import { Reveal } from "./Reveal";
 
+/* Cada servicio incluido enlaza a su card en el catálogo de imágenes */
 const INCLUYE = [
-  { emoji: "✂️", texto: "Corte de pelo y estilo" },
-  { emoji: "💅", texto: "Corte de uñas" },
-  { emoji: "👂", texto: "Limpieza de oídos" },
-  { emoji: "🧴", texto: "Drenaje o limpieza de glándulas anales" },
-  { emoji: "🚿", texto: "Baño completo" },
-  { emoji: "🪮", texto: "Peinado y eliminación de pelo muerto" },
-  { emoji: "💨", texto: "Secado profesional" },
+  { emoji: "✂️", texto: "Corte de pelo y estilo", ancla: "#servicio-corte" },
+  { emoji: "💅", texto: "Corte de uñas", ancla: "#servicio-unas" },
+  { emoji: "👂", texto: "Limpieza de oídos", ancla: "#servicio-oidos" },
+  { emoji: "🧴", texto: "Drenaje o limpieza de glándulas anales", ancla: "#servicio-glandulas" },
+  { emoji: "🚿", texto: "Baño completo", ancla: "#servicio-bano" },
+  { emoji: "🪮", texto: "Peinado y eliminación de pelo muerto", ancla: "#servicio-peinado" },
+  { emoji: "💨", texto: "Secado profesional", ancla: "#servicio-secado" },
 ];
 
 export function Precios() {
@@ -24,13 +25,17 @@ export function Precios() {
             </h3>
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {INCLUYE.map((item) => (
-                <div
+                <Link
                   key={item.texto}
-                  className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-sm"
+                  href={item.ancla}
+                  className="group flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-sm transition-[transform,box-shadow] duration-200 ease-[var(--ease-out-expo)] hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <span aria-hidden="true" className="text-xl">{item.emoji}</span>
-                  <span className="text-sm font-semibold text-ink">{item.texto}</span>
-                </div>
+                  <span className="flex-1 text-sm font-semibold text-ink">{item.texto}</span>
+                  <span aria-hidden="true" className="text-xs font-extrabold text-teal-dark opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                    Ver →
+                  </span>
+                </Link>
               ))}
             </div>
             <p className="mt-5 text-center text-xs leading-relaxed text-ink-soft">

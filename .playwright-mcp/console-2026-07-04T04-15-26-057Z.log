@@ -479,3 +479,488 @@
     at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
     at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
     at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804294ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.messi" for locale "es-419", using default message (Messi) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5323)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804294ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.soccer" for locale "es-419", using default message (soccer) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5408)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804295ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.fifa" for locale "es-419", using default message (FIFA) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5493)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804295ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.world_cup" for locale "es-419", using default message (World Cup) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5579)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804356ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.messi" for locale "es-419", using default message (Messi) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5323)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804358ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.soccer" for locale "es-419", using default message (soccer) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5408)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804358ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.fifa" for locale "es-419", using default message (FIFA) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5493)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804359ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.world_cup" for locale "es-419", using default message (World Cup) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5579)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804367ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.messi" for locale "es-419", using default message (Messi) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5323)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804368ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.soccer" for locale "es-419", using default message (soccer) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5408)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804368ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.fifa" for locale "es-419", using default message (FIFA) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5493)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804368ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.world_cup" for locale "es-419", using default message (World Cup) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5579)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804556ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.messi" for locale "es-419", using default message (Messi) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5323)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804556ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.soccer" for locale "es-419", using default message (soccer) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5408)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804557ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.fifa" for locale "es-419", using default message (FIFA) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5493)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804557ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.world_cup" for locale "es-419", using default message (World Cup) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5579)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804642ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.messi" for locale "es-419", using default message (Messi) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5323)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804642ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.soccer" for locale "es-419", using default message (soccer) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5408)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804643ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.fifa" for locale "es-419", using default message (FIFA) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5493)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1804643ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.world_cup" for locale "es-419", using default message (World Cup) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5579)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1807032ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.messi" for locale "es-419", using default message (Messi) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5323)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1807032ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.soccer" for locale "es-419", using default message (soccer) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5408)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1807033ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.fifa" for locale "es-419", using default message (FIFA) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5493)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1807033ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.world_cup" for locale "es-419", using default message (World Cup) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5579)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930792ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.messi" for locale "es-419", using default message (Messi) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5323)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930792ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.soccer" for locale "es-419", using default message (soccer) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5408)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930792ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.fifa" for locale "es-419", using default message (FIFA) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5493)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930793ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.world_cup" for locale "es-419", using default message (World Cup) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5579)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930851ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.messi" for locale "es-419", using default message (Messi) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5323)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930852ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.soccer" for locale "es-419", using default message (soccer) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5408)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930852ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.fifa" for locale "es-419", using default message (FIFA) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5493)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930853ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.world_cup" for locale "es-419", using default message (World Cup) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5579)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930865ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.messi" for locale "es-419", using default message (Messi) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5323)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930865ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.soccer" for locale "es-419", using default message (soccer) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5408)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930866ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.fifa" for locale "es-419", using default message (FIFA) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5493)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930866ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.world_cup" for locale "es-419", using default message (World Cup) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5579)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930944ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.messi" for locale "es-419", using default message (Messi) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5323)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930945ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.soccer" for locale "es-419", using default message (soccer) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5408)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930945ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.fifa" for locale "es-419", using default message (FIFA) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5493)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1930945ms] [ERROR] kl: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "dotball.trigger_word.world_cup" for locale "es-419", using default message (World Cup) as fallback.
+
+    at new kl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:53:79)
+    at Nl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:287)
+    at _u (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:57:5318)
+    at Qtr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:5579)
+    at anr (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:242:6813)
+    at Zo (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:48748)
+    at Hc (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:71428)
+    at sl (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:82079)
+    at Gd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:126870)
+    at Hd (https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:8:125933) @ https://chatgpt.com/cdn/assets/2340486e-nhvp42933ikxqdtw.js:60
+[ 1966643ms] [ERROR] Failed to load resource: the server responded with a status of 412 () @ https://chatgpt.com/backend-api/conversation/6a488932-ab78-83e9-8a6f-f886ef4dd093/async-status:0
+[ 1966648ms] RequestError: The conversation is stale, please reload and try again.
+    at Rje (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:25:54416)
+    at async tfi (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:278:73696)
+    at async il.fireImmediately (https://chatgpt.com/cdn/assets/4813494d-jnjn9ehsm4unmzfa.js:280:13945)

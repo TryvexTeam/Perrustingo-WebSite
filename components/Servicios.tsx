@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Reveal } from "./Reveal";
 
 interface Servicio {
+  /** Ancla — las cards de "¿Qué incluye?" enlazan aquí */
+  id: string;
   foto: string;
   alt: string;
   w: number;
@@ -12,16 +14,18 @@ interface Servicio {
 }
 
 const SERVICIOS: Servicio[] = [
-  { foto: "/servicios/spa.png", alt: "Día de spa — relajación, mascarillas y mucho mimo", w: 784, h: 844, servicio: "Spa completo" },
-  { foto: "/servicios/secado.png", alt: "Secado profesional con productos de calidad para su pelaje", w: 772, h: 840, servicio: "Solo baño y secado" },
-  { foto: "/servicios/bano.png", alt: "Baño relajante — limpieza profunda con amor y cuidado", w: 1948, h: 924, servicio: "Baño completo (sin corte de pelo)" },
-  { foto: "/servicios/cachorro.png", alt: "Corte de cachorro — ternura que se ve y se siente", w: 1264, h: 772, servicio: "Baño + corte de pelo" },
-  { foto: "/servicios/unas.png", alt: "Cuidado de uñas — uñitas sanas, paseos seguros y sin rasguños", w: 1268, h: 760, servicio: "Solo uñas" },
-  { foto: "/servicios/corte-estilo.png", alt: "Corte y estilo — el look perfecto para tu mejor amigo", w: 1924, h: 916, servicio: "Baño + corte de pelo" },
-  { foto: "/servicios/dental.png", alt: "Limpieza dental — sonrisas frescas y aliento saludable", w: 760, h: 848 },
-  { foto: "/servicios/fragancia.png", alt: "Fragancia que enamora — aromas suaves y duraderos", w: 756, h: 848 },
-  { foto: "/servicios/oidos.png", alt: "Limpieza de oídos — oídos limpios, perrito sano", w: 1320, h: 768 },
-  { foto: "/servicios/accesorios.png", alt: "Accesorios — collares, moños y más para tu consentido", w: 748, h: 816 },
+  { id: "servicio-spa", foto: "/servicios/spa.png", alt: "Día de spa — relajación, mascarillas y mucho mimo", w: 784, h: 844, servicio: "Spa completo" },
+  { id: "servicio-secado", foto: "/servicios/secado.png", alt: "Secado profesional con productos de calidad para su pelaje", w: 772, h: 840, servicio: "Solo baño y secado" },
+  { id: "servicio-bano", foto: "/servicios/bano.png", alt: "Baño relajante — limpieza profunda con amor y cuidado", w: 1948, h: 924, servicio: "Baño completo (sin corte de pelo)" },
+  { id: "servicio-cachorro", foto: "/servicios/cachorro.png", alt: "Corte de cachorro — ternura que se ve y se siente", w: 1264, h: 772, servicio: "Baño + corte de pelo" },
+  { id: "servicio-unas", foto: "/servicios/unas.png", alt: "Cuidado de uñas — uñitas sanas, paseos seguros y sin rasguños", w: 1268, h: 760, servicio: "Solo uñas" },
+  { id: "servicio-corte", foto: "/servicios/corte-estilo.png", alt: "Corte y estilo — el look perfecto para tu mejor amigo", w: 1924, h: 916, servicio: "Baño + corte de pelo" },
+  { id: "servicio-dental", foto: "/servicios/dental.png", alt: "Limpieza dental — sonrisas frescas y aliento saludable", w: 760, h: 848 },
+  { id: "servicio-fragancia", foto: "/servicios/fragancia.png", alt: "Fragancia que enamora — aromas suaves y duraderos", w: 756, h: 848 },
+  { id: "servicio-oidos", foto: "/servicios/oidos.png", alt: "Limpieza de oídos — oídos limpios, perrito sano", w: 1320, h: 768 },
+  { id: "servicio-peinado", foto: "/servicios/peinado.png", alt: "Peinado y deslanado — adiós al pelo muerto", w: 1536, h: 1024, servicio: "Spa completo" },
+  { id: "servicio-glandulas", foto: "/servicios/glandulas.png", alt: "Higiene completa — drenaje o limpieza de glándulas con delicadeza", w: 1536, h: 1024, servicio: "Baño completo (sin corte de pelo)" },
+  { id: "servicio-accesorios", foto: "/servicios/accesorios.png", alt: "Accesorios — collares, moños y más para tu consentido", w: 748, h: 816 },
 ];
 
 function urlReserva(servicio?: string): string {
@@ -45,6 +49,7 @@ export function Servicios() {
             {SERVICIOS.map((s) => (
               <Link
                 key={s.foto}
+                id={s.id}
                 href={urlReserva(s.servicio)}
                 className="group relative block break-inside-avoid overflow-hidden rounded-2xl shadow-sm transition-[transform,box-shadow] duration-200 ease-[var(--ease-out-expo)] hover:-translate-y-1 hover:shadow-md active:scale-[.98]"
               >
