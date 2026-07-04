@@ -1,7 +1,7 @@
 import { Reveal } from "./Reveal";
 
 const WHATSAPP_PUBLICIDAD = `https://wa.me/4915237152283?text=${encodeURIComponent(
-  "Hola Perrustingo 🐾 Me interesa publicitar mi negocio en su sitio web. ¿Podría darme más información?"
+  "Hola Perrustingo, me interesa publicitar mi negocio en su sitio web. ¿Podría darme más información?"
 )}`;
 
 const SPOTS = [

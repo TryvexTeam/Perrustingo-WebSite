@@ -13,19 +13,22 @@ interface Servicio {
   servicio?: string;
 }
 
+/* Orden pensado para equilibrar las 3 columnas del masonry en desktop y
+   para que las imágenes anchas caigan en las posiciones 3, 6, 9 y 12, que en
+   móvil ocupan las 2 columnas. */
 const SERVICIOS: Servicio[] = [
   { id: "servicio-spa", foto: "/servicios/spa.png", alt: "Día de spa — relajación, mascarillas y mucho mimo", w: 784, h: 844, servicio: "Spa completo" },
-  { id: "servicio-secado", foto: "/servicios/secado.png", alt: "Secado profesional con productos de calidad para su pelaje", w: 772, h: 840, servicio: "Solo baño y secado" },
+  { id: "servicio-glandulas", foto: "/servicios/glandulas.png", alt: "Higiene completa — drenaje o limpieza de glándulas con delicadeza", w: 1536, h: 1024, servicio: "Baño completo (sin corte de pelo)" },
   { id: "servicio-bano", foto: "/servicios/bano.png", alt: "Baño relajante — limpieza profunda con amor y cuidado", w: 1948, h: 924, servicio: "Baño completo (sin corte de pelo)" },
+  { id: "servicio-secado", foto: "/servicios/secado.png", alt: "Secado profesional con productos de calidad para su pelaje", w: 772, h: 840, servicio: "Solo baño y secado" },
+  { id: "servicio-dental", foto: "/servicios/dental.png", alt: "Limpieza dental — sonrisas frescas y aliento saludable", w: 760, h: 848 },
+  { id: "servicio-peinado", foto: "/servicios/peinado.png", alt: "Peinado y deslanado — adiós al pelo muerto", w: 1536, h: 1024, servicio: "Spa completo" },
   { id: "servicio-cachorro", foto: "/servicios/cachorro.png", alt: "Corte de cachorro — ternura que se ve y se siente", w: 1264, h: 772, servicio: "Baño + corte de pelo" },
   { id: "servicio-unas", foto: "/servicios/unas.png", alt: "Cuidado de uñas — uñitas sanas, paseos seguros y sin rasguños", w: 1268, h: 760, servicio: "Solo uñas" },
-  { id: "servicio-corte", foto: "/servicios/corte-estilo.png", alt: "Corte y estilo — el look perfecto para tu mejor amigo", w: 1924, h: 916, servicio: "Baño + corte de pelo" },
-  { id: "servicio-dental", foto: "/servicios/dental.png", alt: "Limpieza dental — sonrisas frescas y aliento saludable", w: 760, h: 848 },
-  { id: "servicio-fragancia", foto: "/servicios/fragancia.png", alt: "Fragancia que enamora — aromas suaves y duraderos", w: 756, h: 848 },
   { id: "servicio-oidos", foto: "/servicios/oidos.png", alt: "Limpieza de oídos — oídos limpios, perrito sano", w: 1320, h: 768 },
-  { id: "servicio-peinado", foto: "/servicios/peinado.png", alt: "Peinado y deslanado — adiós al pelo muerto", w: 1536, h: 1024, servicio: "Spa completo" },
-  { id: "servicio-glandulas", foto: "/servicios/glandulas.png", alt: "Higiene completa — drenaje o limpieza de glándulas con delicadeza", w: 1536, h: 1024, servicio: "Baño completo (sin corte de pelo)" },
+  { id: "servicio-fragancia", foto: "/servicios/fragancia.png", alt: "Fragancia que enamora — aromas suaves y duraderos", w: 756, h: 848 },
   { id: "servicio-accesorios", foto: "/servicios/accesorios.png", alt: "Accesorios — collares, moños y más para tu consentido", w: 748, h: 816 },
+  { id: "servicio-corte", foto: "/servicios/corte-estilo.png", alt: "Corte y estilo — el look perfecto para tu mejor amigo", w: 1924, h: 916, servicio: "Baño + corte de pelo" },
 ];
 
 function urlReserva(servicio?: string): string {
