@@ -1,4 +1,0 @@
-[     443ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
-[     589ms] [LOG] [Fast Refresh] done in 246ms @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
-[   11221ms] [WARNING] Image with src "/servicios/glandulas.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
-Read more: https://nextjs.org/docs/app/api-reference/components/image#loading @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
