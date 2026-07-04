@@ -11,6 +11,8 @@ import { PromoBanner } from "@/components/PromoBanner";
 import { Publicidad } from "@/components/Publicidad";
 import { QuickAccess } from "@/components/QuickAccess";
 import { SiteMenu } from "@/components/SiteMenu";
+import { StatsBar } from "@/components/StatsBar";
+import { FAQ } from "@/components/FAQ";
 import { Resenas } from "@/components/Resenas";
 import { Servicios } from "@/components/Servicios";
 import { Tamanos } from "@/components/Tamanos";
@@ -28,6 +30,7 @@ export default function Home() {
         <Banner />
         <ComoTrabajamos />
         <Resenas />
+        <StatsBar />
         <PromoBanner slot="tras-resenas" />
         <Advertencias />
         <Tamanos />
@@ -36,6 +39,7 @@ export default function Home() {
         <InfoInteres />
         <Beneficios />
         <PromoBanner slot="pre-footer" />
+        <FAQ />
         <Publicidad />
       </main>
       <Footer />

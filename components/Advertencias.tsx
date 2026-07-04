@@ -1,23 +1,21 @@
+import Image from "next/image";
 import { Reveal } from "./Reveal";
 
 const AVISOS = [
   {
-    emoji: "🏷️",
-    circleBg: "bg-[#fde4c8]",
+    foto: "/cards/card-precio.png",
     titulo: "Precio según tamaño y estado",
     detalle:
       "Calculamos el valor final según el tamaño, el peso y el estado del pelo de tu perro. Te confirmamos el precio antes de empezar.",
   },
   {
-    emoji: "🐕‍🦺",
-    circleBg: "bg-[#e3f1fb]",
+    foto: "/cards/card-conducta.png",
     titulo: "Conducta del perro",
     detalle:
       "Si tu perro se pone nervioso o difícil durante la sesión, podemos aplicar un recargo. Siempre te avisamos con el motivo.",
   },
   {
-    emoji: "⏱️",
-    circleBg: "bg-[#ece4f7]",
+    foto: "/cards/card-tiempos.png",
     titulo: "Tiempos de trabajo",
     detalle:
       "Nos tomamos entre 2 y 3 horas en promedio por sesión completa. Trabajamos con calma para que tu perro no lo pase mal.",
@@ -39,13 +37,15 @@ export function Advertencias() {
         <div className="mt-10 grid gap-5 md:grid-cols-3">
           {AVISOS.map((aviso, i) => (
             <Reveal key={aviso.titulo} delay={i * 70}>
-              <div className="flex h-full flex-col items-center gap-4 rounded-3xl bg-white p-7 text-center shadow-sm transition-transform duration-200 ease-[var(--ease-out-expo)] hover:-translate-y-1">
-                <span
+              <div className="flex h-full flex-col items-center gap-4 overflow-hidden rounded-3xl bg-white p-7 pt-0 text-center shadow-sm transition-transform duration-200 ease-[var(--ease-out-expo)] hover:-translate-y-1">
+                <Image
+                  src={aviso.foto}
+                  alt=""
                   aria-hidden="true"
-                  className={`flex h-14 w-14 items-center justify-center rounded-full ${aviso.circleBg} text-2xl`}
-                >
-                  {aviso.emoji}
-                </span>
+                  width={640}
+                  height={480}
+                  className="-mx-7 w-[calc(100%+3.5rem)] max-w-none object-cover"
+                />
                 <h3 className="font-display text-base font-bold">{aviso.titulo}</h3>
                 <p className="text-sm leading-relaxed text-ink-soft">{aviso.detalle}</p>
               </div>
