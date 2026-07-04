@@ -1,0 +1,835 @@
+- generic [active] [ref=f4e1]:
+  - generic:
+    - banner "Encabezado de navegación":
+      - link "Perrustingo" [ref=f4e2] [cursor=pointer]:
+        - /url: /
+        - img "Logo Perrustingo" [ref=f4e3]
+      - button "Abrir menú" [ref=f4e4] [cursor=pointer]:
+        - generic [ref=f4e6]:
+          - generic [ref=f4e7]: Menú
+          - generic [ref=f4e8]: Cerrar
+    - complementary [ref=f4e12]:
+      - generic [ref=f4e13]:
+        - list [ref=f4e14]:
+          - listitem [ref=f4e15]:
+            - link [ref=f4e16] [cursor=pointer]:
+              - /url: /#inicio
+              - generic [ref=f4e17]: Inicio
+          - listitem [ref=f4e18]:
+            - link [ref=f4e19] [cursor=pointer]:
+              - /url: /#servicios
+              - generic [ref=f4e20]: Servicios
+          - listitem [ref=f4e21]:
+            - link [ref=f4e22] [cursor=pointer]:
+              - /url: /#precios
+              - generic [ref=f4e23]: Tarifas
+          - listitem [ref=f4e24]:
+            - link [ref=f4e25] [cursor=pointer]:
+              - /url: /#antes-despues
+              - generic [ref=f4e26]: Antes / Después
+          - listitem [ref=f4e27]:
+            - link [ref=f4e28] [cursor=pointer]:
+              - /url: /#opiniones
+              - generic [ref=f4e29]: Opiniones
+          - listitem [ref=f4e30]:
+            - link [ref=f4e31] [cursor=pointer]:
+              - /url: /#proximamente
+              - generic [ref=f4e32]: Próximamente
+          - listitem [ref=f4e33]:
+            - link [ref=f4e34] [cursor=pointer]:
+              - /url: /#visita
+              - generic [ref=f4e35]: Visítanos
+          - listitem [ref=f4e36]:
+            - link [ref=f4e37] [cursor=pointer]:
+              - /url: /reserva
+              - generic [ref=f4e38]: Agenda tu cita
+          - listitem [ref=f4e39]:
+            - link [ref=f4e40] [cursor=pointer]:
+              - /url: /agenda
+              - generic [ref=f4e41]: Calendario
+          - listitem [ref=f4e42]:
+            - link [ref=f4e43] [cursor=pointer]:
+              - /url: /perfil
+              - generic [ref=f4e44]: Mi cuenta
+          - listitem [ref=f4e45]:
+            - link [ref=f4e46] [cursor=pointer]:
+              - /url: /login
+              - generic [ref=f4e47]: Iniciar sesión
+          - listitem [ref=f4e48]:
+            - link [ref=f4e49] [cursor=pointer]:
+              - /url: /registro
+              - generic [ref=f4e50]: Crear cuenta
+        - generic [ref=f4e51]:
+          - heading [level=3] [ref=f4e52]: Síguenos
+          - list [ref=f4e53]:
+            - listitem [ref=f4e54]:
+              - link [ref=f4e55] [cursor=pointer]:
+                - /url: https://instagram.com/perrustingo
+                - text: Instagram
+            - listitem [ref=f4e56]:
+              - link [ref=f4e57] [cursor=pointer]:
+                - /url: https://facebook.com/perrustingo
+                - text: Facebook
+            - listitem [ref=f4e58]:
+              - link [ref=f4e59] [cursor=pointer]:
+                - /url: https://wa.me/4915237152283?text=Hola%20Perrustingo%2C%20quiero%20agendar%20una%20cita%20para%20mi%20perro.%20Nombre%3A%20%E2%80%A6%20Raza%2Ftama%C3%B1o%3A%20%E2%80%A6%20Servicio%3A%20%E2%80%A6
+                - text: WhatsApp
+  - navigation "Accesos directos" [ref=f4e60]:
+    - link [ref=f4e925] [cursor=pointer]:
+      - /url: /reserva
+      - img [ref=f4e62]
+  - generic:
+    - img
+  - generic:
+    - img
+  - generic:
+    - img
+  - generic:
+    - img
+  - generic:
+    - img
+  - link "Agendar por WhatsApp" [ref=f4e73] [cursor=pointer]:
+    - /url: https://wa.me/4915237152283?text=Hola%20Perrustingo%2C%20quiero%20agendar%20una%20cita%20para%20mi%20perro.%20Nombre%3A%20%E2%80%A6%20Raza%2Ftama%C3%B1o%3A%20%E2%80%A6%20Servicio%3A%20%E2%80%A6
+    - img [ref=f4e75]
+  - main [ref=f4e77]:
+    - generic [ref=f4e78]:
+      - generic:
+        - generic:
+          - generic:
+            - img
+        - generic:
+          - generic:
+            - img
+        - generic:
+          - generic:
+            - img
+        - generic:
+          - generic:
+            - img
+        - generic:
+          - generic:
+            - img
+        - generic:
+          - generic:
+            - img
+      - generic:
+        - img
+        - img
+        - img
+        - img
+        - img
+        - img
+      - generic [ref=f4e79]:
+        - generic [ref=f4e80]:
+          - generic "Presente en Chile y próximamente en Brasil, Alemania y el mundo" [ref=f4e81]:
+            - img "Chile" [ref=f4e82]
+            - img "Brasil" [ref=f4e83]
+            - img "Alemania" [ref=f4e84]
+            - img "El mundo" [ref=f4e85]
+          - heading "Llega hecho un desastre , se va hecho un rey." [level=1] [ref=f4e86]:
+            - text: Llega hecho un
+            - generic [ref=f4e87]:
+              - text: desastre
+              - img [ref=f4e88]
+            - text: ","
+            - text: se va hecho
+            - generic [ref=f4e90]: un rey.
+          - paragraph [ref=f4e92]: Bañamos, cortamos y consentimos a tu perro en Renca. Dejamos cortes parejos, oídos limpios y colitas felices desde hace años.
+          - generic [ref=f4e93]:
+            - link "Agenda por WhatsApp" [ref=f4e94] [cursor=pointer]:
+              - /url: https://wa.me/4915237152283?text=Hola%20Perrustingo%2C%20quiero%20agendar%20una%20cita%20para%20mi%20perro.%20Nombre%3A%20%E2%80%A6%20Raza%2Ftama%C3%B1o%3A%20%E2%80%A6%20Servicio%3A%20%E2%80%A6
+            - link "Reserva inteligente →" [ref=f4e95] [cursor=pointer]:
+              - /url: /reserva
+            - link "Ver servicios ↓" [ref=f4e96] [cursor=pointer]:
+              - /url: "#servicios"
+        - img "Perro recién peluqueado sentado sobre nubes en un cielo celeste" [ref=f4e97]
+      - img [ref=f4e98]
+    - generic [ref=f4e101]:
+      - generic [ref=f4e102]:
+        - paragraph [ref=f4e103]: Nuestros servicios
+        - heading "Todo lo que tu perro necesita" [level=2] [ref=f4e104]
+      - generic [ref=f4e106]:
+        - generic [ref=f4e898]:
+          - link "Día de spa — relajación, mascarillas y mucho mimo Reservar este servicio →" [ref=f4e899] [cursor=pointer]:
+            - /url: /reserva?servicio=Spa%20completo
+            - img "Día de spa — relajación, mascarillas y mucho mimo" [ref=f4e900]
+            - generic: Reservar este servicio →
+          - link "Baño relajante — limpieza profunda con amor y cuidado Reservar este servicio →" [ref=f4e901] [cursor=pointer]:
+            - /url: /reserva?servicio=Ba%C3%B1o%20completo%20(sin%20corte%20de%20pelo)
+            - img "Baño relajante — limpieza profunda con amor y cuidado" [ref=f4e902]
+            - generic: Reservar este servicio →
+          - link "Corte y estilo — el look perfecto para tu mejor amigo Reservar este servicio →" [ref=f4e903] [cursor=pointer]:
+            - /url: /reserva?servicio=Ba%C3%B1o%20%2B%20corte%20de%20pelo
+            - img "Corte y estilo — el look perfecto para tu mejor amigo" [ref=f4e904]
+            - generic: Reservar este servicio →
+          - link "Secado profesional con productos de calidad para su pelaje Reservar este servicio →" [ref=f4e905] [cursor=pointer]:
+            - /url: /reserva?servicio=Solo%20ba%C3%B1o%20y%20secado
+            - img "Secado profesional con productos de calidad para su pelaje" [ref=f4e906]
+            - generic: Reservar este servicio →
+        - generic [ref=f4e907]:
+          - link "Limpieza dental — sonrisas frescas y aliento saludable Reservar →" [ref=f4e908] [cursor=pointer]:
+            - /url: /reserva
+            - img "Limpieza dental — sonrisas frescas y aliento saludable" [ref=f4e909]
+            - generic: Reservar →
+          - link "Limpieza de oídos — oídos limpios, perrito sano Reservar →" [ref=f4e910] [cursor=pointer]:
+            - /url: /reserva
+            - img "Limpieza de oídos — oídos limpios, perrito sano" [ref=f4e911]
+            - generic: Reservar →
+          - link "Cuidado de uñas — uñitas sanas, paseos seguros y sin rasguños Reservar este servicio →" [ref=f4e912] [cursor=pointer]:
+            - /url: /reserva?servicio=Solo%20u%C3%B1as
+            - img "Cuidado de uñas — uñitas sanas, paseos seguros y sin rasguños" [ref=f4e913]
+            - generic: Reservar este servicio →
+          - link "Accesorios — collares, moños y más para tu consentido Reservar →" [ref=f4e914] [cursor=pointer]:
+            - /url: /reserva
+            - img "Accesorios — collares, moños y más para tu consentido" [ref=f4e915]
+            - generic: Reservar →
+        - generic [ref=f4e916]:
+          - link "Fragancia que enamora — aromas suaves y duraderos Reservar →" [ref=f4e917] [cursor=pointer]:
+            - /url: /reserva
+            - img "Fragancia que enamora — aromas suaves y duraderos" [ref=f4e918]
+            - generic: Reservar →
+          - link "Corte de cachorro — ternura que se ve y se siente Reservar este servicio →" [ref=f4e919] [cursor=pointer]:
+            - /url: /reserva?servicio=Ba%C3%B1o%20%2B%20corte%20de%20pelo
+            - img "Corte de cachorro — ternura que se ve y se siente" [ref=f4e920]
+            - generic: Reservar este servicio →
+          - link "Peinado y deslanado — adiós al pelo muerto Reservar este servicio →" [ref=f4e921] [cursor=pointer]:
+            - /url: /reserva?servicio=Spa%20completo
+            - img "Peinado y deslanado — adiós al pelo muerto" [ref=f4e922]
+            - generic: Reservar este servicio →
+          - link "Higiene completa — drenaje o limpieza de glándulas con delicadeza Reservar este servicio →" [ref=f4e923] [cursor=pointer]:
+            - /url: /reserva?servicio=Ba%C3%B1o%20completo%20(sin%20corte%20de%20pelo)
+            - img "Higiene completa — drenaje o limpieza de glándulas con delicadeza" [ref=f4e924]
+            - generic: Reservar este servicio →
+    - 'img "Próximamente: servicio de retiro y entrega — vamos por tu peludito, lo consentimos y te lo devolvemos. Seguro, puntual, confiable, fácil y rápido por WhatsApp." [ref=f4e134]'
+    - generic [ref=f4e136]:
+      - generic [ref=f4e138]:
+        - heading "Antes / Después" [level=2] [ref=f4e139]
+        - link "Ver más en Instagram →" [ref=f4e140] [cursor=pointer]:
+          - /url: https://instagram.com/perrustingo
+      - generic [ref=f4e142]:
+        - 'img "El mismo perro después: limpio, con corte parejo y feliz" [ref=f4e143]'
+        - img [ref=f4e145]
+        - generic:
+          - generic:
+            - img
+            - img
+        - slider "Desliza para comparar el antes y el después" [ref=f4e146]: "58"
+    - generic [ref=f4e147]:
+      - img [ref=f4e149]
+      - img [ref=f4e153]
+      - img [ref=f4e157]
+      - img [ref=f4e159]
+      - img [ref=f4e161]
+      - generic [ref=f4e163]:
+        - paragraph [ref=f4e164]: Peluquería Canina Perrustingo
+        - heading "La felicidad se les nota en la cola." [level=2] [ref=f4e165]
+        - paragraph [ref=f4e166]: Dejamos a cada perro limpio, cómodo y feliz. Mira los resultados reales de nuestros clientes peludos.
+        - link "Reserva tu cita" [ref=f4e167] [cursor=pointer]:
+          - /url: https://wa.me/4915237152283?text=Hola%20Perrustingo%2C%20quiero%20agendar%20una%20cita%20para%20mi%20perro.%20Nombre%3A%20%E2%80%A6%20Raza%2Ftama%C3%B1o%3A%20%E2%80%A6%20Servicio%3A%20%E2%80%A6
+      - img [ref=f4e168]
+    - generic [ref=f4e170]:
+      - generic:
+        - img
+        - img
+        - img
+        - img
+      - generic [ref=f4e171]:
+        - generic [ref=f4e172]:
+          - paragraph [ref=f4e173]: Así trabajamos
+          - heading "Queremos que tu perro espere con ilusión su visita" [level=2] [ref=f4e174]
+        - generic [ref=f4e175]:
+          - generic [ref=f4e177]:
+            - img [ref=f4e178]
+            - heading "Atención en nuestro hogar" [level=3] [ref=f4e179]
+            - paragraph [ref=f4e180]: Atendemos en un domicilio particular acondicionado según los últimos estándares técnicos. Trabajamos solo con cita previa, así encontramos un horario conveniente y ni tú ni tu perro tienen que esperar.
+          - generic [ref=f4e182]:
+            - img [ref=f4e183]
+            - heading "Libertad y cero estrés" [level=3] [ref=f4e184]
+            - paragraph [ref=f4e185]: "No usamos jaula de secado, brazo de sujeción ni correa abdominal. Tu perro no tiene que estar sujeto y quieto todo el tiempo: tiene total libertad para moverse y sentarse."
+          - generic [ref=f4e187]:
+            - img [ref=f4e188]
+            - heading "Familiarización para cachorros" [level=3] [ref=f4e189]
+            - paragraph [ref=f4e190]: Presentamos de forma lúdica el cepillo, la bañera, la mesa, el secador y la máquina, y acostumbramos a tu cachorro a que le toquen las patas, el hocico y la cara. Así sus visitas crecen sin miedo ni estrés.
+    - generic [ref=f4e191]:
+      - generic [ref=f4e193]:
+        - paragraph [ref=f4e194]: Opiniones de Google
+        - heading "Más de 135 familias ya nos confiaron a sus regalones" [level=2] [ref=f4e195]
+        - link "4.6 · 135 opiniones en Google" [ref=f4e197] [cursor=pointer]:
+          - /url: https://www.google.com/maps/place/Peluqueria+Canina+Perrustingo/@-33.4035606,-70.7133999,17z
+          - generic [ref=f4e198]: ★
+          - text: 4.6 · 135 opiniones en Google
+      - generic "Carrusel de opiniones — desliza para ver más" [ref=f4e199]:
+        - blockquote [ref=f4e200]:
+          - generic "5 estrellas" [ref=f4e201]: ★★★★★
+          - paragraph [ref=f4e202]: “¡Mi perro quedó hermoso! Es un labrador y el corte quedó parejo, como en ninguna peluquería lo habían dejado antes. Lo llevo hace años, muchas gracias 🫶🏽”
+          - generic [ref=f4e203]:
+            - generic [ref=f4e204]: D
+            - generic [ref=f4e205]:
+              - generic [ref=f4e206]: Daniela Araneda B.
+              - text: Opinión de Google
+        - blockquote [ref=f4e207]:
+          - generic "5 estrellas" [ref=f4e208]: ★★★★★
+          - paragraph [ref=f4e209]: “Llevé a mi perrita golden retriever, la dejaron hermosa. Gracias por la atención 💛”
+          - generic [ref=f4e210]:
+            - generic [ref=f4e211]: J
+            - generic [ref=f4e212]:
+              - generic [ref=f4e213]: Jazmin
+              - text: Opinión de Google
+        - blockquote [ref=f4e214]:
+          - generic "5 estrellas" [ref=f4e215]: ★★★★★
+          - paragraph [ref=f4e216]: “Un muy buen lugar, mi Moana siempre llega limpia y hermosa sin ningún problema. Excelente servicio, full recomendado 🙌🏻”
+          - generic [ref=f4e217]:
+            - generic [ref=f4e218]: J
+            - generic [ref=f4e219]:
+              - generic [ref=f4e220]: Jorge Luis Salinas C.
+              - text: Opinión de Google
+        - blockquote [ref=f4e221]:
+          - generic "5 estrellas" [ref=f4e222]: ★★★★★
+          - paragraph [ref=f4e223]: “¡Excelente servicio! Muy dedicado en su trabajo y preocupado por el bienestar de los perritos 👍🏻👍🏻”
+          - generic [ref=f4e224]:
+            - generic [ref=f4e225]: G
+            - generic [ref=f4e226]:
+              - generic [ref=f4e227]: Guister Maldonado
+              - text: Opinión de Google
+        - blockquote [ref=f4e228]:
+          - generic "5 estrellas" [ref=f4e229]: ★★★★★
+          - paragraph [ref=f4e230]: “Dejaron a mi perrita irreconocible jajaja, muy linda con sus moñitos que le pusieron. ¡Buen servicio!”
+          - generic [ref=f4e231]:
+            - generic [ref=f4e232]: J
+            - generic [ref=f4e233]:
+              - generic [ref=f4e234]: Jorge Abarca
+              - text: Opinión de Google
+        - blockquote [ref=f4e235]:
+          - generic "5 estrellas" [ref=f4e236]: ★★★★★
+          - paragraph [ref=f4e237]: “Muy buena atención, quedó muy regaloneada 🤞✨”
+          - generic [ref=f4e238]:
+            - generic [ref=f4e239]: D
+            - generic [ref=f4e240]:
+              - generic [ref=f4e241]: Denisse
+              - text: Opinión de Google
+        - blockquote [ref=f4e242]:
+          - generic "5 estrellas" [ref=f4e243]: ★★★★★
+          - paragraph [ref=f4e244]: "“Gracias por el tiempo y la dedicación para explicar cualquier detalle. Llegué sin expectativas y me sorprendió gratamente. Hoy tienes un nuevo cliente: ¡mi Lucas!”"
+          - generic [ref=f4e245]:
+            - generic [ref=f4e246]: T
+            - generic [ref=f4e247]:
+              - generic [ref=f4e248]: Tamara Paillao
+              - text: Opinión de Google
+        - blockquote [ref=f4e249]:
+          - generic "5 estrellas" [ref=f4e250]: ★★★★★
+          - paragraph [ref=f4e251]: "“Nuestra perrita viejita estaba en pésimas condiciones y la dejaron hermosa, su pelito bien cortado. Y lo mejor: sin tranquilizantes. ¡Recomendados 1000%!”"
+          - generic [ref=f4e252]:
+            - generic [ref=f4e253]: V
+            - generic [ref=f4e254]:
+              - generic [ref=f4e255]: Vannia Brizuela
+              - text: Opinión de Google
+        - blockquote [ref=f4e256]:
+          - generic "5 estrellas" [ref=f4e257]: ★★★★★
+          - paragraph [ref=f4e258]: “Llevé a mis regalones Luna y Terry, ambos adultos mayores, y quedaron muy lindos a pesar de que son muy inquietos. Todo un profesional, los trata con cariño.”
+          - generic [ref=f4e259]:
+            - generic [ref=f4e260]: M
+            - generic [ref=f4e261]:
+              - generic [ref=f4e262]: Marianela Hermosilla
+              - text: Opinión de Google
+        - blockquote [ref=f4e263]:
+          - generic "5 estrellas" [ref=f4e264]: ★★★★★
+          - paragraph [ref=f4e265]: “La atención 10/10, muy amables y realmente hicieron un trabajo increíble. 100% recomendados.”
+          - generic [ref=f4e266]:
+            - generic [ref=f4e267]: K
+            - generic [ref=f4e268]:
+              - generic [ref=f4e269]: Krom Arl
+              - text: Opinión de Google
+        - blockquote [ref=f4e270]:
+          - generic "5 estrellas" [ref=f4e271]: ★★★★★
+          - paragraph [ref=f4e272]: “Me encantó la preparación que hicieron para el cumpleaños de mi Bê. ¡El mejor servicio de peluquería canina de Chile y Brasil!”
+          - generic [ref=f4e273]:
+            - generic [ref=f4e274]: G
+            - generic [ref=f4e275]:
+              - generic [ref=f4e276]: Graziele de Oliveira
+              - text: Opinión de Google
+        - blockquote [ref=f4e277]:
+          - generic "5 estrellas" [ref=f4e278]: ★★★★★
+          - paragraph [ref=f4e279]: “La atención y la calidad del servicio brindado es muy buena y recomendable.”
+          - generic [ref=f4e280]:
+            - generic [ref=f4e281]: L
+            - generic [ref=f4e282]:
+              - generic [ref=f4e283]: Leonardo Riffo
+              - text: Opinión de Google
+        - blockquote [ref=f4e284]:
+          - generic "5 estrellas" [ref=f4e285]: ★★★★★
+          - paragraph [ref=f4e286]: “¡Mi perro quedó hermoso! Es un labrador y el corte quedó parejo, como en ninguna peluquería lo habían dejado antes. Lo llevo hace años, muchas gracias 🫶🏽”
+          - generic [ref=f4e287]:
+            - generic [ref=f4e288]: D
+            - generic [ref=f4e289]:
+              - generic [ref=f4e290]: Daniela Araneda B.
+              - text: Opinión de Google
+        - blockquote [ref=f4e291]:
+          - generic "5 estrellas" [ref=f4e292]: ★★★★★
+          - paragraph [ref=f4e293]: “Llevé a mi perrita golden retriever, la dejaron hermosa. Gracias por la atención 💛”
+          - generic [ref=f4e294]:
+            - generic [ref=f4e295]: J
+            - generic [ref=f4e296]:
+              - generic [ref=f4e297]: Jazmin
+              - text: Opinión de Google
+        - blockquote [ref=f4e298]:
+          - generic "5 estrellas" [ref=f4e299]: ★★★★★
+          - paragraph [ref=f4e300]: “Un muy buen lugar, mi Moana siempre llega limpia y hermosa sin ningún problema. Excelente servicio, full recomendado 🙌🏻”
+          - generic [ref=f4e301]:
+            - generic [ref=f4e302]: J
+            - generic [ref=f4e303]:
+              - generic [ref=f4e304]: Jorge Luis Salinas C.
+              - text: Opinión de Google
+        - blockquote [ref=f4e305]:
+          - generic "5 estrellas" [ref=f4e306]: ★★★★★
+          - paragraph [ref=f4e307]: “¡Excelente servicio! Muy dedicado en su trabajo y preocupado por el bienestar de los perritos 👍🏻👍🏻”
+          - generic [ref=f4e308]:
+            - generic [ref=f4e309]: G
+            - generic [ref=f4e310]:
+              - generic [ref=f4e311]: Guister Maldonado
+              - text: Opinión de Google
+        - blockquote [ref=f4e312]:
+          - generic "5 estrellas" [ref=f4e313]: ★★★★★
+          - paragraph [ref=f4e314]: “Dejaron a mi perrita irreconocible jajaja, muy linda con sus moñitos que le pusieron. ¡Buen servicio!”
+          - generic [ref=f4e315]:
+            - generic [ref=f4e316]: J
+            - generic [ref=f4e317]:
+              - generic [ref=f4e318]: Jorge Abarca
+              - text: Opinión de Google
+        - blockquote [ref=f4e319]:
+          - generic "5 estrellas" [ref=f4e320]: ★★★★★
+          - paragraph [ref=f4e321]: “Muy buena atención, quedó muy regaloneada 🤞✨”
+          - generic [ref=f4e322]:
+            - generic [ref=f4e323]: D
+            - generic [ref=f4e324]:
+              - generic [ref=f4e325]: Denisse
+              - text: Opinión de Google
+        - blockquote [ref=f4e326]:
+          - generic "5 estrellas" [ref=f4e327]: ★★★★★
+          - paragraph [ref=f4e328]: "“Gracias por el tiempo y la dedicación para explicar cualquier detalle. Llegué sin expectativas y me sorprendió gratamente. Hoy tienes un nuevo cliente: ¡mi Lucas!”"
+          - generic [ref=f4e329]:
+            - generic [ref=f4e330]: T
+            - generic [ref=f4e331]:
+              - generic [ref=f4e332]: Tamara Paillao
+              - text: Opinión de Google
+        - blockquote [ref=f4e333]:
+          - generic "5 estrellas" [ref=f4e334]: ★★★★★
+          - paragraph [ref=f4e335]: "“Nuestra perrita viejita estaba en pésimas condiciones y la dejaron hermosa, su pelito bien cortado. Y lo mejor: sin tranquilizantes. ¡Recomendados 1000%!”"
+          - generic [ref=f4e336]:
+            - generic [ref=f4e337]: V
+            - generic [ref=f4e338]:
+              - generic [ref=f4e339]: Vannia Brizuela
+              - text: Opinión de Google
+        - blockquote [ref=f4e340]:
+          - generic "5 estrellas" [ref=f4e341]: ★★★★★
+          - paragraph [ref=f4e342]: “Llevé a mis regalones Luna y Terry, ambos adultos mayores, y quedaron muy lindos a pesar de que son muy inquietos. Todo un profesional, los trata con cariño.”
+          - generic [ref=f4e343]:
+            - generic [ref=f4e344]: M
+            - generic [ref=f4e345]:
+              - generic [ref=f4e346]: Marianela Hermosilla
+              - text: Opinión de Google
+        - blockquote [ref=f4e347]:
+          - generic "5 estrellas" [ref=f4e348]: ★★★★★
+          - paragraph [ref=f4e349]: “La atención 10/10, muy amables y realmente hicieron un trabajo increíble. 100% recomendados.”
+          - generic [ref=f4e350]:
+            - generic [ref=f4e351]: K
+            - generic [ref=f4e352]:
+              - generic [ref=f4e353]: Krom Arl
+              - text: Opinión de Google
+        - blockquote [ref=f4e354]:
+          - generic "5 estrellas" [ref=f4e355]: ★★★★★
+          - paragraph [ref=f4e356]: “Me encantó la preparación que hicieron para el cumpleaños de mi Bê. ¡El mejor servicio de peluquería canina de Chile y Brasil!”
+          - generic [ref=f4e357]:
+            - generic [ref=f4e358]: G
+            - generic [ref=f4e359]:
+              - generic [ref=f4e360]: Graziele de Oliveira
+              - text: Opinión de Google
+        - blockquote [ref=f4e361]:
+          - generic "5 estrellas" [ref=f4e362]: ★★★★★
+          - paragraph [ref=f4e363]: “La atención y la calidad del servicio brindado es muy buena y recomendable.”
+          - generic [ref=f4e364]:
+            - generic [ref=f4e365]: L
+            - generic [ref=f4e366]:
+              - generic [ref=f4e367]: Leonardo Riffo
+              - text: Opinión de Google
+    - 'img "Próximamente Perrustingo internacional: Brasil (em breve) y Alemania (bald verfügbar) — nuevos destinos, el mismo amor." [ref=f4e371]'
+    - generic [ref=f4e373]:
+      - generic [ref=f4e374]:
+        - paragraph [ref=f4e375]: Transparencia
+        - heading "Antes de reservar, ten en cuenta" [level=2] [ref=f4e376]
+      - generic [ref=f4e377]:
+        - generic [ref=f4e379]:
+          - img [ref=f4e380]
+          - heading "Precio según tamaño y estado" [level=3] [ref=f4e381]
+          - paragraph [ref=f4e382]: Calculamos el valor final según el tamaño, el peso y el estado del pelo de tu perro. Te confirmamos el precio antes de empezar.
+        - generic [ref=f4e384]:
+          - img [ref=f4e385]
+          - heading "Conducta del perro" [level=3] [ref=f4e386]
+          - paragraph [ref=f4e387]: Si tu perro se pone nervioso o difícil durante la sesión, podemos aplicar un recargo. Siempre te avisamos con el motivo.
+        - generic [ref=f4e389]:
+          - img [ref=f4e390]
+          - heading "Tiempos de trabajo" [level=3] [ref=f4e391]
+          - paragraph [ref=f4e392]: Nos tomamos entre 2 y 3 horas en promedio por sesión completa. Trabajamos con calma para que tu perro se sienta seguro.
+    - generic [ref=f4e393]:
+      - generic:
+        - img
+        - img
+        - img
+        - img
+      - generic [ref=f4e394]:
+        - generic [ref=f4e395]:
+          - paragraph [ref=f4e396]: Tamaños y tarifas
+          - heading "Cada perro es distinto, y el precio va con su tamaño" [level=2] [ref=f4e397]
+          - paragraph [ref=f4e398]: Evaluamos el peso, el comportamiento, la salud y el tipo de pelo (liso, rizado, doble capa, nudos o motas). Los precios son para perritos en buen estado, con el servicio completo incluido, y se confirman antes de comenzar. Sin sorpresas.
+        - generic [ref=f4e399]:
+          - generic [ref=f4e401]:
+            - generic [ref=f4e402]:
+              - img [ref=f4e403]
+              - img [ref=f4e409]
+              - img [ref=f4e411]
+              - img [ref=f4e413]
+              - img "Ilustración de Mini / Toy (hasta 5 kg)" [ref=f4e417]
+              - img [ref=f4e418]
+            - generic [ref=f4e420]:
+              - heading "Mini / Toy hasta 5 kg desde $18.000" [level=3] [ref=f4e421]:
+                - text: Mini / Toy
+                - generic [ref=f4e422]: hasta 5 kg
+                - generic [ref=f4e423]: desde $18.000
+              - generic [ref=f4e424]:
+                - list [ref=f4e425]:
+                  - listitem [ref=f4e426]:
+                    - img "Ilustración de Chihuahua" [ref=f4e428]
+                    - generic [ref=f4e429]: Chihuahua
+                  - listitem [ref=f4e430]:
+                    - img "Ilustración de Pomerania" [ref=f4e432]
+                    - generic [ref=f4e433]: Pomerania
+                  - listitem [ref=f4e434]:
+                    - img "Ilustración de Yorkshire" [ref=f4e436]
+                    - generic [ref=f4e437]: Yorkshire
+                  - listitem [ref=f4e438]:
+                    - img "Ilustración de Poodle Toy" [ref=f4e440]
+                    - generic [ref=f4e441]: Poodle Toy
+                  - listitem [ref=f4e442]:
+                    - img "Ilustración de Dachshund Miniatura" [ref=f4e444]
+                    - generic [ref=f4e445]: Dachshund Miniatura
+                  - listitem [ref=f4e446]:
+                    - img "Ilustración de Fox Terrier Pelo Liso" [ref=f4e448]
+                    - generic [ref=f4e449]: Fox Terrier Pelo Liso
+                - paragraph [ref=f4e450]: Baño y corte rápidos, con extrema delicadeza y cuidados.
+          - generic [ref=f4e452]:
+            - generic [ref=f4e453]:
+              - img [ref=f4e454]
+              - img [ref=f4e456]
+              - img [ref=f4e458]
+              - img [ref=f4e460]
+              - img "Ilustración de Pequeño (6–10 kg)" [ref=f4e468]
+              - img [ref=f4e469]
+            - generic [ref=f4e471]:
+              - heading "Pequeños 6 a 10 kg desde $20.000" [level=3] [ref=f4e472]:
+                - text: Pequeños
+                - generic [ref=f4e473]: 6 a 10 kg
+                - generic [ref=f4e474]: desde $20.000
+              - generic [ref=f4e475]:
+                - list [ref=f4e476]:
+                  - listitem [ref=f4e477]:
+                    - img "Ilustración de Bichón Frisé" [ref=f4e479]
+                    - generic [ref=f4e480]: Bichón Frisé
+                  - listitem [ref=f4e481]:
+                    - img "Ilustración de Shih Tzu" [ref=f4e483]
+                    - generic [ref=f4e484]: Shih Tzu
+                  - listitem [ref=f4e485]:
+                    - img "Ilustración de Poodle" [ref=f4e487]
+                    - generic [ref=f4e488]: Poodle
+                  - listitem [ref=f4e489]:
+                    - img "Ilustración de Terrier Chileno" [ref=f4e491]
+                    - generic [ref=f4e492]: Terrier Chileno
+                  - listitem [ref=f4e493]:
+                    - img "Ilustración de Dachshund" [ref=f4e495]
+                    - generic [ref=f4e496]: Dachshund
+                - paragraph [ref=f4e497]: Su manto suele requerir mantenimiento frecuente.
+          - generic [ref=f4e499]:
+            - generic [ref=f4e500]:
+              - img [ref=f4e501]
+              - img [ref=f4e503]
+              - img [ref=f4e509]
+              - img [ref=f4e513]
+              - img "Ilustración de Mediano (11–25 kg)" [ref=f4e518]
+              - img [ref=f4e519]
+            - generic [ref=f4e521]:
+              - heading "Medianos 11 a 25 kg desde $25.000" [level=3] [ref=f4e522]:
+                - text: Medianos
+                - generic [ref=f4e523]: 11 a 25 kg
+                - generic [ref=f4e524]: desde $25.000
+              - generic [ref=f4e525]:
+                - list [ref=f4e526]:
+                  - listitem [ref=f4e527]:
+                    - img "Ilustración de Beagle" [ref=f4e529]
+                    - generic [ref=f4e530]: Beagle
+                  - listitem [ref=f4e531]:
+                    - img "Ilustración de Cocker Spaniel" [ref=f4e533]
+                    - generic [ref=f4e534]: Cocker Spaniel
+                  - listitem [ref=f4e535]:
+                    - img "Ilustración de Schnauzer" [ref=f4e537]
+                    - generic [ref=f4e538]: Schnauzer
+                  - listitem [ref=f4e539]:
+                    - img "Ilustración de Bulldog Francés" [ref=f4e541]
+                    - generic [ref=f4e542]: Bulldog Francés
+                  - listitem [ref=f4e543]:
+                    - img "Ilustración de Dogo Chileno" [ref=f4e545]
+                    - generic [ref=f4e546]: Dogo Chileno
+                - paragraph [ref=f4e547]: Más producto, más tiempo de secado y sus cortes de raza.
+          - generic [ref=f4e549]:
+            - generic [ref=f4e550]:
+              - img [ref=f4e551]
+              - img [ref=f4e553]
+              - img [ref=f4e555]
+              - img [ref=f4e557]
+              - img "Ilustración de Grande (26–45 kg)" [ref=f4e565]
+              - img [ref=f4e566]
+            - generic [ref=f4e568]:
+              - heading "Grandes 26 a 45 kg desde $40.000" [level=3] [ref=f4e569]:
+                - text: Grandes
+                - generic [ref=f4e570]: 26 a 45 kg
+                - generic [ref=f4e571]: desde $40.000
+              - generic [ref=f4e572]:
+                - list [ref=f4e573]:
+                  - listitem [ref=f4e574]:
+                    - img "Ilustración de Golden Retriever" [ref=f4e576]
+                    - generic [ref=f4e577]: Golden Retriever
+                  - listitem [ref=f4e578]:
+                    - img "Ilustración de Labrador" [ref=f4e580]
+                    - generic [ref=f4e581]: Labrador
+                  - listitem [ref=f4e582]:
+                    - img "Ilustración de Pastor Alemán" [ref=f4e584]
+                    - generic [ref=f4e585]: Pastor Alemán
+                  - listitem [ref=f4e586]:
+                    - img "Ilustración de Pastor Inglés" [ref=f4e588]
+                    - generic [ref=f4e589]: Pastor Inglés
+                  - listitem [ref=f4e590]:
+                    - img "Ilustración de Samoyedo" [ref=f4e592]
+                    - generic [ref=f4e593]: Samoyedo
+                  - listitem [ref=f4e594]:
+                    - img "Ilustración de Ovejero Magallánico" [ref=f4e596]
+                    - generic [ref=f4e597]: Ovejero Magallánico
+                - paragraph [ref=f4e598]: El cepillado y desenredado toma más tiempo.
+          - generic [ref=f4e600]:
+            - generic [ref=f4e601]:
+              - img [ref=f4e602]
+              - img [ref=f4e608]
+              - img [ref=f4e612]
+              - img [ref=f4e614]
+              - img "Ilustración de Gigante (más de 45 kg)" [ref=f4e618]
+              - img [ref=f4e619]
+            - generic [ref=f4e621]:
+              - heading "Gigantes más de 45 kg desde $80.000" [level=3] [ref=f4e622]:
+                - text: Gigantes
+                - generic [ref=f4e623]: más de 45 kg
+                - generic [ref=f4e624]: desde $80.000
+              - generic [ref=f4e625]:
+                - list [ref=f4e626]:
+                  - listitem [ref=f4e627]:
+                    - img "Ilustración de San Bernardo" [ref=f4e629]
+                    - generic [ref=f4e630]: San Bernardo
+                  - listitem [ref=f4e631]:
+                    - img "Ilustración de Terranova" [ref=f4e633]
+                    - generic [ref=f4e634]: Terranova
+                  - listitem [ref=f4e635]:
+                    - img "Ilustración de Mestizo / Quiltro" [ref=f4e637]
+                    - generic [ref=f4e638]: Mestizo / Quiltro
+                - paragraph [ref=f4e639]: Requieren instalaciones y mesas adaptadas a su peso.
+    - 'img "Próximamente: Perrustingo a domicilio — el spa canino hasta tu casa." [ref=f4e643]'
+    - generic [ref=f4e644]:
+      - generic:
+        - img
+        - img
+        - img
+        - img
+      - generic [ref=f4e645]:
+        - generic [ref=f4e647]:
+          - heading "¿Qué incluye el servicio?" [level=3] [ref=f4e648]
+          - generic [ref=f4e649]:
+            - link "Corte de pelo y estilo" [ref=f4e650] [cursor=pointer]:
+              - /url: "#servicio-corte"
+              - generic [ref=f4e651]: ✂️
+              - generic [ref=f4e652]: Corte de pelo y estilo
+              - generic [ref=f4e653]: Ver →
+            - link "Corte de uñas" [ref=f4e654] [cursor=pointer]:
+              - /url: "#servicio-unas"
+              - generic [ref=f4e655]: 💅
+              - generic [ref=f4e656]: Corte de uñas
+              - generic [ref=f4e657]: Ver →
+            - link "Limpieza de oídos" [ref=f4e658] [cursor=pointer]:
+              - /url: "#servicio-oidos"
+              - generic [ref=f4e659]: 👂
+              - generic [ref=f4e660]: Limpieza de oídos
+              - generic [ref=f4e661]: Ver →
+            - link "Drenaje o limpieza de glándulas anales" [ref=f4e662] [cursor=pointer]:
+              - /url: "#servicio-glandulas"
+              - generic [ref=f4e663]: 🧴
+              - generic [ref=f4e664]: Drenaje o limpieza de glándulas anales
+              - generic [ref=f4e665]: Ver →
+            - link "Baño completo" [ref=f4e666] [cursor=pointer]:
+              - /url: "#servicio-bano"
+              - generic [ref=f4e667]: 🚿
+              - generic [ref=f4e668]: Baño completo
+              - generic [ref=f4e669]: Ver →
+            - link "Peinado y eliminación de pelo muerto" [ref=f4e670] [cursor=pointer]:
+              - /url: "#servicio-peinado"
+              - generic [ref=f4e671]: 🪮
+              - generic [ref=f4e672]: Peinado y eliminación de pelo muerto
+              - generic [ref=f4e673]: Ver →
+            - link "Secado profesional" [ref=f4e674] [cursor=pointer]:
+              - /url: "#servicio-secado"
+              - generic [ref=f4e675]: 💨
+              - generic [ref=f4e676]: Secado profesional
+              - generic [ref=f4e677]: Ver →
+          - paragraph [ref=f4e678]:
+            - text: "* Si lo solicitas, podemos colocar"
+            - strong [ref=f4e679]: pinches decorativos
+            - text: a las hembras y, a veces, un accesorio a los machos.
+        - link "Reserva y confirma tu precio →" [ref=f4e681] [cursor=pointer]:
+          - /url: /reserva
+    - generic [ref=f4e683]:
+      - generic [ref=f4e685]:
+        - paragraph [ref=f4e686]: Estamos en Renca
+        - heading "Ven a conocernos" [level=2] [ref=f4e687]
+        - generic [ref=f4e688]:
+          - generic [ref=f4e689]:
+            - term [ref=f4e690]: 📍 Dirección
+            - definition [ref=f4e691]:
+              - text: Arturo Prat 4556, Renca, Santiago ·
+              - link "Ver en Google Maps" [ref=f4e692] [cursor=pointer]:
+                - /url: https://www.google.com/maps/place/Peluqueria+Canina+Perrustingo/@-33.4035606,-70.7133999,17z
+          - generic [ref=f4e693]:
+            - term [ref=f4e694]: 🚗 Cómo llegar
+            - definition [ref=f4e695]: Estamos a 3–4 minutos en vehículo de la Plaza Mayor de Renca y a 13–15 minutos caminando. A pasos del Liceo El Señor de Renca, a un costado de Nelas Pizza (ex-Telepizza), donde también hay paradas de locomoción colectiva a pocos metros.
+          - generic [ref=f4e696]:
+            - term [ref=f4e697]: 🕘 Horario
+            - definition [ref=f4e698]: "Lun a Sáb · 9:00 a 17:00. Los miércoles son nuestro día de más demanda: te recomendamos reservar con anticipación."
+          - generic [ref=f4e699]:
+            - term [ref=f4e700]: 💬 Reservas
+            - definition [ref=f4e701]: "Agendamos directo por WhatsApp: envíanos el nombre, la raza o tamaño de tu perro y el servicio que necesitas."
+          - generic [ref=f4e702]:
+            - term [ref=f4e703]: 🏳️‍🌈 Para toda la familia
+            - definition [ref=f4e704]: Somos un espacio amigable con la comunidad LGBTQ+ y con cada perro que cruza nuestra puerta.
+        - link "Escríbenos por WhatsApp" [ref=f4e705] [cursor=pointer]:
+          - /url: https://wa.me/4915237152283?text=Hola%20Perrustingo%2C%20quiero%20agendar%20una%20cita%20para%20mi%20perro.%20Nombre%3A%20%E2%80%A6%20Raza%2Ftama%C3%B1o%3A%20%E2%80%A6%20Servicio%3A%20%E2%80%A6
+      - iframe [ref=f4e708]
+    - generic [ref=f4e710]:
+      - generic [ref=f4e712]:
+        - generic [ref=f4e713]:
+          - img [ref=f4e714]
+          - img [ref=f4e720]
+          - img "Corazón con huella en 3D" [ref=f4e723]
+          - img [ref=f4e724]
+        - generic [ref=f4e726]:
+          - heading "Atención con cariño" [level=3] [ref=f4e727]
+          - generic [ref=f4e728]: Tratamos a cada perro como si fuera nuestro.
+      - generic [ref=f4e730]:
+        - generic [ref=f4e731]:
+          - img [ref=f4e732]
+          - img [ref=f4e734]
+          - img "Burbuja de WhatsApp en 3D" [ref=f4e737]
+          - img [ref=f4e738]
+        - generic [ref=f4e740]:
+          - heading "Aviso por WhatsApp" [level=3] [ref=f4e741]
+          - generic [ref=f4e742]: Te escribimos cuando tu perro está listo.
+      - generic [ref=f4e744]:
+        - generic [ref=f4e745]:
+          - img [ref=f4e746]
+          - img [ref=f4e748]
+          - img "Etiqueta de precio en 3D" [ref=f4e755]
+          - img [ref=f4e756]
+        - generic [ref=f4e758]:
+          - heading "Precios claros" [level=3] [ref=f4e759]
+          - generic [ref=f4e760]: Te confirmamos el precio según tamaño y estado antes de empezar.
+      - generic [ref=f4e762]:
+        - generic [ref=f4e763]:
+          - img [ref=f4e764]
+          - img [ref=f4e766]
+          - img "Estrella dorada feliz en 3D" [ref=f4e769]
+          - img [ref=f4e770]
+        - generic [ref=f4e772]:
+          - heading "4.6 en Google" [level=3] [ref=f4e773]
+          - generic [ref=f4e774]: Más de 135 familias nos recomiendan.
+    - 'img "Próximamente: recomendaciones — consejos, productos y rutinas de cuidado canino." [ref=f4e778]'
+    - generic [ref=f4e780]:
+      - generic [ref=f4e781]:
+        - paragraph [ref=f4e782]: Preguntas frecuentes
+        - heading "Todo lo que necesitas saber" [level=2] [ref=f4e783]
+      - generic [ref=f4e785]:
+        - button "¿Necesito hacer reserva o puedo llegar sin cita?" [ref=f4e787]:
+          - generic [ref=f4e788]: ¿Necesito hacer reserva o puedo llegar sin cita?
+          - img [ref=f4e790]
+        - button "¿Cuánto tiempo tarda el servicio?" [ref=f4e793]:
+          - generic [ref=f4e794]: ¿Cuánto tiempo tarda el servicio?
+          - img [ref=f4e796]
+        - button "¿El precio se puede cambiar el día del servicio?" [ref=f4e799]:
+          - generic [ref=f4e800]: ¿El precio se puede cambiar el día del servicio?
+          - img [ref=f4e802]
+        - button "¿Qué pasa si mi perro no se deja atender?" [ref=f4e805]:
+          - generic [ref=f4e806]: ¿Qué pasa si mi perro no se deja atender?
+          - img [ref=f4e808]
+        - button "¿Puedo quedarme durante el servicio?" [ref=f4e811]:
+          - generic [ref=f4e812]: ¿Puedo quedarme durante el servicio?
+          - img [ref=f4e814]
+        - button "¿Atienden perros con problemas de salud?" [ref=f4e817]:
+          - generic [ref=f4e818]: ¿Atienden perros con problemas de salud?
+          - img [ref=f4e820]
+        - button "¿Con qué productos trabajan?" [ref=f4e823]:
+          - generic [ref=f4e824]: ¿Con qué productos trabajan?
+          - img [ref=f4e826]
+        - button "¿Tienen estacionamiento?" [ref=f4e829]:
+          - generic [ref=f4e830]: ¿Tienen estacionamiento?
+          - img [ref=f4e832]
+    - generic [ref=f4e835]:
+      - generic [ref=f4e836]:
+        - paragraph [ref=f4e837]: Espacios publicitarios
+        - heading "¿Tienes un negocio para mascotas?" [level=2] [ref=f4e838]
+        - paragraph [ref=f4e839]: Llega directamente a los dueños de perros de Renca y Santiago. Contáctanos para conocer disponibilidad y tarifas.
+      - generic [ref=f4e840]:
+        - link "Consultar espacio publicitario Espacio A" [ref=f4e842] [cursor=pointer]:
+          - /url: https://wa.me/4915237152283?text=Hola%20Perrustingo%2C%20me%20interesa%20publicitar%20mi%20negocio%20en%20su%20sitio%20web.%20%C2%BFPodr%C3%ADa%20darme%20m%C3%A1s%20informaci%C3%B3n%3F
+          - generic [ref=f4e843]: 📢
+          - generic [ref=f4e844]: Espacio A
+          - generic [ref=f4e845]: Banner horizontal · visible en toda la página
+          - generic [ref=f4e846]: Consultar disponibilidad →
+        - link "Consultar espacio publicitario Espacio B" [ref=f4e848] [cursor=pointer]:
+          - /url: https://wa.me/4915237152283?text=Hola%20Perrustingo%2C%20me%20interesa%20publicitar%20mi%20negocio%20en%20su%20sitio%20web.%20%C2%BFPodr%C3%ADa%20darme%20m%C3%A1s%20informaci%C3%B3n%3F
+          - generic [ref=f4e849]: 📢
+          - generic [ref=f4e850]: Espacio B
+          - generic [ref=f4e851]: Ideal para productos y servicios de mascotas
+          - generic [ref=f4e852]: Consultar disponibilidad →
+        - link "Consultar espacio publicitario Espacio C" [ref=f4e854] [cursor=pointer]:
+          - /url: https://wa.me/4915237152283?text=Hola%20Perrustingo%2C%20me%20interesa%20publicitar%20mi%20negocio%20en%20su%20sitio%20web.%20%C2%BFPodr%C3%ADa%20darme%20m%C3%A1s%20informaci%C3%B3n%3F
+          - generic [ref=f4e855]: 📢
+          - generic [ref=f4e856]: Espacio C
+          - generic [ref=f4e857]: Alta visibilidad · comunidad dueños de perros
+          - generic [ref=f4e858]: Consultar disponibilidad →
+  - contentinfo [ref=f4e859]:
+    - img [ref=f4e860]
+    - generic [ref=f4e862]:
+      - generic [ref=f4e863]:
+        - navigation "Enlaces legales" [ref=f4e864]:
+          - link "Políticas" [ref=f4e865] [cursor=pointer]:
+            - /url: /politicas
+          - link "Advertencias" [ref=f4e866] [cursor=pointer]:
+            - /url: /#advertencias
+          - link "Contacto" [ref=f4e867] [cursor=pointer]:
+            - /url: /#visita
+        - link "Perrustingo" [ref=f4e868] [cursor=pointer]:
+          - /url: /
+          - img "Logo Perrustingo" [ref=f4e869]
+        - generic [ref=f4e870]:
+          - link "Instagram" [ref=f4e871] [cursor=pointer]:
+            - /url: https://instagram.com/perrustingo
+          - link "Facebook" [ref=f4e872] [cursor=pointer]:
+            - /url: https://facebook.com/perrustingo
+      - generic [ref=f4e873]:
+        - paragraph [ref=f4e874]: Atendemos a familias de 🇨🇱 🇧🇷 🇩🇪 🌎
+        - button "Cambiar idioma" [ref=f4e876]:
+          - generic [ref=f4e877]: 🇨🇱
+          - img [ref=f4e878]
+      - paragraph [ref=f4e880]: © 2026 Perrustingo · Peluquería Canina · Arturo Prat 4556, Renca, Santiago
+  - button "Open Next.js Dev Tools" [ref=f4e886] [cursor=pointer]:
+    - img [ref=f4e887]
+  - alert [ref=f4e890]: Perrustingo — Peluquería Canina en Renca

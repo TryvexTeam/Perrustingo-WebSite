@@ -41,14 +41,12 @@ function urlReserva(servicio?: string): string {
   return servicio ? `/reserva?servicio=${encodeURIComponent(servicio)}` : "/reserva";
 }
 
-function CardServicio({ s, ancha }: { s: Servicio; ancha: boolean }) {
+function CardServicio({ s }: { s: Servicio }) {
   return (
     <Link
       id={s.id}
       href={urlReserva(s.servicio)}
-      className={`group relative block overflow-hidden rounded-2xl shadow-sm transition-[transform,box-shadow] duration-200 ease-[var(--ease-out-expo)] hover:-translate-y-1 hover:shadow-md active:scale-[.98] lg:last:flex-1 ${
-        ancha ? "col-span-2" : ""
-      }`}
+      className="group relative block overflow-hidden rounded-2xl shadow-sm transition-[transform,box-shadow] duration-200 ease-[var(--ease-out-expo)] hover:-translate-y-1 hover:shadow-md active:scale-[.98] lg:last:flex-1"
     >
       <Image
         src={s.foto}
@@ -79,9 +77,9 @@ export function Servicios() {
         <Reveal className="mt-9">
           <div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
             {COLUMNAS.map((columna, c) => (
-              <div key={c} className="grid grid-cols-2 gap-4 lg:flex lg:flex-col">
+              <div key={c} className="flex flex-col gap-4">
                 {columna.map((s) => (
-                  <CardServicio key={s.id} s={s} ancha={s.w / s.h > 1.4} />
+                  <CardServicio key={s.id} s={s} />
                 ))}
               </div>
             ))}
