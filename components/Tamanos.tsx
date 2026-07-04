@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Flotantes } from "./Flotantes";
 import { PrecioDinamico } from "./PrecioDinamico";
 import { Reveal } from "./Reveal";
@@ -5,6 +6,24 @@ import { BreedAvatar } from "./ui/BreedAvatar";
 import { CloudCard, type CloudCardTone } from "./ui/CloudCard";
 import { razaImagen, razasPorTamano, TAMANO_IMAGEN } from "@/lib/razas";
 import { TAMANO_LABELS, type TamanoKey } from "@/lib/reserva";
+
+/* Fila de tarifas con fotos realistas (último pull del equipo) — convive con
+   la fila de cards ilustradas con las razas de más abajo. */
+const FOTOS_TAMANO: Record<TamanoKey, string> = {
+  toy: "/cards/foto-mini.png",
+  pequeno: "/cards/foto-pequeno.png",
+  mediano: "/cards/foto-mediano.png",
+  grande: "/cards/foto-grande.png",
+  gigante: "/cards/foto-gigante.png",
+};
+
+const BG_TAMANO: Record<TamanoKey, string> = {
+  toy: "bg-[#fdeaf1]",
+  pequeno: "bg-[#e3f1fb]",
+  mediano: "bg-[#ece4f7]",
+  grande: "bg-[#fde4c8]",
+  gigante: "bg-[#d8f0e3]",
+};
 
 interface GrupoTamano {
   key: TamanoKey;
@@ -78,7 +97,35 @@ export function Tamanos() {
           </p>
         </Reveal>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 [&>div:nth-child(4)]:lg:col-start-1 xl:[&>div:nth-child(4)]:col-start-auto">
+        {/* Fila 1 — fotos realistas con el precio de cada tamaño */}
+        <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 [&>div:last-child]:col-span-2 md:[&>div:last-child]:col-span-1">
+          {GRUPOS.map((grupo, i) => (
+            <Reveal key={`foto-${grupo.key}`} delay={i * 60} className="h-full">
+              <div
+                className={`flex h-full flex-col items-center gap-3 overflow-hidden rounded-3xl ${BG_TAMANO[grupo.key]} p-6 pt-0 text-center transition-transform duration-200 ease-[var(--ease-out-expo)] hover:-translate-y-1`}
+              >
+                <Image
+                  src={FOTOS_TAMANO[grupo.key]}
+                  alt={`Perro de tamaño ${grupo.nombre}`}
+                  width={640}
+                  height={480}
+                  className="-mx-6 w-[calc(100%+3rem)] max-w-none object-cover"
+                />
+                <div>
+                  <h3 className="font-display text-base font-extrabold">{grupo.nombre}</h3>
+                  <p className="text-xs font-bold uppercase tracking-wide text-teal-dark">{grupo.rango}</p>
+                </div>
+                <PrecioDinamico
+                  tamano={grupo.key}
+                  className={`font-display text-xl font-extrabold ${grupo.priceColor}`}
+                />
+              </div>
+            </Reveal>
+          ))}
+        </div>
+
+        {/* Fila 2 — cards ilustradas con las razas de cada grupo */}
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 [&>div:nth-child(4)]:lg:col-start-1 xl:[&>div:nth-child(4)]:col-start-auto">
           {GRUPOS.map((grupo, i) => {
             const razas = razasPorTamano(grupo.key);
             return (
