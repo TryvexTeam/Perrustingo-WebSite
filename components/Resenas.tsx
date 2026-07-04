@@ -131,7 +131,7 @@ export function Resenas() {
       </div>
 
       <div className="group mt-10" aria-label="Carrusel de opiniones">
-        <div className="flex w-max gap-5 pr-5 [animation:marquee_60s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:[animation:none] motion-reduce:flex-wrap motion-reduce:px-5">
+        <div className="flex w-max gap-5 pr-5 [animation:marquee_60s_linear_infinite] group-hover:[animation-play-state:paused]">
           {[...RESENAS, ...RESENAS].map((resena, i) => (
             <TarjetaResena key={`${resena.autor}-${i}`} resena={resena} />
           ))}
