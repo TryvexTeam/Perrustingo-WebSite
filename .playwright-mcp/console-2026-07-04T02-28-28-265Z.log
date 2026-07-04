@@ -1,0 +1,50 @@
+[     132ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[     380ms] [LOG] [Fast Refresh] done in 362ms @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[     698ms] [LOG] %c Console Ninja extension is connected to Next.js browser, background: rgb(30,30,30); color: rgb(255,213,92) see https://tinyurl.com/2vt8jxzw for more info. @ :0
+[     706ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[     812ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[   31267ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[   31268ms] [LOG] [Fast Refresh] done in 107ms @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[   80829ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[   80936ms] [LOG] [Fast Refresh] done in 211ms @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  122536ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/chihuahua.png:0
+[  122538ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/pomerania.png:0
+[  122545ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/yorkshire.png:0
+[  123116ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/poodle-toy.png:0
+[  123126ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  123143ms] [LOG] [Fast Refresh] done in 119ms @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  123151ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/dachshund-mini.png:0
+[  123153ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/fox-terrier.png:0
+[  123724ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  123727ms] [LOG] [Fast Refresh] done in 107ms @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  123730ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/bichon-frise.png:0
+[  123737ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/shih-tzu.png:0
+[  123738ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/poodle.png:0
+[  123824ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/terrier-chileno.png:0
+[  123825ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/dachshund.png:0
+[  124358ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  124383ms] [LOG] [Fast Refresh] done in 128ms @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  124387ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/beagle.png:0
+[  124396ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/cocker-spaniel.png:0
+[  124397ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/schnauzer.png:0
+[  124485ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  124487ms] [LOG] [Fast Refresh] done in 103ms @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  124488ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/bulldog-frances.png:0
+[  124492ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/dogo-chileno.png:0
+[  126197ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  126224ms] [LOG] [Fast Refresh] done in 130ms @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  126228ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/golden-retriever.png:0
+[  126235ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/labrador.png:0
+[  126237ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/pastor-aleman.png:0
+[  126361ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  126393ms] [LOG] [Fast Refresh] done in 140ms @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  126398ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/pastor-ingles.png:0
+[  126401ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/samoyedo.png:0
+[  126403ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/ovejero-magallanico.png:0
+[  126782ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  126792ms] [LOG] [Fast Refresh] done in 113ms @ http://localhost:3001/_next/static/chunks/1dyb_next_dist_1tnlzyy._.js:2487
+[  126822ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/san-bernardo.png:0
+[  126823ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/terranova.png:0
+[  126837ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/razas/quiltro.png:0
+[  130638ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/ilustraciones/etiqueta.png:0
+[  130641ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/ilustraciones/estrella.png:0

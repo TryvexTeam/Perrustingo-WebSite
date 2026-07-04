@@ -173,9 +173,14 @@ export function formatCLP(n: number): string {
   return "$" + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-export function buildWhatsAppMessage(data: FormData, esManual: boolean): string {
+export function buildWhatsAppMessage(
+  data: FormData,
+  esManual: boolean,
+  precioOverride?: number | null
+): string {
   const peso = parseFloat(data.pesoKg);
-  const precio = !isNaN(peso) && peso > 0 ? calcularPrecio(peso) : 0;
+  const precio =
+    precioOverride ?? (!isNaN(peso) && peso > 0 ? calcularPrecio(peso) : 0);
   const raza = data.raza === "Otro" ? (data.razaOtro || "Otro") : data.raza;
   const pelo =
     data.tipoPelo === "otro"
@@ -212,42 +217,46 @@ export function buildWhatsAppMessage(data: FormData, esManual: boolean): string 
     .filter(([, v]) => v === "no_se_deja")
     .map(([k]) => k);
 
+  /* Solo caracteres del plano básico Unicode (BMP): los emojis 🐶📋…
+     se corrompen a "�" cuando Windows entrega el link wa.me a la app de
+     escritorio de WhatsApp. Viñetas y negritas de WhatsApp sobreviven. */
+  const pesoValido = !isNaN(peso) && peso > 0 && peso <= 120;
   const lines: string[] = [];
 
   lines.push(
     esManual
-      ? "Hola Perrustingo 🐾 Necesito una evaluación personalizada para mi perro."
-      : "Hola Perrustingo 🐾 Quiero agendar una cita para mi perro."
+      ? "Hola Perrustingo, necesito una evaluación personalizada para mi perro."
+      : "Hola Perrustingo, quiero agendar una cita para mi perro."
   );
   lines.push("");
-  lines.push(`🐶 *Nombre:* ${data.nombrePerro || "—"}`);
-  if (raza) lines.push(`📋 *Raza:* ${raza}`);
-  if (data.pesoKg) lines.push(`⚖️ *Peso:* ${data.pesoKg} kg`);
-  lines.push(`🎂 *Edad:* ${edad}`);
-  if (data.contextura) lines.push(`📐 *Contextura:* ${data.contextura}`);
-  if (pelo) lines.push(`🧶 *Tipo de pelo:* ${pelo}`);
+  lines.push(`• *Nombre:* ${data.nombrePerro || "—"}`);
+  if (raza) lines.push(`• *Raza:* ${raza}`);
+  if (pesoValido) lines.push(`• *Peso:* ${data.pesoKg} kg`);
+  lines.push(`• *Edad:* ${edad}`);
+  if (data.contextura) lines.push(`• *Contextura:* ${data.contextura}`);
+  if (pelo) lines.push(`• *Tipo de pelo:* ${pelo}`);
 
   if (saludItems.length > 0) {
     lines.push("");
-    lines.push(`⚠️ *Condiciones de salud:* ${saludItems.join(", ")}`);
+    lines.push(`*Condiciones de salud:* ${saludItems.join(", ")}`);
   }
 
   if (tempGeneral || zonas.length > 0) {
     lines.push("");
-    if (tempGeneral) lines.push(`😊 *Temperamento general:* ${tempGeneral}`);
-    if (zonas.length > 0) lines.push(`⚠️ *No se deja con:* ${zonas.join(", ")}`);
+    if (tempGeneral) lines.push(`*Temperamento general:* ${tempGeneral}`);
+    if (zonas.length > 0) lines.push(`*No se deja con:* ${zonas.join(", ")}`);
   }
 
   if (precio > 0 || data.servicio || data.fechaDeseada) {
     lines.push("");
-    if (precio > 0) lines.push(`💰 *Precio estimado:* desde ${formatCLP(precio)}`);
-    if (data.servicio) lines.push(`🛁 *Servicio:* ${data.servicio}`);
-    if (data.fechaDeseada) lines.push(`📅 *Fecha deseada:* ${data.fechaDeseada}`);
+    if (precio > 0 && pesoValido) lines.push(`*Precio estimado:* desde ${formatCLP(precio)}`);
+    if (data.servicio) lines.push(`*Servicio:* ${data.servicio}`);
+    if (data.fechaDeseada) lines.push(`*Fecha deseada:* ${data.fechaDeseada}`);
   }
 
   if (esManual) {
     lines.push("");
-    lines.push("📝 El tamaño y el peso no coinciden — solicito evaluación directa.");
+    lines.push("Nota: el tamaño y el peso no coinciden — solicito evaluación directa.");
   }
 
   return lines.join("\n");

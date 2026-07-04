@@ -1,7 +1,7 @@
 import { Reveal } from "./Reveal";
 
 const WHATSAPP_PUBLICIDAD = `https://wa.me/4915237152283?text=${encodeURIComponent(
-  "Hola Perrustingo 🐾 Me interesa publicitar mi negocio en su sitio web. ¿Podría darme más información?"
+  "Hola Perrustingo, me interesa publicitar mi negocio en su sitio web. ¿Podría darme más información?"
 )}`;
 
 const SPOTS = [
@@ -24,7 +24,7 @@ const SPOTS = [
 
 export function Publicidad() {
   return (
-    <section className="bg-white px-5 py-14">
+    <section className="bg-section-blend px-5 py-14">
       <div className="mx-auto max-w-6xl">
         <Reveal>
           <p className="text-center text-xs font-extrabold uppercase tracking-[0.22em] text-teal-dark">

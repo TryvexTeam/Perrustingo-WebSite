@@ -1,81 +1,59 @@
-﻿import Image from "next/image";
 import { Flotantes } from "./Flotantes";
+import { PrecioDinamico } from "./PrecioDinamico";
 import { Reveal } from "./Reveal";
+import { BreedAvatar } from "./ui/BreedAvatar";
+import { CloudCard, type CloudCardTone } from "./ui/CloudCard";
+import { razaImagen, razasPorTamano, TAMANO_IMAGEN } from "@/lib/razas";
+import { TAMANO_LABELS, type TamanoKey } from "@/lib/reserva";
 
-interface Tamano {
-  foto: string;
-  bg: string;
+interface GrupoTamano {
+  key: TamanoKey;
+  tone: CloudCardTone;
   nombre: string;
   rango: string;
-  razas: string[];
   nota: string;
+  priceColor: string;
 }
 
-const TAMANOS: Tamano[] = [
+const GRUPOS: GrupoTamano[] = [
   {
-    foto: "/cards/foto-mini.png",
-    bg: "bg-[#fdeaf1]",
+    key: "toy",
+    priceColor: "text-[#c94fa8]",
+    tone: "rose",
     nombre: "Mini / Toy",
     rango: "hasta 5 kg",
-    razas: [
-      "Chihuahua",
-      "Pomerania",
-      "Yorkshire",
-      "Poodle Toy",
-      "Dachshund Miniatura",
-      "Fox Terrier Pelo Liso",
-    ],
     nota: "Baño y corte rápidos, con extrema delicadeza y cuidados.",
   },
   {
-    foto: "/cards/foto-pequeno.png",
-    bg: "bg-[#e3f1fb]",
+    key: "pequeno",
+    priceColor: "text-[#1890d4]",
+    tone: "sky",
     nombre: "Pequeños",
     rango: "6 a 10 kg",
-    razas: [
-      "Bichón Frisé",
-      "Shih Tzu",
-      "Poodle",
-      "Terrier Chileno",
-      "Dachshund",
-    ],
     nota: "Su manto suele requerir mantenimiento frecuente.",
   },
   {
-    foto: "/cards/foto-mediano.png",
-    bg: "bg-[#ece4f7]",
+    key: "mediano",
+    priceColor: "text-[#7c4bba]",
+    tone: "lilac",
     nombre: "Medianos",
     rango: "11 a 25 kg",
-    razas: [
-      "Beagle",
-      "Cocker Spaniel",
-      "Schnauzer",
-      "Bulldog Francés",
-      "Dogo Chileno",
-    ],
     nota: "Más producto, más tiempo de secado y sus cortes de raza.",
   },
   {
-    foto: "/cards/foto-grande.png",
-    bg: "bg-[#fde4c8]",
+    key: "grande",
+    priceColor: "text-orange",
+    tone: "peach",
     nombre: "Grandes",
     rango: "26 a 45 kg",
-    razas: [
-      "Golden Retriever",
-      "Labrador",
-      "Pastor Alemán",
-      "Pastor Inglés",
-      "Samoyedo",
-      "Ovejero Magallánico",
-    ],
     nota: "El cepillado y desenredado toma más tiempo.",
   },
   {
-    foto: "/cards/foto-gigante.png",
-    bg: "bg-[#d8f0e3]",
+    key: "gigante",
+    priceColor: "text-teal-dark",
+    tone: "mint",
     nombre: "Gigantes",
     rango: "más de 45 kg",
-    razas: ["San Bernardo", "Terranova", "Mestizo / Quiltro"],
     nota: "Requieren instalaciones y mesas adaptadas a su peso.",
   },
 ];
@@ -87,50 +65,63 @@ export function Tamanos() {
       <div className="relative mx-auto max-w-6xl">
         <Reveal>
           <p className="text-center text-xs font-extrabold uppercase tracking-[0.22em] text-teal-dark">
-            Guía de tamaños
+            Tamaños y tarifas
           </p>
           <h2 className="mt-2 text-center font-display text-3xl font-extrabold tracking-tight md:text-4xl">
-            Cada perro es distinto, y así lo evaluamos
+            Cada perro es distinto, y el precio va con su tamaño
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-[15px] leading-relaxed text-ink-soft">
-            Evaluamos el peso, el tamaño, el comportamiento y cualquier condición
-            de salud que debamos saber, además del tipo de pelo (liso, rizado,
-            doble capa, nudos o motas) para preparar el servicio de tu perro.
+            Evaluamos el peso, el comportamiento, la salud y el tipo de pelo
+            (liso, rizado, doble capa, nudos o motas). Los precios son para
+            perritos en buen estado, con el servicio completo incluido, y se
+            confirman antes de comenzar. Sin sorpresas.
           </p>
         </Reveal>
 
-        <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 [&>div:last-child]:col-span-2 md:[&>div:last-child]:col-span-1">
-          {TAMANOS.map((t, i) => (
-            <Reveal key={t.nombre} delay={i * 60} className="h-full">
-              <div
-                className={`tilt-card flex h-full flex-col items-center gap-3 overflow-hidden rounded-3xl ${t.bg} p-6 pt-0 text-center`}
-              >
-                <Image
-                  src={t.foto}
-                  alt=""
-                  aria-hidden="true"
-                  width={640}
-                  height={480}
-                  className="-mx-6 w-[calc(100%+3rem)] max-w-none object-cover"
-                />
-                <div>
-                  <h3 className="font-display text-base font-extrabold">{t.nombre}</h3>
-                  <p className="text-xs font-bold uppercase tracking-wide text-teal-dark">{t.rango}</p>
-                </div>
-                <div className="flex flex-wrap justify-center gap-1.5">
-                  {t.razas.map((raza) => (
-                    <span
-                      key={raza}
-                      className="rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold text-ink"
-                    >
-                      {raza}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-xs leading-relaxed text-ink-soft">{t.nota}</p>
-              </div>
-            </Reveal>
-          ))}
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 [&>div:nth-child(4)]:lg:col-start-1 xl:[&>div:nth-child(4)]:col-start-auto">
+          {GRUPOS.map((grupo, i) => {
+            const razas = razasPorTamano(grupo.key);
+            return (
+              <Reveal key={grupo.key} delay={i * 60} className="h-full">
+                <CloudCard
+                  tone={grupo.tone}
+                  index={i}
+                  visual={
+                    <BreedAvatar
+                      src={TAMANO_IMAGEN[grupo.key]}
+                      nombre={TAMANO_LABELS[grupo.key]}
+                      size="lg"
+                      className="!h-full !w-full !border-0 !bg-transparent !shadow-none"
+                    />
+                  }
+                  titulo={
+                    <>
+                      {grupo.nombre}
+                      <span className="mt-0.5 block text-xs font-bold uppercase tracking-wide text-teal-dark">
+                        {grupo.rango}
+                      </span>
+                      <PrecioDinamico
+                        tamano={grupo.key}
+                        className={`mt-1 block font-display text-xl font-extrabold ${grupo.priceColor}`}
+                      />
+                    </>
+                  }
+                >
+                  <ul className="flex flex-wrap justify-center gap-x-3 gap-y-2.5">
+                    {razas.map((raza) => (
+                      <li key={raza.slug} className="flex w-[74px] flex-col items-center gap-1">
+                        <BreedAvatar src={razaImagen(raza.slug)} nombre={raza.nombre} size="md" />
+                        <span className="text-[10.5px] font-semibold leading-tight text-ink">
+                          {raza.nombre}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-4 text-xs leading-relaxed text-ink-soft">{grupo.nota}</p>
+                </CloudCard>
+              </Reveal>
+            );
+          })}
         </div>
       </div>
     </section>

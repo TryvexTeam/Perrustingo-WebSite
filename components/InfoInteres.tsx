@@ -3,7 +3,7 @@ import { Reveal } from "./Reveal";
 
 export function InfoInteres() {
   return (
-    <section id="visita" className="scroll-mt-20 bg-white px-5 py-16">
+    <section id="visita" className="scroll-mt-20 bg-section-blend px-5 py-16">
       <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-2">
         <Reveal>
           <div>
@@ -26,6 +26,15 @@ export function InfoInteres() {
                   >
                     Ver en Google Maps
                   </a>
+                </dd>
+              </div>
+              <div>
+                <dt className="font-extrabold">🚗 Cómo llegar</dt>
+                <dd className="mt-1 text-ink-soft">
+                  Estamos a 3–4 minutos en vehículo de la Plaza Mayor de Renca
+                  y a 13–15 minutos caminando. A pasos del Liceo El Señor de
+                  Renca, a un costado de Nelas Pizza (ex-Telepizza), donde
+                  también hay paradas de locomoción colectiva a pocos metros.
                 </dd>
               </div>
               <div>

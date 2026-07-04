@@ -2,6 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { BOOKING_URL } from "@/lib/site";
 import { HeroClouds } from "./HeroClouds";
+const BANDERAS = [
+  { src: "/flags/chile.svg", alt: "Chile" },
+  { src: "/flags/brasil.svg", alt: "Brasil" },
+  { src: "/flags/alemania.svg", alt: "Alemania" },
+  { src: "/flags/mundo.svg", alt: "El mundo" },
+];
 
 function Star({ className }: { className?: string }) {
   return (
@@ -46,6 +52,22 @@ export function Hero() {
 
       <div className="relative mx-auto flex max-w-7xl flex-col px-5 pt-24 md:min-h-[min(60.5vw,860px)] md:flex-row md:items-center md:py-16 md:pt-24">
         <div className="max-w-xl">
+          {/* Banderas bajo el logo del menú — Chile, Brasil, Alemania y el mundo (solo en el hero) */}
+          <div
+            className="rise-in mb-5 flex items-center gap-2"
+            aria-label="Presente en Chile y próximamente en Brasil, Alemania y el mundo"
+          >
+            {BANDERAS.map((b) => (
+              <Image
+                key={b.src}
+                src={b.src}
+                alt={b.alt}
+                width={28}
+                height={28}
+                className="h-7 w-7 drop-shadow-sm"
+              />
+            ))}
+          </div>
           <h1 className="rise-in font-display text-[2.7rem] font-extrabold leading-[1.08] tracking-[-0.03em] text-teal-ink [animation-delay:80ms] md:text-[3.8rem]">
             Llega hecho un{" "}
             <span className="relative inline-block whitespace-nowrap">
@@ -102,28 +124,6 @@ export function Hero() {
             </a>
           </div>
 
-          {/* Accesos rápidos — cuenta nueva o iniciar sesión */}
-          <div className="rise-in mt-5 flex flex-wrap items-center gap-3 [animation-delay:320ms]">
-            <span className="text-sm font-medium text-teal-ink/60">¿Ya eres cliente?</span>
-            <Link
-              href="/login"
-              className="flex items-center gap-1.5 rounded-full border-2 border-teal-dark/30 bg-white/60 px-4 py-1.5 text-sm font-bold text-teal-dark backdrop-blur-sm transition hover:border-teal-dark hover:bg-white"
-            >
-              <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className="h-3.5 w-3.5">
-                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM1.5 14.5a6.5 6.5 0 0 1 13 0H1.5Z" />
-              </svg>
-              Iniciar sesión
-            </Link>
-            <Link
-              href="/registro"
-              className="flex items-center gap-1.5 rounded-full border-2 border-orange/40 bg-white/60 px-4 py-1.5 text-sm font-bold text-orange backdrop-blur-sm transition hover:border-orange hover:bg-white"
-            >
-              <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className="h-3.5 w-3.5">
-                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM1.5 14.5a6.5 6.5 0 0 1 13 0H1.5ZM13.5 5.5v-2h-2V2h2V0h1.5v2h2v1.5h-2v2H13.5Z" />
-              </svg>
-              Crear cuenta gratis
-            </Link>
-          </div>
         </div>
 
         <Image

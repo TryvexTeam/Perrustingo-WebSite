@@ -18,5 +18,5 @@ export function whatsappUrl(message: string): string {
 }
 
 export const BOOKING_URL = whatsappUrl(
-  "Hola Perrustingo 🐾 Quiero agendar una cita para mi perro. Nombre: … Raza/tamaño: … Servicio: …"
+  "Hola Perrustingo, quiero agendar una cita para mi perro. Nombre: … Raza/tamaño: … Servicio: …"
 );

@@ -12,11 +12,10 @@ import { LoaderHuellita } from "@/components/LoaderHuellita";
 import { TiltCards } from "@/components/TiltCards";
 import { InfoInteres } from "@/components/InfoInteres";
 import { Precios } from "@/components/Precios";
-import { Proximamente } from "@/components/Proximamente";
+import { PromoBanner } from "@/components/PromoBanner";
 import { Publicidad } from "@/components/Publicidad";
 import { QuickAccess } from "@/components/QuickAccess";
 import { SiteMenu } from "@/components/SiteMenu";
-import { StatsBar } from "@/components/StatsBar";
 import { FAQ } from "@/components/FAQ";
 import { Resenas } from "@/components/Resenas";
 import { Servicios } from "@/components/Servicios";
@@ -35,17 +34,19 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
         <Servicios />
+        <PromoBanner slot="tras-servicios" id="proximamente" />
         <AntesDespues />
         <Banner />
         <ComoTrabajamos />
         <Resenas />
-        <StatsBar />
+        <PromoBanner slot="tras-resenas" />
         <Advertencias />
         <Tamanos />
+        <PromoBanner slot="tras-tamanos" />
         <Precios />
         <InfoInteres />
         <Beneficios />
-        <Proximamente />
+        <PromoBanner slot="pre-footer" />
         <FAQ />
         <Publicidad />
       </main>

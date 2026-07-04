@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cream: #fbf7f0;
+  /* Prueba de dirección: azul cielo muy claro en vez del crema (#fbf7f0) */
+  --color-cream: #edf3ff;
   --color-ink: #2f3e46;
   --color-ink-soft: #5b6b72;
   --color-teal: #00a6a8;
@@ -43,6 +44,18 @@
 
 .rise-in {
   animation: rise 0.8s var(--ease-out-expo) both;
+}
+
+/* Secciones blancas que se funden con el fondo celeste del body en sus
+   márgenes — el scroll se siente continuo, sin costuras duras. */
+.bg-section-blend {
+  background: linear-gradient(
+    to bottom,
+    var(--color-cream),
+    #ffffff 14%,
+    #ffffff 86%,
+    var(--color-cream)
+  );
 }
 
 :focus-visible {
@@ -89,19 +102,14 @@ body {
   transform: translateY(0);
 }
 
+/* prefers-reduced-motion: bloque global eliminado (mismo fix que Tryvex
+   Landing) — Windows con "efectos de animación" apagado lo activaba y mataba
+   reveals y carruseles para la mayoría de los visitantes. Se mantiene solo
+   la animación decorativa infinita bajo la preferencia. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  html {
-    scroll-behavior: auto;
-  }
-  .reveal {
-    opacity: 1;
-    transform: none;
+  .animate-drift,
+  .animate-drift-slow,
+  .animate-float {
+    animation: none;
   }
 }

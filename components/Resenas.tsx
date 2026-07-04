@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import { SITE } from "@/lib/site";
 import { Reveal } from "./Reveal";
 
@@ -105,6 +108,77 @@ function TarjetaResena({ resena }: { resena: Resena }) {
   );
 }
 
+/* Carrusel deslizable: scroll horizontal nativo (swipe en móvil, rueda o
+   arrastre en desktop) + auto-avance infinito que se pausa mientras el
+   usuario interactúa y se reanuda solo. */
+function CarruselResenas() {
+  const ref = useRef<HTMLDivElement>(null);
+  const pausado = useRef(false);
+  const reanudarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    let raf = 0;
+    const paso = () => {
+      if (!pausado.current) {
+        el.scrollLeft += 0.6;
+        const mitad = el.scrollWidth / 2;
+        if (el.scrollLeft >= mitad) el.scrollLeft -= mitad;
+      }
+      raf = requestAnimationFrame(paso);
+    };
+    raf = requestAnimationFrame(paso);
+
+    const pausar = () => {
+      pausado.current = true;
+      if (reanudarTimer.current) clearTimeout(reanudarTimer.current);
+    };
+    const reanudarLuego = () => {
+      if (reanudarTimer.current) clearTimeout(reanudarTimer.current);
+      reanudarTimer.current = setTimeout(() => {
+        pausado.current = false;
+      }, 2500);
+    };
+    const salir = () => {
+      pausado.current = false;
+    };
+
+    el.addEventListener("pointerdown", pausar);
+    el.addEventListener("pointerup", reanudarLuego);
+    el.addEventListener("touchstart", pausar, { passive: true });
+    el.addEventListener("touchend", reanudarLuego);
+    el.addEventListener("mouseenter", pausar);
+    el.addEventListener("mouseleave", salir);
+    el.addEventListener("wheel", reanudarLuego, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      if (reanudarTimer.current) clearTimeout(reanudarTimer.current);
+      el.removeEventListener("pointerdown", pausar);
+      el.removeEventListener("pointerup", reanudarLuego);
+      el.removeEventListener("touchstart", pausar);
+      el.removeEventListener("touchend", reanudarLuego);
+      el.removeEventListener("mouseenter", pausar);
+      el.removeEventListener("mouseleave", salir);
+      el.removeEventListener("wheel", reanudarLuego);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      aria-label="Carrusel de opiniones — desliza para ver más"
+      className="mt-10 flex gap-5 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      {[...RESENAS, ...RESENAS].map((resena, i) => (
+        <TarjetaResena key={`${resena.autor}-${i}`} resena={resena} />
+      ))}
+    </div>
+  );
+}
+
 export function Resenas() {
   return (
     <section id="opiniones" className="scroll-mt-20 overflow-hidden bg-cream py-16">
@@ -130,13 +204,7 @@ export function Resenas() {
         </Reveal>
       </div>
 
-      <div className="group mt-10" aria-label="Carrusel de opiniones">
-        <div className="flex w-max gap-5 pr-5 [animation:marquee_60s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:[animation:none] motion-reduce:flex-wrap motion-reduce:px-5">
-          {[...RESENAS, ...RESENAS].map((resena, i) => (
-            <TarjetaResena key={`${resena.autor}-${i}`} resena={resena} />
-          ))}
-        </div>
-      </div>
+      <CarruselResenas />
     </section>
   );
 }

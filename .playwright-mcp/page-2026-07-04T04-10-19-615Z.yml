@@ -1,0 +1,1814 @@
+- generic [ref=e1]:
+  - link "Saltar al contenido" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - generic [ref=e6]:
+    - generic [ref=e8]:
+      - navigation "Barra lateral":
+        - generic:
+          - generic:
+            - generic:
+              - button "Abrir barra lateral":
+                - img
+        - generic:
+          - generic:
+            - link "Nuevo chat":
+              - /url: /
+              - generic:
+                - img
+              - generic: Nuevo chat
+          - generic:
+            - button "Buscar chats":
+              - generic:
+                - img
+              - generic: Buscar chats
+          - generic:
+            - button "Chats recientes":
+              - generic:
+                - img
+              - generic: Chats recientes
+        - generic:
+          - generic:
+            - button "Abrir el menú de perfil":
+              - generic:
+                - generic:
+                  - img "Imagen de perfil"
+      - generic [ref=e9]:
+        - heading "Historial del chat" [level=2] [ref=e10]
+        - generic [ref=e11]:
+          - navigation "Historial del chat" [ref=e12]:
+            - generic [ref=e15]:
+              - link "Local" [ref=e16] [cursor=pointer]:
+                - /url: /
+                - img [ref=e17]
+              - button "Cerrar barra lateral" [expanded] [ref=e20]:
+                - img [ref=e21]
+            - list [ref=e24]:
+              - listitem [ref=e25]:
+                - link "Nuevo chat Controlar Tecla Mayús O" [ref=e130] [cursor=pointer]:
+                  - /url: /
+                  - generic [ref=e27]:
+                    - img [ref=e132]
+                    - generic [ref=e135]: Nuevo chat
+                  - generic [ref=e136]:
+                    - generic "Controlar" [ref=e137]:
+                      - generic [ref=e138]: Ctrl
+                      - text: +
+                    - generic "Tecla Mayús" [ref=e139]:
+                      - generic [ref=e140]: Shift
+                      - text: +
+                    - generic [ref=e142]: O
+              - listitem
+              - listitem [ref=e32]:
+                - button "Buscar chats Controlar K" [ref=e143] [cursor=pointer]:
+                  - generic [ref=e34]:
+                    - img [ref=e145]
+                    - generic [ref=e148]: Buscar chats
+                  - generic [ref=e149]:
+                    - generic "Controlar" [ref=e150]:
+                      - generic [ref=e151]: Ctrl
+                      - text: +
+                    - generic [ref=e153]: K
+            - link "Biblioteca" [ref=e39] [cursor=pointer]:
+              - /url: /library
+              - img [ref=e41]
+              - generic [ref=e44]: Biblioteca
+            - link "Proyectos Nuevo proyecto" [ref=e154] [cursor=pointer]:
+              - /url: /projects
+              - generic [ref=e155]:
+                - img [ref=e157]
+                - generic [ref=e160]: Proyectos
+              - button "Nuevo proyecto" [ref=e162]:
+                - img [ref=e164]
+            - link "Aplicaciones" [ref=e45] [cursor=pointer]:
+              - /url: /apps
+              - img [ref=e47]
+              - generic [ref=e50]: Aplicaciones
+            - link "Codex" [ref=e166] [cursor=pointer]:
+              - /url: /codex
+              - generic [ref=e167]:
+                - img [ref=e169]
+                - generic [ref=e172]: Codex
+              - img [ref=e174]
+            - generic [ref=e52] [cursor=pointer]:
+              - img [ref=e54]
+              - generic [ref=e57]: Más
+            - generic [ref=e176]:
+              - generic [ref=e177]:
+                - button "Recientes" [expanded] [ref=e178] [cursor=pointer]:
+                  - heading "Recientes" [level=2] [ref=e179]
+                - generic [ref=e181]:
+                  - link "Nuevo chat" [ref=e182] [cursor=pointer]:
+                    - /url: /
+                    - img [ref=e184]
+                  - button "Organizar chats" [ref=e186] [cursor=pointer]:
+                    - img [ref=e188]
+              - list [ref=e191]:
+                - listitem [ref=e192]:
+                  - link "Hero para peluquería canina" [ref=e193] [cursor=pointer]:
+                    - /url: /c/6a45f700-3a30-83e9-8de9-59c47a1b09ef
+                    - generic [ref=e195]: Hero para peluquería canina
+                    - generic [ref=e197]:
+                      - button "Anclar Hero para peluquería canina" [ref=e198]:
+                        - img [ref=e200]
+                      - button "Abrir opciones de conversación para Hero para peluquería canina" [ref=e202]:
+                        - img [ref=e204]
+                - listitem [ref=e206]:
+                  - link "Diseño de tarjetas UI" [ref=e207] [cursor=pointer]:
+                    - /url: /c/6a472c36-1640-83e9-9609-49a7e63ea283
+                    - generic [ref=e209]: Diseño de tarjetas UI
+                    - generic [ref=e211]:
+                      - button "Anclar Diseño de tarjetas UI" [ref=e212]:
+                        - img [ref=e214]
+                      - button "Abrir opciones de conversación para Diseño de tarjetas UI" [ref=e216]:
+                        - img [ref=e218]
+                - listitem [ref=e220]:
+                  - link "Imagen solicitada recreada" [ref=e221] [cursor=pointer]:
+                    - /url: /c/6a413cd6-1a3c-83e9-b355-5bf2bf78aa21
+                    - generic [ref=e223]: Imagen solicitada recreada
+                    - generic [ref=e225]:
+                      - button "Anclar Imagen solicitada recreada" [ref=e226]:
+                        - img [ref=e228]
+                      - button "Abrir opciones de conversación para Imagen solicitada recreada" [ref=e230]:
+                        - img [ref=e232]
+                - listitem [ref=e234]:
+                  - link "Imagen entorno moderno" [ref=e235] [cursor=pointer]:
+                    - /url: /c/6a413bf4-e2e4-83e9-9b8c-9914f553c514
+                    - generic [ref=e237]: Imagen entorno moderno
+                    - generic [ref=e239]:
+                      - button "Anclar Imagen entorno moderno" [ref=e240]:
+                        - img [ref=e242]
+                      - button "Abrir opciones de conversación para Imagen entorno moderno" [ref=e244]:
+                        - img [ref=e246]
+                - listitem [ref=e248]:
+                  - link "Escena arquitectónica nocturna" [ref=e249] [cursor=pointer]:
+                    - /url: /c/6a413941-2780-83e9-a448-a1bf938165ef
+                    - generic [ref=e251]: Escena arquitectónica nocturna
+                    - generic [ref=e253]:
+                      - button "Anclar Escena arquitectónica nocturna" [ref=e254]:
+                        - img [ref=e256]
+                      - button "Abrir opciones de conversación para Escena arquitectónica nocturna" [ref=e258]:
+                        - img [ref=e260]
+                - listitem [ref=e262]:
+                  - link "Solicitud evaluación retrasada" [ref=e263] [cursor=pointer]:
+                    - /url: /c/6a3c2f32-4890-83e9-8421-4310aaa962eb
+                    - generic [ref=e265]: Solicitud evaluación retrasada
+                    - generic [ref=e267]:
+                      - button "Anclar Solicitud evaluación retrasada" [ref=e268]:
+                        - img [ref=e270]
+                      - button "Abrir opciones de conversación para Solicitud evaluación retrasada" [ref=e272]:
+                        - img [ref=e274]
+                - listitem [ref=e276]:
+                  - link "Contexto de Entrenamiento" [ref=e277] [cursor=pointer]:
+                    - /url: /c/6a2b5180-b48c-83e9-a87a-76866933536c
+                    - generic [ref=e279]: Contexto de Entrenamiento
+                    - generic [ref=e281]:
+                      - button "Anclar Contexto de Entrenamiento" [ref=e282]:
+                        - img [ref=e284]
+                      - button "Abrir opciones de conversación para Contexto de Entrenamiento" [ref=e286]:
+                        - img [ref=e288]
+                - listitem [ref=e290]:
+                  - link "Saludo y respuesta" [ref=e291] [cursor=pointer]:
+                    - /url: /g/g-69e93005c9dc8191a7e2cddd6b08086f-entrenador-cita-postulacion/c/6a2b4e0d-a3e8-83e9-bf4e-e39ff3318917
+                    - generic [ref=e293]: Saludo y respuesta
+                    - generic [ref=e295]:
+                      - button "Anclar Saludo y respuesta" [ref=e296]:
+                        - img [ref=e298]
+                      - button "Abrir opciones de conversación para Saludo y respuesta" [ref=e300]:
+                        - img [ref=e302]
+                - listitem [ref=e304]:
+                  - link "Agencia IA y Automatización" [ref=e305] [cursor=pointer]:
+                    - /url: /c/6a1333e5-72cc-83e9-bdd1-9307ec012bfe
+                    - generic [ref=e307]: Agencia IA y Automatización
+                    - generic [ref=e309]:
+                      - button "Anclar Agencia IA y Automatización" [ref=e310]:
+                        - img [ref=e312]
+                      - button "Abrir opciones de conversación para Agencia IA y Automatización" [ref=e314]:
+                        - img [ref=e316]
+                - listitem [ref=e318]:
+                  - link "Edición de imagen gimnasio" [ref=e319] [cursor=pointer]:
+                    - /url: /c/6a1642d1-6b30-83e9-ac1e-c7099fd621a0
+                    - generic [ref=e321]: Edición de imagen gimnasio
+                    - generic [ref=e323]:
+                      - button "Anclar Edición de imagen gimnasio" [ref=e324]:
+                        - img [ref=e326]
+                      - button "Abrir opciones de conversación para Edición de imagen gimnasio" [ref=e328]:
+                        - img [ref=e330]
+                - listitem [ref=e332]:
+                  - link "Gym Website HTML Prompt" [ref=e333] [cursor=pointer]:
+                    - /url: /c/6a04e2a5-047c-83e9-ac9a-d64be007cdaa
+                    - generic [ref=e335]: Gym Website HTML Prompt
+                    - generic [ref=e337]:
+                      - button "Anclar Gym Website HTML Prompt" [ref=e338]:
+                        - img [ref=e340]
+                      - button "Abrir opciones de conversación para Gym Website HTML Prompt" [ref=e342]:
+                        - img [ref=e344]
+                - listitem [ref=e346]:
+                  - link "Mejorar imagen" [ref=e347] [cursor=pointer]:
+                    - /url: /c/6a13436c-5c5c-83e9-9ef8-b8103396d96f
+                    - generic [ref=e349]: Mejorar imagen
+                    - generic [ref=e351]:
+                      - button "Anclar Mejorar imagen" [ref=e352]:
+                        - img [ref=e354]
+                      - button "Abrir opciones de conversación para Mejorar imagen" [ref=e356]:
+                        - img [ref=e358]
+                - listitem [ref=e360]:
+                  - link "Mejorar fondo imagen oficina" [ref=e361] [cursor=pointer]:
+                    - /url: /c/6a0d180b-19fc-83e9-bff4-9d5fbde33f39
+                    - generic [ref=e363]: Mejorar fondo imagen oficina
+                    - generic [ref=e365]:
+                      - button "Anclar Mejorar fondo imagen oficina" [ref=e366]:
+                        - img [ref=e368]
+                      - button "Abrir opciones de conversación para Mejorar fondo imagen oficina" [ref=e370]:
+                        - img [ref=e372]
+                - listitem [ref=e374]:
+                  - link "Dividir contenido para videos" [ref=e375] [cursor=pointer]:
+                    - /url: /c/6a1333dc-1fcc-83e9-9344-ef813bff29cc
+                    - generic [ref=e377]: Dividir contenido para videos
+                    - generic [ref=e379]:
+                      - button "Anclar Dividir contenido para videos" [ref=e380]:
+                        - img [ref=e382]
+                      - button "Abrir opciones de conversación para Dividir contenido para videos" [ref=e384]:
+                        - img [ref=e386]
+                - listitem [ref=e388]:
+                  - link "Prompt para UI UX" [ref=e389] [cursor=pointer]:
+                    - /url: /c/6a0d03b4-502c-83e9-a4f5-056f22f38cc0
+                    - generic [ref=e391]: Prompt para UI UX
+                    - generic [ref=e393]:
+                      - button "Anclar Prompt para UI UX" [ref=e394]:
+                        - img [ref=e396]
+                      - button "Abrir opciones de conversación para Prompt para UI UX" [ref=e398]:
+                        - img [ref=e400]
+                - listitem [ref=e402]:
+                  - link "Carrusel de anuncios" [ref=e403] [cursor=pointer]:
+                    - /url: /c/6a0b779e-f09c-83e9-869f-756f78d71b6a
+                    - generic [ref=e405]: Carrusel de anuncios
+                    - generic [ref=e407]:
+                      - button "Anclar Carrusel de anuncios" [ref=e408]:
+                        - img [ref=e410]
+                      - button "Abrir opciones de conversación para Carrusel de anuncios" [ref=e412]:
+                        - img [ref=e414]
+                - listitem [ref=e416]:
+                  - link "Mejora de prompt OpenCode" [ref=e417] [cursor=pointer]:
+                    - /url: /c/69fbb89c-7814-83e9-92c8-e2cb24bb0927
+                    - generic [ref=e419]: Mejora de prompt OpenCode
+                    - generic [ref=e421]:
+                      - button "Anclar Mejora de prompt OpenCode" [ref=e422]:
+                        - img [ref=e424]
+                      - button "Abrir opciones de conversación para Mejora de prompt OpenCode" [ref=e426]:
+                        - img [ref=e428]
+                - listitem [ref=e430]:
+                  - link "Ver amigos en Riot" [ref=e431] [cursor=pointer]:
+                    - /url: /c/69d5c0d4-003c-83e9-b86d-4e32782f4cc3
+                    - generic [ref=e433]: Ver amigos en Riot
+                    - generic [ref=e435]:
+                      - button "Anclar Ver amigos en Riot" [ref=e436]:
+                        - img [ref=e438]
+                      - button "Abrir opciones de conversación para Ver amigos en Riot" [ref=e440]:
+                        - img [ref=e442]
+                - listitem [ref=e444]:
+                  - link "Ver amigos de amigos" [ref=e445] [cursor=pointer]:
+                    - /url: /c/69d5c0cd-bacc-83e9-a994-9fb2abae668b
+                    - generic [ref=e447]: Ver amigos de amigos
+                    - generic [ref=e449]:
+                      - button "Anclar Ver amigos de amigos" [ref=e450]:
+                        - img [ref=e452]
+                      - button "Abrir opciones de conversación para Ver amigos de amigos" [ref=e454]:
+                        - img [ref=e456]
+                - listitem [ref=e458]:
+                  - link "Simplificación código con while" [ref=e459] [cursor=pointer]:
+                    - /url: /c/697bc4c1-ec5c-8332-9fcb-a27240bb626a
+                    - generic [ref=e461]: Simplificación código con while
+                    - generic [ref=e463]:
+                      - button "Anclar Simplificación código con while" [ref=e464]:
+                        - img [ref=e466]
+                      - button "Abrir opciones de conversación para Simplificación código con while" [ref=e468]:
+                        - img [ref=e470]
+                - listitem [ref=e472]:
+                  - link "Recorte de audio Discord" [ref=e473] [cursor=pointer]:
+                    - /url: /c/696a6e69-221c-832e-bf13-abe54a301b86
+                    - generic [ref=e475]: Recorte de audio Discord
+                    - generic [ref=e477]:
+                      - button "Anclar Recorte de audio Discord" [ref=e478]:
+                        - img [ref=e480]
+                      - button "Abrir opciones de conversación para Recorte de audio Discord" [ref=e482]:
+                        - img [ref=e484]
+                - listitem [ref=e486]:
+                  - link "Diagrama de arquitectura" [ref=e487] [cursor=pointer]:
+                    - /url: /c/692916ec-cd04-8330-a181-1da8c73316a4
+                    - generic [ref=e489]: Diagrama de arquitectura
+                    - generic [ref=e491]:
+                      - button "Anclar Diagrama de arquitectura" [ref=e492]:
+                        - img [ref=e494]
+                      - button "Abrir opciones de conversación para Diagrama de arquitectura" [ref=e496]:
+                        - img [ref=e498]
+                - listitem [ref=e500]:
+                  - link "Apps para ver código iOS" [ref=e501] [cursor=pointer]:
+                    - /url: /c/6925eacc-e7a4-832c-898e-5b1aafa288e4
+                    - generic [ref=e503]: Apps para ver código iOS
+                    - generic [ref=e505]:
+                      - button "Anclar Apps para ver código iOS" [ref=e506]:
+                        - img [ref=e508]
+                      - button "Abrir opciones de conversación para Apps para ver código iOS" [ref=e510]:
+                        - img [ref=e512]
+                - listitem [ref=e514]:
+                  - link "Cambio de modelo chat" [ref=e515] [cursor=pointer]:
+                    - /url: /c/690fc236-7444-8332-a569-80ba297ed6d4
+                    - generic [ref=e517]: Cambio de modelo chat
+                    - generic [ref=e519]:
+                      - button "Anclar Cambio de modelo chat" [ref=e520]:
+                        - img [ref=e522]
+                      - button "Abrir opciones de conversación para Cambio de modelo chat" [ref=e524]:
+                        - img [ref=e526]
+                - listitem [ref=e528]:
+                  - link "Miami ciudad o estado" [ref=e529] [cursor=pointer]:
+                    - /url: /c/68ff09bc-e81c-8326-9a4c-391b29a2e84c
+                    - generic [ref=e531]: Miami ciudad o estado
+                    - generic [ref=e533]:
+                      - button "Anclar Miami ciudad o estado" [ref=e534]:
+                        - img [ref=e536]
+                      - button "Abrir opciones de conversación para Miami ciudad o estado" [ref=e538]:
+                        - img [ref=e540]
+                - listitem [ref=e542]:
+                  - link "Cumple presentación prompt" [ref=e543] [cursor=pointer]:
+                    - /url: /c/68fedf6a-c5c0-8326-bd33-d053b79b66b6
+                    - generic [ref=e545]: Cumple presentación prompt
+                    - generic [ref=e547]:
+                      - button "Anclar Cumple presentación prompt" [ref=e548]:
+                        - img [ref=e550]
+                      - button "Abrir opciones de conversación para Cumple presentación prompt" [ref=e552]:
+                        - img [ref=e554]
+                - listitem [ref=e556]:
+                  - link "Redacción portafolio ingeniero" [ref=e557] [cursor=pointer]:
+                    - /url: /c/68d42938-e76c-8324-af9d-09379fc47cb9
+                    - generic [ref=e559]: Redacción portafolio ingeniero
+                    - generic [ref=e561]:
+                      - button "Anclar Redacción portafolio ingeniero" [ref=e562]:
+                        - img [ref=e564]
+                      - button "Abrir opciones de conversación para Redacción portafolio ingeniero" [ref=e566]:
+                        - img [ref=e568]
+                - listitem [ref=e570]:
+                  - link "Haz imagen png" [ref=e571] [cursor=pointer]:
+                    - /url: /c/68c8c859-778c-8331-b912-21d6533a500b
+                    - generic [ref=e573]: Haz imagen png
+                    - generic [ref=e575]:
+                      - button "Anclar Haz imagen png" [ref=e576]:
+                        - img [ref=e578]
+                      - button "Abrir opciones de conversación para Haz imagen png" [ref=e580]:
+                        - img [ref=e582]
+          - generic [ref=e60]:
+            - button "Ignacio Gratis, abrir el menú de perfil" [ref=e584] [cursor=pointer]:
+              - generic [ref=e62]:
+                - img "Imagen de perfil" [ref=e585]
+                - generic [ref=e65]:
+                  - generic [ref=e67]: Ignacio
+                  - generic [ref=e70]: Gratis
+            - button "Reclamar oferta" [ref=e587] [cursor=pointer]:
+              - generic [ref=e588]:
+                - img [ref=e590]
+                - generic [ref=e592]: Reclamar oferta
+    - generic [ref=e74]:
+      - generic [ref=e75]:
+        - banner:
+          - button "Selector de modelo" [ref=e76] [cursor=pointer]:
+            - generic [ref=e77]:
+              - generic [ref=e78]: ChatGPT
+              - img [ref=e79]
+          - generic [ref=e83]:
+            - button "Compartir" [ref=e84] [cursor=pointer]:
+              - generic [ref=e85]:
+                - img [ref=e86]
+                - text: Compartir
+            - button "Abrir opciones de conversación" [ref=e90] [cursor=pointer]:
+              - img [ref=e91]
+      - main [ref=e94]:
+        - generic [ref=e95]:
+          - generic [ref=e599]:
+            - generic [ref=e602]:
+              - button "Prompt 1" [ref=e603] [cursor=pointer]
+              - button "Prompt 2" [ref=e604] [cursor=pointer]
+              - button "Prompt 3" [ref=e605] [cursor=pointer]
+              - button "Prompt 4" [ref=e606] [cursor=pointer]
+              - button "Prompt 5" [ref=e607] [cursor=pointer]
+              - button "Prompt 6" [ref=e608] [cursor=pointer]
+              - button "Prompt 7" [ref=e609] [cursor=pointer]
+              - button "Prompt 8" [ref=e610] [cursor=pointer]
+              - button "Prompt 9" [ref=e611] [cursor=pointer]
+              - button "Prompt 10" [ref=e612] [cursor=pointer]
+              - button "Prompt 11" [ref=e613] [cursor=pointer]
+              - button "Prompt 12" [ref=e614] [cursor=pointer]
+              - button "Prompt 13" [ref=e615] [cursor=pointer]
+              - button "Prompt 14" [ref=e616] [cursor=pointer]
+              - button "Prompt 15" [ref=e617] [cursor=pointer]
+              - button "Prompt 16" [ref=e618] [cursor=pointer]
+              - button "Prompt 17" [ref=e619] [cursor=pointer]
+              - button "Prompt 18" [ref=e620] [cursor=pointer]
+              - button "Prompt 19" [ref=e621] [cursor=pointer]
+              - button "Prompt 20" [ref=e622] [cursor=pointer]
+              - button "Prompt 21" [ref=e623] [cursor=pointer]
+              - button "Prompt 22" [ref=e624] [cursor=pointer]
+              - button "Prompt 23" [ref=e625] [cursor=pointer]
+              - button "Prompt 24" [ref=e626] [cursor=pointer]
+              - button "Prompt 25" [ref=e627] [cursor=pointer]
+              - button "Prompt 26" [ref=e628] [cursor=pointer]
+              - button "Prompt 27" [ref=e629] [cursor=pointer]
+              - button "Prompt 28" [ref=e630] [cursor=pointer]
+              - button "Prompt 29" [ref=e631] [cursor=pointer]
+              - button "Prompt 30" [ref=e632] [cursor=pointer]
+              - button "Prompt 31" [ref=e633] [cursor=pointer]
+              - button "Prompt 32" [ref=e634] [cursor=pointer]
+              - button "Prompt 33" [ref=e635] [cursor=pointer]
+              - button "Prompt 34" [ref=e636] [cursor=pointer]
+              - button "Prompt 35" [ref=e637] [cursor=pointer]
+              - button "Prompt 36" [ref=e638] [cursor=pointer]
+              - button "Prompt 37" [ref=e639] [cursor=pointer]
+              - button "Prompt 38" [ref=e640] [cursor=pointer]
+              - button "Prompt 39" [ref=e641] [cursor=pointer]
+              - button "Prompt 40" [ref=e642] [cursor=pointer]
+              - button "Prompt 41" [ref=e643] [cursor=pointer]
+              - button "Prompt 42" [ref=e644] [cursor=pointer]
+              - button "Prompt 43" [ref=e645] [cursor=pointer]
+              - button "Prompt 44" [ref=e646] [cursor=pointer]
+              - button "Prompt 45" [ref=e647] [cursor=pointer]
+              - button "Prompt 46" [ref=e648] [cursor=pointer]
+              - button "Prompt 47" [ref=e649] [cursor=pointer]
+              - button "Prompt 48" [ref=e650] [cursor=pointer]
+              - button "Prompt 49" [ref=e651] [cursor=pointer]
+              - button "Prompt 50" [ref=e2243] [cursor=pointer]
+            - generic [ref=e653]:
+              - heading "Dijiste:" [level=4] [ref=e654]
+              - generic [ref=e656]:
+                - generic [ref=e659]:
+                  - generic [ref=e661]:
+                    - 'button "Abrir imagen 1 de 2: 061626c7-9f04-4121-9837-3b03d45cf153.png" [ref=e664] [cursor=pointer]':
+                      - img "061626c7-9f04-4121-9837-3b03d45cf153.png" [ref=e665]
+                    - 'button "Abrir imagen 2 de 2: dab5d2fc-c55e-405b-92f7-278de17ff9e8.png" [ref=e668] [cursor=pointer]':
+                      - img "dab5d2fc-c55e-405b-92f7-278de17ff9e8.png" [ref=e669]
+                  - generic [ref=e671]: dame el hero para una website de esté perrito de la segunda imagen con un fondo png igual que la primera imagen con las nubes y ese diseño para una peluquería canina
+                - generic [ref=e672]:
+                  - group "Acciones de tu mensaje":
+                    - button "Copiar mensaje":
+                      - generic:
+                        - img
+                    - button "Editar mensaje":
+                      - generic:
+                        - img
+            - generic [ref=e675]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e676]
+              - generic [ref=e678]:
+                - generic [ref=e684]:
+                  - 'button "Imagen generada: Perro feliz sobre nubes esponjosas" [ref=e685] [cursor=pointer]':
+                    - generic [ref=e686]:
+                      - 'img "Imagen generada: Perro feliz sobre nubes esponjosas" [ref=e688]'
+                      - img [ref=e692]
+                  - generic [ref=e695]:
+                    - button "Editar imagen" [ref=e698] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e700] [cursor=pointer]:
+                      - img [ref=e702]
+                - generic [ref=e704]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e708]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e709]
+              - generic [ref=e711]:
+                - generic [ref=e717]:
+                  - 'button "Imagen generada: Perro en nubes juguetonas" [ref=e718] [cursor=pointer]':
+                    - generic [ref=e719]:
+                      - 'img "Imagen generada: Perro en nubes juguetonas" [ref=e721]'
+                      - img [ref=e723]
+                  - generic [ref=e726]:
+                    - button "Editar imagen" [ref=e729] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e731] [cursor=pointer]:
+                      - img [ref=e733]
+                - generic [ref=e735]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e738]:
+              - heading "Dijiste:" [level=4] [ref=e739]
+              - generic [ref=e741]:
+                - generic [ref=e744]:
+                  - generic [ref=e746]:
+                    - 'button "Abrir imagen 1 de 2: a7b8fb42-b5ae-48ad-8591-f5d34f85eda2.png" [ref=e749] [cursor=pointer]':
+                      - img "a7b8fb42-b5ae-48ad-8591-f5d34f85eda2.png" [ref=e750]
+                    - 'button "Abrir imagen 2 de 2: d921b504-3c08-471f-8e7f-c9f231cd5f2c.png" [ref=e753] [cursor=pointer]':
+                      - img "d921b504-3c08-471f-8e7f-c9f231cd5f2c.png" [ref=e754]
+                  - generic [ref=e756]: ahora de ese mismo estilo dame un perrito en una bañera, uno con el pelito corto, uno con pediquiur bonito de perritos y variaciones para un catalogo de una peliquería canina estilo marketing
+                - generic [ref=e757]:
+                  - group "Acciones de tu mensaje":
+                    - button "Copiar mensaje":
+                      - generic:
+                        - img
+                    - button "Editar mensaje":
+                      - generic:
+                        - img
+            - generic [ref=e760]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e761]
+              - generic [ref=e763]:
+                - generic [ref=e769]:
+                  - 'button "Imagen generada: Cuidado y estilo para tu mascota" [ref=e770] [cursor=pointer]':
+                    - generic [ref=e771]:
+                      - 'img "Imagen generada: Cuidado y estilo para tu mascota" [ref=e773]'
+                      - img [ref=e775]
+                  - generic [ref=e778]:
+                    - button "Editar imagen" [ref=e781] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e783] [cursor=pointer]:
+                      - img [ref=e785]
+                - generic [ref=e787]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e791]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e792]
+              - generic [ref=e794]:
+                - generic [ref=e800]:
+                  - 'button "Imagen generada: Servicios de estética canina" [ref=e801] [cursor=pointer]':
+                    - generic [ref=e802]:
+                      - 'img "Imagen generada: Servicios de estética canina" [ref=e804]'
+                      - img [ref=e806]
+                  - generic [ref=e809]:
+                    - button "Editar imagen" [ref=e812] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e814] [cursor=pointer]:
+                      - img [ref=e816]
+                - generic [ref=e818]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e822]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e823]
+              - generic [ref=e825]:
+                - generic [ref=e831]:
+                  - 'button "Imagen generada: Baño relajante para tu mascota" [ref=e832] [cursor=pointer]':
+                    - generic [ref=e833]:
+                      - 'img "Imagen generada: Baño relajante para tu mascota" [ref=e835]'
+                      - img [ref=e837]
+                  - generic [ref=e840]:
+                    - button "Editar imagen" [ref=e843] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e845] [cursor=pointer]:
+                      - img [ref=e847]
+                - generic [ref=e849]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e852]:
+              - heading "Dijiste:" [level=4] [ref=e853]
+              - generic [ref=e855]:
+                - generic [ref=e858]:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - 'button "Abrir imagen: 3d7480cc-0eda-49f5-8aca-0df137bbbd40.png"':
+                            - img "3d7480cc-0eda-49f5-8aca-0df137bbbd40.png"
+                  - generic [ref=e860]: mejora esté logo adecuado al contexto que tenemos
+                - generic [ref=e861]:
+                  - group "Acciones de tu mensaje":
+                    - button "Copiar mensaje":
+                      - generic:
+                        - img
+                    - button "Editar mensaje":
+                      - generic:
+                        - img
+            - generic [ref=e864]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e865]
+              - generic [ref=e867]:
+                - generic [ref=e873]:
+                  - 'button "Imagen generada: Logo de peluquería canina \"Perrustingo\"" [ref=e874] [cursor=pointer]':
+                    - generic [ref=e875]:
+                      - 'img "Imagen generada: Logo de peluquería canina \"Perrustingo\"" [ref=e877]'
+                      - img [ref=e879]
+                  - generic [ref=e882]:
+                    - button "Editar imagen" [ref=e885] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e887] [cursor=pointer]:
+                      - img [ref=e889]
+                - generic [ref=e891]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e894]:
+              - heading "Dijiste:" [level=4] [ref=e895]
+              - generic [ref=e897]:
+                - generic [ref=e900]:
+                  - generic [ref=e902]:
+                    - 'button "Abrir imagen 1 de 2: 7b3c1563-77a4-49c5-ab7d-6c547256a71d.png" [ref=e905] [cursor=pointer]':
+                      - img "7b3c1563-77a4-49c5-ab7d-6c547256a71d.png" [ref=e906]
+                    - 'button "Abrir imagen 2 de 2: 551c7c98-05bc-420a-9052-f7265d4a4bad.png" [ref=e909] [cursor=pointer]':
+                      - img "551c7c98-05bc-420a-9052-f7265d4a4bad.png" [ref=e910]
+                  - generic [ref=e912]:
+                    - text: ahora dame el antes y despues de un perrito para hacer un slider interactivo
+                    - generic [ref=e913]:
+                      - img [ref=e914]
+                      - generic [ref=e916]: Crea una imagen
+                    - text: usa esas imagenes de referencia para que entiendas lo que necesito pero obvio más bonito y como foto profesional realista
+                - generic [ref=e917]:
+                  - group "Acciones de tu mensaje":
+                    - button "Copiar mensaje":
+                      - generic:
+                        - img
+                    - button "Editar mensaje":
+                      - generic:
+                        - img
+            - generic [ref=e920]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e921]
+              - generic [ref=e923]:
+                - generic [ref=e929]:
+                  - 'button "Imagen generada: Antes y después de grooming" [ref=e930] [cursor=pointer]':
+                    - generic [ref=e931]:
+                      - 'img "Imagen generada: Antes y después de grooming" [ref=e933]'
+                      - img [ref=e935]
+                  - generic [ref=e938]:
+                    - button "Editar imagen" [ref=e941] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e943] [cursor=pointer]:
+                      - img [ref=e945]
+                - generic [ref=e947]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e951]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e952]
+              - generic [ref=e954]:
+                - generic [ref=e960]:
+                  - 'button "Imagen generada: Antes y después del corte de pelo" [ref=e961] [cursor=pointer]':
+                    - generic [ref=e962]:
+                      - 'img "Imagen generada: Antes y después del corte de pelo" [ref=e964]'
+                      - img [ref=e966]
+                  - generic [ref=e969]:
+                    - button "Editar imagen" [ref=e972] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e974] [cursor=pointer]:
+                      - img [ref=e976]
+                - generic [ref=e978]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e982]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e983]
+              - generic [ref=e985]:
+                - generic [ref=e991]:
+                  - 'button "Imagen generada: Peluquería canina Perrustingo internacional" [ref=e992] [cursor=pointer]':
+                    - generic [ref=e993]:
+                      - 'img "Imagen generada: Peluquería canina Perrustingo internacional" [ref=e995]'
+                      - img [ref=e997]
+                  - generic [ref=e1000]:
+                    - button "Editar imagen" [ref=e1003] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1005] [cursor=pointer]:
+                      - img [ref=e1007]
+                - generic [ref=e1009]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1013]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1014]
+              - generic [ref=e1016]:
+                - generic [ref=e1022]:
+                  - 'button "Imagen generada: Peluquería canina móvil para tu peludito" [ref=e1023] [cursor=pointer]':
+                    - generic [ref=e1024]:
+                      - 'img "Imagen generada: Peluquería canina móvil para tu peludito" [ref=e1026]'
+                      - img [ref=e1028]
+                  - generic [ref=e1031]:
+                    - button "Editar imagen" [ref=e1034] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1036] [cursor=pointer]:
+                      - img [ref=e1038]
+                - generic [ref=e1040]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1044]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1045]
+              - generic [ref=e1047]:
+                - generic [ref=e1053]:
+                  - 'button "Imagen generada: Servicio de retiro y entrega canina" [ref=e1054] [cursor=pointer]':
+                    - generic [ref=e1055]:
+                      - 'img "Imagen generada: Servicio de retiro y entrega canina" [ref=e1057]'
+                      - img [ref=e1059]
+                  - generic [ref=e1062]:
+                    - button "Editar imagen" [ref=e1065] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1067] [cursor=pointer]:
+                      - img [ref=e1069]
+                - generic [ref=e1071]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1075]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1076]
+              - generic [ref=e1078]:
+                - generic [ref=e1084]:
+                  - 'button "Imagen generada: Recomendaciones para el cuidado canino" [ref=e1085] [cursor=pointer]':
+                    - generic [ref=e1086]:
+                      - 'img "Imagen generada: Recomendaciones para el cuidado canino" [ref=e1088]'
+                      - img [ref=e1090]
+                  - generic [ref=e1093]:
+                    - button "Editar imagen" [ref=e1096] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1098] [cursor=pointer]:
+                      - img [ref=e1100]
+                - generic [ref=e1102]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1106]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1107]
+              - generic [ref=e1109]:
+                - generic [ref=e1115]:
+                  - 'button "Imagen generada: Cachorrito chihuahua en fondo rosa" [ref=e1116] [cursor=pointer]':
+                    - generic [ref=e1117]:
+                      - 'img "Imagen generada: Cachorrito chihuahua en fondo rosa" [ref=e1119]'
+                      - img [ref=e1121]
+                  - generic [ref=e1124]:
+                    - button "Editar imagen" [ref=e1127] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1129] [cursor=pointer]:
+                      - img [ref=e1131]
+                - generic [ref=e1133]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1137]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1138]
+              - generic [ref=e1140]:
+                - generic [ref=e1146]:
+                  - 'button "Imagen generada: Perro juguetón en fondo azul" [ref=e1147] [cursor=pointer]':
+                    - generic [ref=e1148]:
+                      - 'img "Imagen generada: Perro juguetón en fondo azul" [ref=e1150]'
+                      - img [ref=e1152]
+                  - generic [ref=e1155]:
+                    - button "Editar imagen" [ref=e1158] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1160] [cursor=pointer]:
+                      - img [ref=e1162]
+                - generic [ref=e1164]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1168]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1169]
+              - generic [ref=e1171]:
+                - generic [ref=e1177]:
+                  - 'button "Imagen generada: Beagle sonriente sobre fondo lila" [ref=e1178] [cursor=pointer]':
+                    - generic [ref=e1179]:
+                      - 'img "Imagen generada: Beagle sonriente sobre fondo lila" [ref=e1181]'
+                      - img [ref=e1183]
+                  - generic [ref=e1186]:
+                    - button "Editar imagen" [ref=e1189] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1191] [cursor=pointer]:
+                      - img [ref=e1193]
+                - generic [ref=e1195]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1199]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1200]
+              - generic [ref=e1202]:
+                - generic [ref=e1208]:
+                  - 'button "Imagen generada: Perro retriever dorado en estudio" [ref=e1209] [cursor=pointer]':
+                    - generic [ref=e1210]:
+                      - 'img "Imagen generada: Perro retriever dorado en estudio" [ref=e1212]'
+                      - img [ref=e1214]
+                  - generic [ref=e1217]:
+                    - button "Editar imagen" [ref=e1220] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1222] [cursor=pointer]:
+                      - img [ref=e1224]
+                - generic [ref=e1226]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1230]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1231]
+              - generic [ref=e1233]:
+                - generic [ref=e1239]:
+                  - 'button "Imagen generada: Perro de raza grande con fondo pastel" [ref=e1240] [cursor=pointer]':
+                    - generic [ref=e1241]:
+                      - 'img "Imagen generada: Perro de raza grande con fondo pastel" [ref=e1243]'
+                      - img [ref=e1245]
+                  - generic [ref=e1248]:
+                    - button "Editar imagen" [ref=e1251] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1253] [cursor=pointer]:
+                      - img [ref=e1255]
+                - generic [ref=e1257]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1261]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1262]
+              - generic [ref=e1264]:
+                - generic [ref=e1270]:
+                  - 'button "Imagen generada: Casa de juguete con tejado rojo" [ref=e1271] [cursor=pointer]':
+                    - generic [ref=e1272]:
+                      - 'img "Imagen generada: Casa de juguete con tejado rojo" [ref=e1274]'
+                      - img [ref=e1276]
+                  - generic [ref=e1279]:
+                    - button "Editar imagen" [ref=e1282] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1284] [cursor=pointer]:
+                      - img [ref=e1286]
+                - generic [ref=e1288]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1292]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1293]
+              - generic [ref=e1295]:
+                - generic [ref=e1301]:
+                  - 'button "Imagen generada: Pluma lavanda flotante en rosa" [ref=e1302] [cursor=pointer]':
+                    - generic [ref=e1303]:
+                      - 'img "Imagen generada: Pluma lavanda flotante en rosa" [ref=e1305]'
+                      - img [ref=e1307]
+                  - generic [ref=e1310]:
+                    - button "Editar imagen" [ref=e1313] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1315] [cursor=pointer]:
+                      - img [ref=e1317]
+                - generic [ref=e1319]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1323]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1324]
+              - generic [ref=e1326]:
+                - generic [ref=e1332]:
+                  - 'button "Imagen generada: Cachorro feliz sobre fondo pastel" [ref=e1333] [cursor=pointer]':
+                    - generic [ref=e1334]:
+                      - 'img "Imagen generada: Cachorro feliz sobre fondo pastel" [ref=e1336]'
+                      - img [ref=e1338]
+                  - generic [ref=e1341]:
+                    - button "Editar imagen" [ref=e1344] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1346] [cursor=pointer]:
+                      - img [ref=e1348]
+                - generic [ref=e1350]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1354]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1355]
+              - generic [ref=e1357]:
+                - generic [ref=e1363]:
+                  - 'button "Imagen generada: Corazón rosa con huella de pata" [ref=e1364] [cursor=pointer]':
+                    - generic [ref=e1365]:
+                      - 'img "Imagen generada: Corazón rosa con huella de pata" [ref=e1367]'
+                      - img [ref=e1369]
+                  - generic [ref=e1372]:
+                    - button "Editar imagen" [ref=e1375] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1377] [cursor=pointer]:
+                      - img [ref=e1379]
+                - generic [ref=e1381]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1385]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1386]
+              - generic [ref=e1388]:
+                - generic [ref=e1394]:
+                  - 'button "Imagen generada: Ícono de chat minimalista en 3D" [ref=e1395] [cursor=pointer]':
+                    - generic [ref=e1396]:
+                      - 'img "Imagen generada: Ícono de chat minimalista en 3D" [ref=e1398]'
+                      - img [ref=e1400]
+                  - generic [ref=e1403]:
+                    - button "Editar imagen" [ref=e1406] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1408] [cursor=pointer]:
+                      - img [ref=e1410]
+                - generic [ref=e1412]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1418]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1419]
+              - generic [ref=e1421]:
+                - generic [ref=e1427]:
+                  - 'button "Imagen generada: Etiqueta de precio minimalista en 3D" [ref=e1428] [cursor=pointer]':
+                    - generic [ref=e1429]:
+                      - 'img "Imagen generada: Etiqueta de precio minimalista en 3D" [ref=e1431]'
+                      - img [ref=e1433]
+                  - generic [ref=e1436]:
+                    - button "Editar imagen" [ref=e1439] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1441] [cursor=pointer]:
+                      - img [ref=e1443]
+                - generic [ref=e1445]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1449]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1450]
+              - generic [ref=e1452]:
+                - generic [ref=e1458]:
+                  - 'button "Imagen generada: Estrella kawaii sobre fondo azul" [ref=e1459] [cursor=pointer]':
+                    - generic [ref=e1460]:
+                      - 'img "Imagen generada: Estrella kawaii sobre fondo azul" [ref=e1462]'
+                      - img [ref=e1464]
+                  - generic [ref=e1467]:
+                    - button "Editar imagen" [ref=e1470] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1472] [cursor=pointer]:
+                      - img [ref=e1474]
+                - generic [ref=e1476]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1480]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1481]
+              - generic [ref=e1483]:
+                - generic [ref=e1489]:
+                  - 'button "Imagen generada: Retrato adorable de Chihuahua en 3D" [ref=e1490] [cursor=pointer]':
+                    - generic [ref=e1491]:
+                      - 'img "Imagen generada: Retrato adorable de Chihuahua en 3D" [ref=e1493]'
+                      - img [ref=e1495]
+                  - generic [ref=e1498]:
+                    - button "Editar imagen" [ref=e1501] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1503] [cursor=pointer]:
+                      - img [ref=e1505]
+                - generic [ref=e1507]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1511]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1512]
+              - generic [ref=e1514]:
+                - generic [ref=e1520]:
+                  - 'button "Imagen generada: Perro pomerania sonriente en rosa" [ref=e1521] [cursor=pointer]':
+                    - generic [ref=e1522]:
+                      - 'img "Imagen generada: Perro pomerania sonriente en rosa" [ref=e1524]'
+                      - img [ref=e1526]
+                  - generic [ref=e1529]:
+                    - button "Editar imagen" [ref=e1532] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1534] [cursor=pointer]:
+                      - img [ref=e1536]
+                - generic [ref=e1538]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1542]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1543]
+              - generic [ref=e1545]:
+                - generic [ref=e1551]:
+                  - 'button "Imagen generada: Perro Yorkie con moño rosa" [ref=e1552] [cursor=pointer]':
+                    - generic [ref=e1553]:
+                      - 'img "Imagen generada: Perro Yorkie con moño rosa" [ref=e1555]'
+                      - img [ref=e1557]
+                  - generic [ref=e1560]:
+                    - button "Editar imagen" [ref=e1563] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1565] [cursor=pointer]:
+                      - img [ref=e1567]
+                - generic [ref=e1569]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1573]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1574]
+              - generic [ref=e1576]:
+                - generic [ref=e1582]:
+                  - 'button "Imagen generada: Retrato de perro de peluche" [ref=e1583] [cursor=pointer]':
+                    - generic [ref=e1584]:
+                      - 'img "Imagen generada: Retrato de perro de peluche" [ref=e1586]'
+                      - img [ref=e1588]
+                  - generic [ref=e1591]:
+                    - button "Editar imagen" [ref=e1594] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1596] [cursor=pointer]:
+                      - img [ref=e1598]
+                - generic [ref=e1600]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1604]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1605]
+              - generic [ref=e1607]:
+                - generic [ref=e1613]:
+                  - 'button "Imagen generada: Perro teckel con mirada encantadora" [ref=e1614] [cursor=pointer]':
+                    - generic [ref=e1615]:
+                      - 'img "Imagen generada: Perro teckel con mirada encantadora" [ref=e1617]'
+                      - img [ref=e1619]
+                  - generic [ref=e1622]:
+                    - button "Editar imagen" [ref=e1625] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1627] [cursor=pointer]:
+                      - img [ref=e1629]
+                - generic [ref=e1631]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1635]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1636]
+              - generic [ref=e1638]:
+                - generic [ref=e1644]:
+                  - 'button "Imagen generada: Retrato alegre de perro en estudio" [ref=e1645] [cursor=pointer]':
+                    - generic [ref=e1646]:
+                      - 'img "Imagen generada: Retrato alegre de perro en estudio" [ref=e1648]'
+                      - img [ref=e1650]
+                  - generic [ref=e1653]:
+                    - button "Editar imagen" [ref=e1656] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1658] [cursor=pointer]:
+                      - img [ref=e1660]
+                - generic [ref=e1662]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1666]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1667]
+              - generic [ref=e1669]:
+                - generic [ref=e1675]:
+                  - 'button "Imagen generada: Retrato encantador de perro blanco" [ref=e1676] [cursor=pointer]':
+                    - generic [ref=e1677]:
+                      - 'img "Imagen generada: Retrato encantador de perro blanco" [ref=e1679]'
+                      - img [ref=e1681]
+                  - generic [ref=e1684]:
+                    - button "Editar imagen" [ref=e1687] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1689] [cursor=pointer]:
+                      - img [ref=e1691]
+                - generic [ref=e1693]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1697]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1698]
+              - generic [ref=e1700]:
+                - generic [ref=e1706]:
+                  - 'button "Imagen generada: Perro Shih Tzu feliz en estudio" [ref=e1707] [cursor=pointer]':
+                    - generic [ref=e1708]:
+                      - 'img "Imagen generada: Perro Shih Tzu feliz en estudio" [ref=e1710]'
+                      - img [ref=e1712]
+                  - generic [ref=e1715]:
+                    - button "Editar imagen" [ref=e1718] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1720] [cursor=pointer]:
+                      - img [ref=e1722]
+                - generic [ref=e1724]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1728]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1729]
+              - generic [ref=e1731]:
+                - generic [ref=e1737]:
+                  - 'button "Imagen generada: Poodle en fondo azul claro" [ref=e1738] [cursor=pointer]':
+                    - generic [ref=e1739]:
+                      - 'img "Imagen generada: Poodle en fondo azul claro" [ref=e1741]'
+                      - img [ref=e1743]
+                  - generic [ref=e1746]:
+                    - button "Editar imagen" [ref=e1749] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1751] [cursor=pointer]:
+                      - img [ref=e1753]
+                - generic [ref=e1755]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1759]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1760]
+              - generic [ref=e1762]:
+                - generic [ref=e1768]:
+                  - 'button "Imagen generada: Retrato de perro sonriente en estudio" [ref=e1769] [cursor=pointer]':
+                    - generic [ref=e1770]:
+                      - 'img "Imagen generada: Retrato de perro sonriente en estudio" [ref=e1772]'
+                      - img [ref=e1774]
+                  - generic [ref=e1777]:
+                    - button "Editar imagen" [ref=e1780] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1782] [cursor=pointer]:
+                      - img [ref=e1784]
+                - generic [ref=e1786]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1790]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1791]
+              - generic [ref=e1793]:
+                - generic [ref=e1799]:
+                  - 'button "Imagen generada: Dachshund feliz en estudio minimalista" [ref=e1800] [cursor=pointer]':
+                    - generic [ref=e1801]:
+                      - 'img "Imagen generada: Dachshund feliz en estudio minimalista" [ref=e1803]'
+                      - img [ref=e1805]
+                  - generic [ref=e1808]:
+                    - button "Editar imagen" [ref=e1811] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1813] [cursor=pointer]:
+                      - img [ref=e1815]
+                - generic [ref=e1817]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1821]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1822]
+              - generic [ref=e1824]:
+                - generic [ref=e1830]:
+                  - 'button "Imagen generada: Retrato de beagle sobre fondo pastel" [ref=e1831] [cursor=pointer]':
+                    - generic [ref=e1832]:
+                      - 'img "Imagen generada: Retrato de beagle sobre fondo pastel" [ref=e1834]'
+                      - img [ref=e1836]
+                  - generic [ref=e1839]:
+                    - button "Editar imagen" [ref=e1842] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1844] [cursor=pointer]:
+                      - img [ref=e1846]
+                - generic [ref=e1848]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1852]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1853]
+              - generic [ref=e1855]:
+                - generic [ref=e1861]:
+                  - 'button "Imagen generada: Retrato de un Cocker Spaniel feliz" [ref=e1862] [cursor=pointer]':
+                    - generic [ref=e1863]:
+                      - 'img "Imagen generada: Retrato de un Cocker Spaniel feliz" [ref=e1865]'
+                      - img [ref=e1867]
+                  - generic [ref=e1870]:
+                    - button "Editar imagen" [ref=e1873] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1875] [cursor=pointer]:
+                      - img [ref=e1877]
+                - generic [ref=e1879]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1883]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1884]
+              - generic [ref=e1886]:
+                - generic [ref=e1892]:
+                  - 'button "Imagen generada: Retrato de Schnauzer en estudio" [ref=e1893] [cursor=pointer]':
+                    - generic [ref=e1894]:
+                      - 'img "Imagen generada: Retrato de Schnauzer en estudio" [ref=e1896]'
+                      - img [ref=e1898]
+                  - generic [ref=e1901]:
+                    - button "Editar imagen" [ref=e1904] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1906] [cursor=pointer]:
+                      - img [ref=e1908]
+                - generic [ref=e1910]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1914]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1915]
+              - generic [ref=e1917]:
+                - generic [ref=e1923]:
+                  - 'button "Imagen generada: Retrato de bulldog francés sonriente" [ref=e1924] [cursor=pointer]':
+                    - generic [ref=e1925]:
+                      - 'img "Imagen generada: Retrato de bulldog francés sonriente" [ref=e1927]'
+                      - img [ref=e1929]
+                  - generic [ref=e1932]:
+                    - button "Editar imagen" [ref=e1935] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1937] [cursor=pointer]:
+                      - img [ref=e1939]
+                - generic [ref=e1941]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1945]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1946]
+              - generic [ref=e1948]:
+                - generic [ref=e1954]:
+                  - 'button "Imagen generada: Retrato de estudio de perro feliz" [ref=e1955] [cursor=pointer]':
+                    - generic [ref=e1956]:
+                      - 'img "Imagen generada: Retrato de estudio de perro feliz" [ref=e1958]'
+                      - img [ref=e1960]
+                  - generic [ref=e1963]:
+                    - button "Editar imagen" [ref=e1966] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1968] [cursor=pointer]:
+                      - img [ref=e1970]
+                - generic [ref=e1972]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e1976]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e1977]
+              - generic [ref=e1979]:
+                - generic [ref=e1985]:
+                  - 'button "Imagen generada: Retrato amable de un golden retriever" [ref=e1986] [cursor=pointer]':
+                    - generic [ref=e1987]:
+                      - 'img "Imagen generada: Retrato amable de un golden retriever" [ref=e1989]'
+                      - img [ref=e1991]
+                  - generic [ref=e1994]:
+                    - button "Editar imagen" [ref=e1997] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e1999] [cursor=pointer]:
+                      - img [ref=e2001]
+                - generic [ref=e2003]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e2007]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e2008]
+              - generic [ref=e2010]:
+                - generic [ref=e2016]:
+                  - 'button "Imagen generada: Retrato sonriente de un labrador" [ref=e2017] [cursor=pointer]':
+                    - generic [ref=e2018]:
+                      - 'img "Imagen generada: Retrato sonriente de un labrador" [ref=e2020]'
+                      - img [ref=e2022]
+                  - generic [ref=e2025]:
+                    - button "Editar imagen" [ref=e2028] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e2030] [cursor=pointer]:
+                      - img [ref=e2032]
+                - generic [ref=e2034]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e2038]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e2039]
+              - generic [ref=e2041]:
+                - generic [ref=e2047]:
+                  - 'button "Imagen generada: Retrato en estudio de pastor alemán" [ref=e2048] [cursor=pointer]':
+                    - generic [ref=e2049]:
+                      - 'img "Imagen generada: Retrato en estudio de pastor alemán" [ref=e2051]'
+                      - img [ref=e2053]
+                  - generic [ref=e2056]:
+                    - button "Editar imagen" [ref=e2059] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e2061] [cursor=pointer]:
+                      - img [ref=e2063]
+                - generic [ref=e2065]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e2069]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e2070]
+              - generic [ref=e2072]:
+                - generic [ref=e2078]:
+                  - 'button "Imagen generada: Perro de peluche en el estudio" [ref=e2079] [cursor=pointer]':
+                    - generic [ref=e2080]:
+                      - 'img "Imagen generada: Perro de peluche en el estudio" [ref=e2082]'
+                      - img [ref=e2084]
+                  - generic [ref=e2087]:
+                    - button "Editar imagen" [ref=e2090] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e2092] [cursor=pointer]:
+                      - img [ref=e2094]
+                - generic [ref=e2096]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e2100]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e2101]
+              - generic [ref=e2103]:
+                - generic [ref=e2109]:
+                  - 'button "Imagen generada: Perro blanco sonriente en estudio" [ref=e2110] [cursor=pointer]':
+                    - generic [ref=e2111]:
+                      - 'img "Imagen generada: Perro blanco sonriente en estudio" [ref=e2113]'
+                      - img [ref=e2115]
+                  - generic [ref=e2118]:
+                    - button "Editar imagen" [ref=e2121] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e2123] [cursor=pointer]:
+                      - img [ref=e2125]
+                - generic [ref=e2127]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e2131]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e2132]
+              - generic [ref=e2134]:
+                - generic [ref=e2140]:
+                  - 'button "Imagen generada: Perro feliz con pelaje esponjoso" [ref=e2141] [cursor=pointer]':
+                    - generic [ref=e2142]:
+                      - 'img "Imagen generada: Perro feliz con pelaje esponjoso" [ref=e2144]'
+                      - img [ref=e2146]
+                      - img [ref=e2148]
+                  - generic [ref=e2150]:
+                    - button "Editar imagen" [ref=e2153] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e2155] [cursor=pointer]:
+                      - img [ref=e2157]
+                - generic [ref=e2159]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e2174]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e2175]
+              - generic [ref=e2177]:
+                - generic [ref=e2183]:
+                  - 'button "Imagen generada: Retrato de un perro San Bernardo" [ref=e2184] [cursor=pointer]':
+                    - generic [ref=e2185]:
+                      - 'img "Imagen generada: Retrato de un perro San Bernardo" [ref=e2187]'
+                      - img [ref=e2189]
+                      - img [ref=e2191]
+                  - generic [ref=e2193]:
+                    - button "Editar imagen" [ref=e2196] [cursor=pointer]: Editar
+                    - button "Compartir esta imagen" [ref=e2198] [cursor=pointer]:
+                      - img [ref=e2200]
+                - generic [ref=e2202]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "No me gusta esta imagen":
+                      - generic:
+                        - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e2205]:
+              - heading "Dijiste:" [level=4] [ref=e2206]
+              - generic [ref=e2208]:
+                - generic [ref=e2213]: "Ahora igual: busto de un Terranova negro gigante y peludo, adorable, mismo fondo verde menta pastel (#d5efe2), cuadrada 1:1, sin texto."
+                - generic [ref=e2214]:
+                  - group "Acciones de tu mensaje":
+                    - button "Copiar mensaje":
+                      - generic:
+                        - img
+                    - button "Editar mensaje":
+                      - generic:
+                        - img
+            - generic [ref=e2217]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e2218]
+              - generic [ref=e2220]:
+                - generic [ref=e2224]:
+                  - paragraph [ref=e2225]: You've hit the Free plan limit for image generations requests. You can create more images when the limit resets in 23 hours and 14 minutes.
+                  - paragraph [ref=e2226]: No pude invocar la herramienta de generación de imágenes en este momento debido al límite diario del plan gratuito. No puedo reintentar la generación hasta que envíes un nuevo mensaje después de que ese límite se haya restablecido.
+                  - paragraph [ref=e2227]: "Cuando vuelva a estar disponible, generaré exactamente esta ilustración manteniendo el mismo estilo que toda la colección de Perrustingo:"
+                  - blockquote [ref=e2228]:
+                    - paragraph [ref=e2229]:
+                      - strong [ref=e2230]: Mismo estilo 3D exacto
+                      - text: de toda la colección Perrustingo (render suave tipo juguete/emoji 3D, iluminación de estudio, materiales mate con sutiles brillos, sombras suaves, estética premium, adorable y minimalista).
+                      - strong [ref=e2231]: Busto de un Terranova negro gigante y muy peludo
+                      - text: ", expresión extremadamente tierna y amigable, ojos grandes brillantes, sonrisa suave con la lengua apenas visible, abundante pelaje esponjoso alrededor del cuello y pecho, sujeto perfectamente centrado con margen."
+                      - strong [ref=e2232]: Fondo verde menta pastel sólido plano (#d5efe2)
+                      - text: . Formato
+                      - strong [ref=e2233]: 1:1
+                      - text: ", alta resolución (2048×2048), sin texto, sin marco, sin marca de agua, sin elementos adicionales. Consistente con el resto de los avatares de razas de Perrustingo."
+                - generic [ref=e2234]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Buena respuesta":
+                      - generic:
+                        - img
+                    - button "Respuesta deficiente":
+                      - generic:
+                        - img
+                    - button "Compartir":
+                      - generic:
+                        - img
+                    - generic:
+                      - button "Cambiar modelo":
+                        - generic:
+                          - img
+                    - button "Más acciones":
+                      - img
+            - generic [ref=e2246]:
+              - heading "Dijiste:" [level=4] [ref=e2247]
+              - generic [ref=e2249]:
+                - generic [ref=e2254]: "Genera el Terranova pendiente: busto de un Terranova negro gigante y peludo, adorable, sobre fondo verde menta pastel sólido plano (#d5efe2), cuadrada 1:1, sin texto."
+                - generic [ref=e2255]:
+                  - group "Acciones de tu mensaje":
+                    - button "Copiar mensaje":
+                      - generic:
+                        - img
+                    - button "Editar mensaje":
+                      - generic:
+                        - img
+            - generic [ref=e2258]:
+              - heading "ChatGPT dijo:" [level=4] [ref=e2259]
+              - generic [ref=e2261]:
+                - generic [ref=e2265]:
+                  - paragraph [ref=e2266]: You've hit the Free plan limit for image generations requests. You can create more images when the limit resets in 23 hours and 14 minutes.
+                  - paragraph [ref=e2267]: "No puedo generar esta imagen ahora mismo porque la herramienta de generación de imágenes sigue bloqueada por el límite del plan gratuito. Cuando el límite se restablezca y vuelvas a enviarme este mensaje, generaré exactamente:"
+                  - blockquote [ref=e2268]:
+                    - paragraph [ref=e2269]:
+                      - strong [ref=e2270]: Mismo estilo 3D exacto
+                      - text: de toda la colección Perrustingo (render suave tipo juguete/emoji 3D, iluminación de estudio, materiales mate con sutiles brillos, sombras suaves, estética premium, adorable y minimalista).
+                      - strong [ref=e2271]: Busto de un Terranova negro gigante y muy peludo
+                      - text: ", expresión extremadamente tierna y amigable, ojos grandes brillantes, nariz grande brillante, sonrisa suave con la lengua apenas visible, abundante pelaje negro esponjoso alrededor del cuello y pecho, sujeto perfectamente centrado con margen."
+                      - strong [ref=e2272]: Fondo verde menta pastel sólido plano (#d5efe2)
+                      - text: . Formato
+                      - strong [ref=e2273]: 1:1
+                      - text: ", alta resolución (2048×2048), sin texto, sin marco, sin marca de agua, sin elementos adicionales. Debe mantener exactamente la misma dirección artística, proporciones, iluminación y acabado que el resto de los avatares de razas de Perrustingo."
+                - generic [ref=e2274]:
+                  - group "Acciones de respuesta":
+                    - button "Copiar respuesta":
+                      - generic:
+                        - img
+                    - button "Buena respuesta":
+                      - generic:
+                        - img
+                    - button "Respuesta deficiente":
+                      - generic:
+                        - img
+                    - button "Compartir":
+                      - generic:
+                        - img
+                    - generic:
+                      - button "Cambiar modelo":
+                        - generic:
+                          - img
+                    - button "Más acciones":
+                      - img
+                - generic [ref=e2276]:
+                  - generic [ref=e2277]: Por ahora no te quedan generaciones de imágenes. Comienza una prueba gratis de Plus para continuar o espera a que se restablezcan a las 10:42 p.m..
+                  - button "Prueba Plus gratis" [ref=e2280] [cursor=pointer]:
+                    - img [ref=e2281]
+                    - text: Prueba Plus gratis
+          - generic [ref=e97]:
+            - generic:
+              - generic:
+                - button:
+                  - img
+            - generic [ref=e103]:
+              - generic [ref=e107]:
+                - button "Agregar archivos y más" [ref=e110] [cursor=pointer]:
+                  - img
+                - textbox "Chatear con ChatGPT" [active] [ref=e2235]:
+                  - paragraph [ref=e2236]: Preguntar lo que quieras
+                - generic [ref=e115]:
+                  - button "Iniciar dictado" [ref=e2237] [cursor=pointer]:
+                    - img
+                  - button "Iniciar voz" [ref=e2285] [cursor=pointer]:
+                    - img [ref=e2286]
+              - button [ref=e120]
+              - button [ref=e121]
+            - generic [ref=e127]: ChatGPT puede cometer errores. Se debe comprobar la información importante
+  - alert [ref=e128]
+  - status [ref=e129]: Respuesta completada
