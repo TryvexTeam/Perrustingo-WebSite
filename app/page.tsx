@@ -3,8 +3,13 @@ import { Advertencias } from "@/components/Advertencias";
 import { Banner } from "@/components/Banner";
 import { Beneficios } from "@/components/Beneficios";
 import { ComoTrabajamos } from "@/components/ComoTrabajamos";
+import { BotonWhatsApp } from "@/components/BotonWhatsApp";
 import { Footer } from "@/components/Footer";
 import { Hero } from "@/components/Hero";
+import { HeroParallax } from "@/components/HeroParallax";
+import { HuellitasScroll } from "@/components/HuellitasScroll";
+import { LoaderHuellita } from "@/components/LoaderHuellita";
+import { TiltCards } from "@/components/TiltCards";
 import { InfoInteres } from "@/components/InfoInteres";
 import { Precios } from "@/components/Precios";
 import { Proximamente } from "@/components/Proximamente";
@@ -22,6 +27,11 @@ export default function Home() {
     <>
       <SiteMenu />
       <QuickAccess />
+      <LoaderHuellita />
+      <HuellitasScroll />
+      <TiltCards />
+      <HeroParallax />
+      <BotonWhatsApp />
       <main className="flex-1">
         <Hero />
         <Servicios />
