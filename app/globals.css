@@ -102,19 +102,14 @@ body {
   transform: translateY(0);
 }
 
+/* prefers-reduced-motion: bloque global eliminado (mismo fix que Tryvex
+   Landing) — Windows con "efectos de animación" apagado lo activaba y mataba
+   reveals y carruseles para la mayoría de los visitantes. Se mantiene solo
+   la animación decorativa infinita bajo la preferencia. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  html {
-    scroll-behavior: auto;
-  }
-  .reveal {
-    opacity: 1;
-    transform: none;
+  .animate-drift,
+  .animate-drift-slow,
+  .animate-float {
+    animation: none;
   }
 }
