@@ -1,21 +1,21 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import { Reveal } from "./Reveal";
 
 const AVISOS = [
   {
-    foto: "/cards/card-precio.png",
+    foto: "/cards/foto-precio.png",
     titulo: "Precio según tamaño y estado",
     detalle:
       "Calculamos el valor final según el tamaño, el peso y el estado del pelo de tu perro. Te confirmamos el precio antes de empezar.",
   },
   {
-    foto: "/cards/card-conducta.png",
+    foto: "/cards/foto-conducta.png",
     titulo: "Conducta del perro",
     detalle:
       "Si tu perro se pone nervioso o difícil durante la sesión, podemos aplicar un recargo. Siempre te avisamos con el motivo.",
   },
   {
-    foto: "/cards/card-tiempos.png",
+    foto: "/cards/foto-tiempos.png",
     titulo: "Tiempos de trabajo",
     detalle:
       "Nos tomamos entre 2 y 3 horas en promedio por sesión completa. Trabajamos con calma para que tu perro se sienta seguro.",
@@ -37,7 +37,7 @@ export function Advertencias() {
         <div className="mt-10 grid gap-5 md:grid-cols-3">
           {AVISOS.map((aviso, i) => (
             <Reveal key={aviso.titulo} delay={i * 70}>
-              <div className="flex h-full flex-col items-center gap-4 overflow-hidden rounded-3xl bg-white p-7 pt-0 text-center shadow-sm transition-transform duration-200 ease-[var(--ease-out-expo)] hover:-translate-y-1">
+              <div className="tilt-card flex h-full flex-col items-center gap-4 overflow-hidden rounded-3xl bg-white p-7 pt-0 text-center shadow-sm">
                 <Image
                   src={aviso.foto}
                   alt=""
