@@ -10,7 +10,10 @@ const ITEMS: StaggeredMenuItem[] = [
   { label: "Próximamente", ariaLabel: "Ver lo que viene", link: "/#proximamente" },
   { label: "Visítanos", ariaLabel: "Cómo llegar y contacto", link: "/#visita" },
   { label: "Agenda tu cita", ariaLabel: "Agendar cita — formulario inteligente", link: "/reserva" },
+  { label: "Calendario", ariaLabel: "Ver disponibilidad semanal", link: "/agenda" },
   { label: "Mi cuenta", ariaLabel: "Ver mi perfil y mis citas", link: "/perfil" },
+  { label: "Iniciar sesión", ariaLabel: "Entrar a tu cuenta", link: "/login" },
+  { label: "Crear cuenta", ariaLabel: "Crear una cuenta gratis", link: "/registro" },
 ];
 
 const SOCIALS: StaggeredMenuSocialItem[] = [

@@ -1,0 +1,178 @@
+- generic [active] [ref=f9e1]:
+  - generic:
+    - banner "Encabezado de navegación":
+      - link "Perrustingo" [ref=f9e2] [cursor=pointer]:
+        - /url: /
+        - img "Logo Perrustingo" [ref=f9e3]
+        - generic [ref=f9e4]: Perrustingo
+      - button "Abrir menú" [ref=f9e5] [cursor=pointer]:
+        - generic [ref=f9e7]:
+          - generic [ref=f9e8]: Menú
+          - generic [ref=f9e9]: Cerrar
+    - complementary [ref=f9e13]:
+      - generic [ref=f9e14]:
+        - list [ref=f9e15]:
+          - listitem [ref=f9e16]:
+            - link [ref=f9e17] [cursor=pointer]:
+              - /url: /#inicio
+              - generic [ref=f9e18]: Inicio
+          - listitem [ref=f9e19]:
+            - link [ref=f9e20] [cursor=pointer]:
+              - /url: /#servicios
+              - generic [ref=f9e21]: Servicios
+          - listitem [ref=f9e22]:
+            - link [ref=f9e23] [cursor=pointer]:
+              - /url: /#precios
+              - generic [ref=f9e24]: Tarifas
+          - listitem [ref=f9e25]:
+            - link [ref=f9e26] [cursor=pointer]:
+              - /url: /#antes-despues
+              - generic [ref=f9e27]: Antes / Después
+          - listitem [ref=f9e28]:
+            - link [ref=f9e29] [cursor=pointer]:
+              - /url: /#opiniones
+              - generic [ref=f9e30]: Opiniones
+          - listitem [ref=f9e31]:
+            - link [ref=f9e32] [cursor=pointer]:
+              - /url: /#proximamente
+              - generic [ref=f9e33]: Próximamente
+          - listitem [ref=f9e34]:
+            - link [ref=f9e35] [cursor=pointer]:
+              - /url: /#visita
+              - generic [ref=f9e36]: Visítanos
+          - listitem [ref=f9e37]:
+            - link [ref=f9e38] [cursor=pointer]:
+              - /url: /reserva
+              - generic [ref=f9e39]: Agenda tu cita
+          - listitem [ref=f9e40]:
+            - link [ref=f9e41] [cursor=pointer]:
+              - /url: /agenda
+              - generic [ref=f9e42]: Calendario
+          - listitem [ref=f9e43]:
+            - link [ref=f9e44] [cursor=pointer]:
+              - /url: /perfil
+              - generic [ref=f9e45]: Mi cuenta
+          - listitem [ref=f9e46]:
+            - link [ref=f9e47] [cursor=pointer]:
+              - /url: /login
+              - generic [ref=f9e48]: Iniciar sesión
+          - listitem [ref=f9e49]:
+            - link [ref=f9e50] [cursor=pointer]:
+              - /url: /registro
+              - generic [ref=f9e51]: Crear cuenta
+        - generic [ref=f9e52]:
+          - heading [level=3] [ref=f9e53]: Síguenos
+          - list [ref=f9e54]:
+            - listitem [ref=f9e55]:
+              - link [ref=f9e56] [cursor=pointer]:
+                - /url: https://instagram.com/perrustingo
+                - text: Instagram
+            - listitem [ref=f9e57]:
+              - link [ref=f9e58] [cursor=pointer]:
+                - /url: https://facebook.com/perrustingo
+                - text: Facebook
+            - listitem [ref=f9e59]:
+              - link [ref=f9e60] [cursor=pointer]:
+                - /url: https://wa.me/4915237152283?text=Hola%20Perrustingo%20%F0%9F%90%BE%20Quiero%20agendar%20una%20cita%20para%20mi%20perro.%20Nombre%3A%20%E2%80%A6%20Raza%2Ftama%C3%B1o%3A%20%E2%80%A6%20Servicio%3A%20%E2%80%A6
+                - text: WhatsApp
+  - main [ref=f9e61]:
+    - generic [ref=f9e62]:
+      - paragraph [ref=f9e63]: Panel del admin
+      - heading "Costos y tarifas" [level=1] [ref=f9e64]
+      - paragraph [ref=f9e65]: Ajusta los precios base por tamaño y los recargos. Los cambios se reflejan al instante en la sección de precios de la landing y en el formulario de reserva.
+      - generic [ref=f9e67]:
+        - generic [ref=f9e68]:
+          - generic [ref=f9e69]:
+            - generic [ref=f9e70]: 🔧
+            - text: Modo maqueta — los cambios se guardan en este navegador. Con la base de datos conectada, se aplicarán para todos los visitantes.
+          - heading "Precio base por tamaño" [level=2] [ref=f9e71]
+          - generic [ref=f9e72]:
+            - generic [ref=f9e73]:
+              - img "Ilustración de Mini / Toy (hasta 5 kg)" [ref=f9e75]
+              - generic [ref=f9e76]: Mini / Toy (hasta 5 kg)
+              - generic [ref=f9e77]:
+                - generic [ref=f9e78]: $
+                - spinbutton "Mini / Toy (hasta 5 kg)" [ref=f9e79]: "18000"
+            - generic [ref=f9e80]:
+              - img "Ilustración de Pequeño (6–10 kg)" [ref=f9e82]
+              - generic [ref=f9e83]: Pequeño (6–10 kg)
+              - generic [ref=f9e84]:
+                - generic [ref=f9e85]: $
+                - spinbutton "Pequeño (6–10 kg)" [ref=f9e86]: "20000"
+            - generic [ref=f9e87]:
+              - img "Ilustración de Mediano (11–25 kg)" [ref=f9e89]
+              - generic [ref=f9e90]: Mediano (11–25 kg)
+              - generic [ref=f9e91]:
+                - generic [ref=f9e92]: $
+                - spinbutton "Mediano (11–25 kg)" [ref=f9e93]: "25000"
+            - generic [ref=f9e94]:
+              - img "Ilustración de Grande (26–45 kg)" [ref=f9e96]
+              - generic [ref=f9e97]: Grande (26–45 kg)
+              - generic [ref=f9e98]:
+                - generic [ref=f9e99]: $
+                - spinbutton "Grande (26–45 kg)" [ref=f9e100]: "40000"
+            - generic [ref=f9e101]:
+              - img "Ilustración de Gigante (más de 45 kg)" [ref=f9e103]
+              - generic [ref=f9e104]: Gigante (más de 45 kg)
+              - generic [ref=f9e105]:
+                - generic [ref=f9e106]: $
+                - spinbutton "Gigante (más de 45 kg)" [ref=f9e107]: "80000"
+          - heading "Extras" [level=2] [ref=f9e108]
+          - generic [ref=f9e109]:
+            - generic [ref=f9e110]:
+              - text: Recargo por motas / nudos severos
+              - generic [ref=f9e111]:
+                - spinbutton "Recargo por motas / nudos severos" [ref=f9e112]: "20"
+                - generic [ref=f9e113]: "%"
+            - generic [ref=f9e114]:
+              - text: Pinches / accesorio (opcional)
+              - generic [ref=f9e115]:
+                - generic [ref=f9e116]: $
+                - spinbutton "Pinches / accesorio (opcional)" [ref=f9e117]: "3000"
+          - generic [ref=f9e118]:
+            - button "Guardar cambios" [ref=f9e119]
+            - button "Restaurar valores originales" [ref=f9e120]
+        - complementary [ref=f9e121]:
+          - generic [ref=f9e122]:
+            - paragraph [ref=f9e123]: Vista previa
+            - heading "Así se ve en la landing" [level=3] [ref=f9e124]
+            - generic [ref=f9e125]:
+              - generic [ref=f9e126]:
+                - generic [ref=f9e127]: Mini / Toy
+                - generic [ref=f9e128]: desde $18.000
+              - generic [ref=f9e129]:
+                - generic [ref=f9e130]: Pequeño
+                - generic [ref=f9e131]: desde $20.000
+              - generic [ref=f9e132]:
+                - generic [ref=f9e133]: Mediano
+                - generic [ref=f9e134]: desde $25.000
+              - generic [ref=f9e135]:
+                - generic [ref=f9e136]: Grande
+                - generic [ref=f9e137]: desde $40.000
+              - generic [ref=f9e138]:
+                - generic [ref=f9e139]: Gigante
+                - generic [ref=f9e140]: desde $80.000
+            - paragraph [ref=f9e141]: "El formulario de reserva calculará el precio estimado con estos valores. Recargo por motas: 20% · Accesorio: $3.000."
+  - contentinfo [ref=f9e142]:
+    - img [ref=f9e143]
+    - generic [ref=f9e145]:
+      - generic [ref=f9e146]:
+        - navigation "Enlaces legales" [ref=f9e147]:
+          - link "Políticas" [ref=f9e148] [cursor=pointer]:
+            - /url: /politicas
+          - link "Advertencias" [ref=f9e149] [cursor=pointer]:
+            - /url: /#advertencias
+          - link "Contacto" [ref=f9e150] [cursor=pointer]:
+            - /url: /#visita
+        - link "Perrustingo" [ref=f9e151] [cursor=pointer]:
+          - /url: /
+          - img "Logo Perrustingo" [ref=f9e152]
+        - generic [ref=f9e153]:
+          - link "Instagram" [ref=f9e154] [cursor=pointer]:
+            - /url: https://instagram.com/perrustingo
+          - link "Facebook" [ref=f9e155] [cursor=pointer]:
+            - /url: https://facebook.com/perrustingo
+      - paragraph [ref=f9e156]: Atendemos a familias de 🇨🇱 🇧🇷 🇩🇪 🌎
+      - paragraph [ref=f9e157]: © 2026 Perrustingo · Peluquería Canina · Arturo Prat 4556, Renca, Santiago
+  - button "Open Next.js Dev Tools" [ref=f9e163] [cursor=pointer]:
+    - img [ref=f9e164]

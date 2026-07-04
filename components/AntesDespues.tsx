@@ -3,7 +3,7 @@ import { Reveal } from "./Reveal";
 
 export function AntesDespues() {
   return (
-    <section id="antes-despues" className="scroll-mt-20 bg-white px-5 py-14">
+    <section id="antes-despues" className="scroll-mt-20 bg-section-blend px-5 py-14">
       <div className="mx-auto max-w-6xl">
         <Reveal>
           <div className="flex items-end justify-between gap-4">

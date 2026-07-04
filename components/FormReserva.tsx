@@ -1,42 +1,40 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FORM_INITIAL,
   PELO_LABELS,
   RAZAS,
   SERVICIOS,
   TAMANO_LABELS,
-  TEMP_LABELS,
-  Temperamento,
   TamanoKey,
   TipoPelo,
   buildWhatsAppMessage,
-  calcularPrecio,
   detectarTamanoPorPeso,
   formatCLP,
   hayConflicto,
   type FormData,
 } from "@/lib/reserva";
+import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
+import { useTarifas } from "@/lib/tarifas";
+import { BreedAvatar } from "./ui/BreedAvatar";
 
-const STEPS = ["Tu perro", "Tamaño y pelo", "Salud y carácter", "Tu cita"];
 const WHATSAPP_BASE = "https://wa.me/4915237152283?text=";
+
+/* Wizard progresivo — una pregunta por pantalla, avance automático en
+   selecciones únicas y multiselección de chips para las zonas sensibles.
+   Menos densidad = menos fatiga visual. */
+
+const AUTO_ADVANCE_MS = 350;
 
 // ─── UI helpers ────────────────────────────────────────────────────────────
 
-function Label({ htmlFor, children }: { htmlFor?: string; children: React.ReactNode }) {
-  return (
-    <label htmlFor={htmlFor} className="mb-1 block text-sm font-bold text-ink">
-      {children}
-    </label>
-  );
-}
-
 function Input({
-  id, value, onChange, placeholder, type = "text", min, max,
+  id, value, onChange, placeholder, type = "text", min, max, autoFocus, onEnter,
 }: {
   id?: string; value: string; onChange: (v: string) => void;
   placeholder?: string; type?: string; min?: string; max?: string;
+  autoFocus?: boolean; onEnter?: () => void;
 }) {
   return (
     <input
@@ -46,13 +44,17 @@ function Input({
       max={max}
       placeholder={placeholder}
       value={value}
+      autoFocus={autoFocus}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-2xl border-2 border-ink/10 bg-white px-4 py-3 text-sm font-semibold text-ink placeholder:font-normal placeholder:text-ink/30 focus:border-teal focus:outline-none"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && onEnter) onEnter();
+      }}
+      className="w-full rounded-2xl border-2 border-ink/10 bg-white px-4 py-3.5 text-base font-semibold text-ink placeholder:font-normal placeholder:text-ink/30 focus:border-teal focus:outline-none"
     />
   );
 }
 
-function RadioCard({
+function ChoiceCard({
   checked, onClick, children,
 }: {
   checked: boolean; onClick: () => void; children: React.ReactNode;
@@ -61,7 +63,7 @@ function RadioCard({
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left text-sm font-semibold transition-colors duration-150 ${
+      className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3.5 text-left text-sm font-semibold transition-[border-color,background-color,transform] duration-150 active:scale-[0.98] ${
         checked
           ? "border-teal bg-sky/40 text-teal-ink"
           : "border-ink/10 bg-white text-ink hover:border-teal/30"
@@ -78,367 +80,412 @@ function RadioCard({
   );
 }
 
-function SiNo({
-  value, onChange,
+function Chip({
+  active, onClick, children,
 }: {
-  value: "si" | "no" | ""; onChange: (v: "si" | "no") => void;
+  active: boolean; onClick: () => void; children: React.ReactNode;
 }) {
   return (
-    <div className="flex gap-3">
-      <RadioCard checked={value === "si"} onClick={() => onChange("si")}>Sí</RadioCard>
-      <RadioCard checked={value === "no"} onClick={() => onChange("no")}>No</RadioCard>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-[border-color,background-color,color,transform] duration-150 active:scale-95 ${
+        active
+          ? "border-coral bg-coral text-white"
+          : "border-ink/15 bg-white text-ink hover:border-coral/50"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
-function TempRow({
-  label, value, onChange,
+// ─── Definición de micro-pasos ─────────────────────────────────────────────
+
+type PasoId =
+  | "nombre" | "raza" | "edad" | "peso" | "tamano" | "contextura"
+  | "pelo" | "salud" | "temperamento" | "zonas" | "cita";
+
+const PASOS: { id: PasoId; pregunta: string; hint?: string }[] = [
+  { id: "nombre", pregunta: "¿Cómo se llama tu perro?" },
+  { id: "raza", pregunta: "¿Qué raza es?" },
+  { id: "edad", pregunta: "¿Qué edad tiene?", hint: "Aproximada está bien" },
+  { id: "peso", pregunta: "¿Cuánto pesa?", hint: "Con el peso calculamos el precio al instante" },
+  { id: "tamano", pregunta: "¿Cómo describirías su tamaño?", hint: "Opcional — toca el que más se parezca" },
+  { id: "contextura", pregunta: "¿Y su contextura?" },
+  { id: "pelo", pregunta: "¿Cómo es su pelito?" },
+  { id: "salud", pregunta: "Un chequeo rápido de salud", hint: "Nos ayuda a preparar su sesión" },
+  { id: "temperamento", pregunta: "¿Cómo se porta en la peluquería?" },
+  { id: "zonas", pregunta: "¿Con qué NO se deja tocar?", hint: "Marca todas las que apliquen — o ninguna" },
+  { id: "cita", pregunta: "¡Último paso! Tu cita" },
+];
+
+const ZONAS: { key: keyof FormData; label: string; emoji: string }[] = [
+  { key: "conPatitas", label: "Patitas", emoji: "🐾" },
+  { key: "conHocico", label: "Hocico", emoji: "👃" },
+  { key: "conUnas", label: "Uñas", emoji: "💅" },
+  { key: "conCola", label: "Cola", emoji: "🌀" },
+  { key: "conBano", label: "Baño", emoji: "🚿" },
+  { key: "conSecador", label: "Secador", emoji: "💨" },
+  { key: "conMaquina", label: "Máquina", emoji: "✂️" },
+  { key: "conTijeras", label: "Tijeras", emoji: "✄" },
+];
+
+// ─── Main ──────────────────────────────────────────────────────────────────
+
+export function FormReserva({
+  initialServicio = "",
+  initialFecha = "",
 }: {
-  label: string; value: Temperamento | ""; onChange: (v: Temperamento) => void;
+  initialServicio?: string;
+  initialFecha?: string;
 }) {
-  return (
-    <div>
-      <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-ink-soft">{label}</p>
-      <div className="flex flex-wrap gap-2">
-        {(["se_deja", "no_se_deja", "no_lo_se"] as Temperamento[]).map((t) => (
-          <RadioCard key={t} checked={value === t} onClick={() => onChange(t)}>
-            {TEMP_LABELS[t]}
-          </RadioCard>
-        ))}
-      </div>
-    </div>
+  const [step, setStep] = useState(0);
+  const [data, setData] = useState<FormData>(() => ({
+    ...FORM_INITIAL,
+    servicio: SERVICIOS.includes(initialServicio) ? initialServicio : "",
+    fechaDeseada: /^\d{4}-\d{2}-\d{2}$/.test(initialFecha) ? initialFecha : "",
+  }));
+  const tarifas = useTarifas();
+  const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (autoTimer.current) clearTimeout(autoTimer.current);
+  }, []);
+
+  const upd = useCallback((key: keyof FormData, value: string) => {
+    setData((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const avanzar = useCallback(() => {
+    setStep((s) => Math.min(s + 1, PASOS.length - 1));
+  }, []);
+
+  /** Actualiza y avanza solo tras una pausa breve (feedback visual primero) */
+  const updYAvanzar = useCallback((key: keyof FormData, value: string) => {
+    setData((prev) => ({ ...prev, [key]: value }));
+    if (autoTimer.current) clearTimeout(autoTimer.current);
+    autoTimer.current = setTimeout(avanzar, AUTO_ADVANCE_MS);
+  }, [avanzar]);
+
+  const precioDe = useCallback(
+    (p: number) => tarifas.base[detectarTamanoPorPeso(p)],
+    [tarifas]
   );
-}
 
-// ─── Steps ─────────────────────────────────────────────────────────────────
-
-function Step1({ data, upd }: { data: FormData; upd: (k: keyof FormData, v: string) => void }) {
-  return (
-    <div className="space-y-5">
-      <div>
-        <Label htmlFor="nombrePerro">Nombre de tu perro</Label>
-        <Input id="nombrePerro" value={data.nombrePerro} onChange={(v) => upd("nombrePerro", v)} placeholder="Ej: Firulais" />
-      </div>
-
-      <div>
-        <Label htmlFor="raza">Raza</Label>
-        <select
-          id="raza"
-          value={data.raza}
-          onChange={(e) => upd("raza", e.target.value)}
-          className="w-full rounded-2xl border-2 border-ink/10 bg-white px-4 py-3 text-sm font-semibold text-ink focus:border-teal focus:outline-none"
-        >
-          <option value="">Selecciona una raza…</option>
-          {RAZAS.map((r) => (
-            <option key={r} value={r}>{r}</option>
-          ))}
-        </select>
-        {data.raza === "Otro" && (
-          <div className="mt-2">
-            <Input value={data.razaOtro} onChange={(v) => upd("razaOtro", v)} placeholder="¿Cuál raza?" />
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="edadAnios">Edad — años</Label>
-          <Input id="edadAnios" type="number" min="0" max="25" value={data.edadAnios} onChange={(v) => upd("edadAnios", v)} placeholder="0" />
-        </div>
-        <div>
-          <Label htmlFor="edadMeses">Meses</Label>
-          <Input id="edadMeses" type="number" min="0" max="11" value={data.edadMeses} onChange={(v) => upd("edadMeses", v)} placeholder="0" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Step2({ data, upd }: { data: FormData; upd: (k: keyof FormData, v: string) => void }) {
   const peso = parseFloat(data.pesoKg);
   const pesoValido = !isNaN(peso) && peso > 0;
   const tamanoAuto = pesoValido ? detectarTamanoPorPeso(peso) : null;
-  const precio = pesoValido ? calcularPrecio(peso) : null;
-  const conflicto = !!(data.tamanoDeclarado && pesoValido && hayConflicto(data.tamanoDeclarado as TamanoKey, peso));
-
-  return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="pesoKg">Peso (kg)</Label>
-          <Input id="pesoKg" type="number" min="0" max="120" value={data.pesoKg} onChange={(v) => upd("pesoKg", v)} placeholder="Ej: 8" />
-        </div>
-        <div>
-          <Label htmlFor="alturaCmd">Altura (cm) <span className="font-normal text-ink/40">opcional</span></Label>
-          <Input id="alturaCmd" type="number" min="0" max="100" value={data.alturaCmd} onChange={(v) => upd("alturaCmd", v)} placeholder="Ej: 30" />
-        </div>
-      </div>
-
-      {/* Precio en tiempo real */}
-      {precio !== null && (
-        <div className={`rounded-2xl px-5 py-4 text-sm font-semibold ${conflicto ? "bg-[#fde4c8] text-[#a34d00]" : "bg-[#d8f0e3] text-teal-ink"}`}>
-          {conflicto ? (
-            <>⚠️ El tamaño declarado y el peso no coinciden — te derivaremos a <strong>atención personalizada</strong>.</>
-          ) : (
-            <>✅ Tamaño detectado: <strong>{TAMANO_LABELS[tamanoAuto!]}</strong> · Precio estimado: <strong>{formatCLP(precio)}</strong></>
-          )}
-        </div>
-      )}
-
-      <div>
-        <Label>¿Cómo describirías su tamaño? <span className="font-normal text-ink/40">(opcional)</span></Label>
-        <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {(Object.keys(TAMANO_LABELS) as TamanoKey[]).map((k) => (
-            <RadioCard key={k} checked={data.tamanoDeclarado === k} onClick={() => upd("tamanoDeclarado", k)}>
-              {TAMANO_LABELS[k]}
-            </RadioCard>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <Label>Contextura</Label>
-        <div className="mt-1 flex flex-wrap gap-2">
-          {(["delgado", "normal", "robusto"] as const).map((c) => (
-            <RadioCard key={c} checked={data.contextura === c} onClick={() => upd("contextura", c)}>
-              {c.charAt(0).toUpperCase() + c.slice(1)}
-            </RadioCard>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <Label>Tipo de pelo</Label>
-        <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {(Object.keys(PELO_LABELS) as TipoPelo[]).map((k) => (
-            <RadioCard key={k} checked={data.tipoPelo === k} onClick={() => upd("tipoPelo", k)}>
-              {PELO_LABELS[k]}
-            </RadioCard>
-          ))}
-        </div>
-        {data.tipoPelo === "otro" && (
-          <div className="mt-2">
-            <Input value={data.tipoPeloOtro} onChange={(v) => upd("tipoPeloOtro", v)} placeholder="Describe el tipo de pelo…" />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Step3({ data, upd }: { data: FormData; upd: (k: keyof FormData, v: string) => void }) {
-  return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm font-bold text-ink">Uñas encarnadas</p>
-        <div className="mt-2">
-          <SiNo value={data.unasEncarnadas} onChange={(v) => upd("unasEncarnadas", v)} />
-        </div>
-      </div>
-
-      <div>
-        <p className="text-sm font-bold text-ink">Secreción ocular</p>
-        <div className="mt-2">
-          <SiNo value={data.secrecionOcular} onChange={(v) => upd("secrecionOcular", v)} />
-        </div>
-      </div>
-
-      <div>
-        <p className="text-sm font-bold text-ink">¿Tiene enfermedad o alergia?</p>
-        <div className="mt-2">
-          <SiNo value={data.tieneAlergia} onChange={(v) => upd("tieneAlergia", v)} />
-        </div>
-        {data.tieneAlergia === "si" && (
-          <div className="mt-2">
-            <Input value={data.cualAlergia} onChange={(v) => upd("cualAlergia", v)} placeholder="¿Cuál enfermedad o alergia?" />
-          </div>
-        )}
-      </div>
-
-      <hr className="border-ink/10" />
-
-      <div>
-        <p className="mb-3 text-sm font-bold text-ink">Temperamento general</p>
-        <div className="flex flex-wrap gap-2">
-          {([
-            ["se_deja", "Se deja"],
-            ["no_se_deja", "No se deja"],
-            ["no_lo_se", "No lo sé"],
-            ["complicado", "Complicado / bravo"],
-          ] as [string, string][]).map(([v, l]) => (
-            <RadioCard key={v} checked={data.temperamentoGeneral === v} onClick={() => upd("temperamentoGeneral", v)}>
-              {l}
-            </RadioCard>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <p className="text-sm font-bold text-ink">¿Con qué partes o herramientas tiene problemas?</p>
-        <TempRow label="Patitas" value={data.conPatitas} onChange={(v) => upd("conPatitas", v)} />
-        <TempRow label="Hocico" value={data.conHocico} onChange={(v) => upd("conHocico", v)} />
-        <TempRow label="Uñas" value={data.conUnas} onChange={(v) => upd("conUnas", v)} />
-        <TempRow label="Cola" value={data.conCola} onChange={(v) => upd("conCola", v)} />
-        <TempRow label="Baño" value={data.conBano} onChange={(v) => upd("conBano", v)} />
-        <TempRow label="Secador" value={data.conSecador} onChange={(v) => upd("conSecador", v)} />
-        <TempRow label="Máquina" value={data.conMaquina} onChange={(v) => upd("conMaquina", v)} />
-        <TempRow label="Tijeras" value={data.conTijeras} onChange={(v) => upd("conTijeras", v)} />
-      </div>
-    </div>
-  );
-}
-
-function Step4({ data, upd, esManual, precio }: {
-  data: FormData; upd: (k: keyof FormData, v: string) => void;
-  esManual: boolean; precio: number | null;
-}) {
-  const mensaje = buildWhatsAppMessage(data, esManual);
-  const url = WHATSAPP_BASE + encodeURIComponent(mensaje);
-
-  return (
-    <div className="space-y-5">
-      <div>
-        <Label htmlFor="fechaDeseada">Fecha deseada</Label>
-        <Input id="fechaDeseada" type="date" value={data.fechaDeseada} onChange={(v) => upd("fechaDeseada", v)} placeholder="" />
-      </div>
-
-      <div>
-        <Label>Servicio</Label>
-        <div className="mt-1 grid gap-2">
-          {SERVICIOS.map((s) => (
-            <RadioCard key={s} checked={data.servicio === s} onClick={() => upd("servicio", s)}>
-              {s}
-            </RadioCard>
-          ))}
-        </div>
-      </div>
-
-      {/* Resumen */}
-      <div className={`rounded-3xl p-5 ${esManual ? "bg-[#fde4c8]" : "bg-[#d8f0e3]"}`}>
-        <p className="font-display text-base font-extrabold text-ink">
-          {esManual ? "⚠️ Atención personalizada" : "✅ Reserva lista"}
-        </p>
-        <p className="mt-1 text-sm leading-relaxed text-ink-soft">
-          {esManual
-            ? "El tamaño y el peso no coinciden. Rodolfo te atenderá directamente para evaluar a tu perro."
-            : `Precio estimado: ${precio ? formatCLP(precio) : "—"} · Todo listo para enviar por WhatsApp.`}
-        </p>
-      </div>
-
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`flex w-full items-center justify-center gap-2 rounded-full py-4 font-display text-base font-extrabold shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow] duration-150 hover:shadow-[0_5px_0_rgba(6,58,64,.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)] ${
-          esManual
-            ? "bg-orange text-teal-ink hover:bg-[#f7ab52]"
-            : "bg-teal text-white hover:bg-teal-dark"
-        }`}
-      >
-        <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-          <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.122 1.528 5.858L0 24l6.335-1.652A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.007-1.37l-.36-.213-3.727.977.994-3.634-.234-.373A9.818 9.818 0 0112 2.182c5.426 0 9.818 4.392 9.818 9.818S17.426 21.818 12 21.818z"/>
-        </svg>
-        {esManual ? "Solicitar evaluación personalizada" : "Confirmar reserva por WhatsApp"}
-      </a>
-    </div>
-  );
-}
-
-// ─── Main form orchestrator ─────────────────────────────────────────────────
-
-export function FormReserva() {
-  const [step, setStep] = useState(0);
-  const [data, setData] = useState<FormData>(FORM_INITIAL);
-
-  const upd = useCallback(<K extends keyof FormData>(key: K, value: FormData[K]) => {
-    setData((prev) => ({ ...prev, [key]: value }));
-  }, []);
-
-  const updStr = useCallback((key: keyof FormData, value: string) => {
-    setData((prev) => ({ ...prev, [key]: value }));
-  }, []);
-
-  const peso = parseFloat(data.pesoKg);
-  const pesoValido = !isNaN(peso) && peso > 0;
   const esManual = !!(data.tamanoDeclarado && pesoValido && hayConflicto(data.tamanoDeclarado as TamanoKey, peso));
-  const precio = pesoValido ? calcularPrecio(peso) : null;
+  const precio = pesoValido ? precioDe(peso) : null;
 
-  const pct = ((step + 1) / STEPS.length) * 100;
+  const paso = PASOS[step];
+  const pct = ((step + 1) / PASOS.length) * 100;
+  const esUltimo = step === PASOS.length - 1;
 
   return (
-    <div className="mx-auto w-full max-w-xl">
-      {/* Progreso */}
-      <div className="mb-8">
-        <div className="mb-3 flex justify-between">
-          {STEPS.map((s, i) => (
-            <span
-              key={s}
-              className={`text-xs font-bold transition-colors ${i === step ? "text-teal-dark" : i < step ? "text-teal/60" : "text-ink/30"}`}
-            >
-              {s}
-            </span>
-          ))}
-        </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-ink/10">
+    <div className="mx-auto w-full max-w-lg">
+      {/* Progreso minimalista */}
+      <div className="mb-6 flex items-center gap-3">
+        <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink/10">
           <div
             className="h-full rounded-full bg-teal transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
             style={{ width: `${pct}%` }}
             role="progressbar"
             aria-valuenow={step + 1}
             aria-valuemin={1}
-            aria-valuemax={STEPS.length}
-            aria-label={`Paso ${step + 1} de ${STEPS.length}: ${STEPS[step]}`}
+            aria-valuemax={PASOS.length}
+            aria-label={`Paso ${step + 1} de ${PASOS.length}`}
           />
         </div>
+        <span className="text-xs font-bold text-ink-soft">
+          {step + 1}/{PASOS.length}
+        </span>
       </div>
 
-      {/* Card del paso actual */}
-      <div className="rounded-3xl bg-white p-7 shadow-sm">
-        <h2 className="mb-6 font-display text-xl font-extrabold tracking-tight text-ink">
-          {step === 0 && "Cuéntanos sobre tu perro"}
-          {step === 1 && "Tamaño y tipo de pelo"}
-          {step === 2 && "Salud y temperamento"}
-          {step === 3 && "¿Cuándo agendamos?"}
-        </h2>
+      {/* Servicio preseleccionado */}
+      {data.servicio && !esUltimo && step === 0 && (
+        <div className="mb-5 flex items-center gap-2 rounded-2xl bg-sky/50 px-4 py-3 text-sm font-semibold text-teal-ink">
+          <span aria-hidden="true">🛁</span>
+          <span>Servicio elegido: <strong>{data.servicio}</strong></span>
+        </div>
+      )}
 
-        {step === 0 && <Step1 data={data} upd={updStr} />}
-        {step === 1 && <Step2 data={data} upd={updStr} />}
-        {step === 2 && <Step3 data={data} upd={updStr} />}
-        {step === 3 && <Step4 data={data} upd={updStr} esManual={esManual} precio={precio} />}
+      {/* Pantalla del paso — key fuerza re-animación de entrada */}
+      <div key={paso.id} className="rise-in rounded-3xl bg-white p-7 shadow-sm">
+        <h2 className="font-display text-2xl font-extrabold leading-snug tracking-tight text-ink">
+          {paso.pregunta}
+        </h2>
+        {paso.hint && (
+          <p className="mt-1 text-sm text-ink-soft">{paso.hint}</p>
+        )}
+
+        <div className="mt-6">
+          {paso.id === "nombre" && (
+            <Input
+              id="nombrePerro"
+              value={data.nombrePerro}
+              onChange={(v) => upd("nombrePerro", v)}
+              placeholder="Ej: Firulais"
+              autoFocus
+              onEnter={avanzar}
+            />
+          )}
+
+          {paso.id === "raza" && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                {(() => {
+                  const razaSel = CATALOGO_RAZAS.find((r) => r.nombre === data.raza);
+                  return razaSel ? (
+                    <BreedAvatar src={razaImagen(razaSel.slug)} nombre={razaSel.nombre} size="lg" />
+                  ) : null;
+                })()}
+                <select
+                  id="raza"
+                  value={data.raza}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v && v !== "Otro") updYAvanzar("raza", v);
+                    else upd("raza", v);
+                  }}
+                  className="w-full rounded-2xl border-2 border-ink/10 bg-white px-4 py-3.5 text-base font-semibold text-ink focus:border-teal focus:outline-none"
+                >
+                  <option value="">Selecciona una raza…</option>
+                  {RAZAS.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+              {data.raza === "Otro" && (
+                <Input
+                  value={data.razaOtro}
+                  onChange={(v) => upd("razaOtro", v)}
+                  placeholder="¿Cuál raza?"
+                  autoFocus
+                  onEnter={avanzar}
+                />
+              )}
+            </div>
+          )}
+
+          {paso.id === "edad" && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="edadAnios" className="mb-1 block text-sm font-bold text-ink">Años</label>
+                <Input id="edadAnios" type="number" min="0" max="25" value={data.edadAnios} onChange={(v) => upd("edadAnios", v)} placeholder="0" autoFocus onEnter={avanzar} />
+              </div>
+              <div>
+                <label htmlFor="edadMeses" className="mb-1 block text-sm font-bold text-ink">Meses</label>
+                <Input id="edadMeses" type="number" min="0" max="11" value={data.edadMeses} onChange={(v) => upd("edadMeses", v)} placeholder="0" onEnter={avanzar} />
+              </div>
+            </div>
+          )}
+
+          {paso.id === "peso" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="pesoKg" className="mb-1 block text-sm font-bold text-ink">Peso (kg)</label>
+                  <Input id="pesoKg" type="number" min="0" max="120" value={data.pesoKg} onChange={(v) => upd("pesoKg", v)} placeholder="Ej: 8" autoFocus onEnter={avanzar} />
+                </div>
+                <div>
+                  <label htmlFor="alturaCmd" className="mb-1 block text-sm font-bold text-ink">
+                    Altura (cm) <span className="font-normal text-ink/40">opcional</span>
+                  </label>
+                  <Input id="alturaCmd" type="number" min="0" max="100" value={data.alturaCmd} onChange={(v) => upd("alturaCmd", v)} placeholder="Ej: 30" onEnter={avanzar} />
+                </div>
+              </div>
+              {precio !== null && tamanoAuto && (
+                <div className="rise-in flex items-center gap-4 rounded-2xl bg-[#d8f0e3] px-5 py-4 text-sm font-semibold text-teal-ink">
+                  <BreedAvatar src={TAMANO_IMAGEN[tamanoAuto]} nombre={TAMANO_LABELS[tamanoAuto]} size="lg" />
+                  <span>
+                    ✅ <strong>{TAMANO_LABELS[tamanoAuto]}</strong>
+                    <span className="block">Precio estimado: <strong>{formatCLP(precio)}</strong></span>
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {paso.id === "tamano" && (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {(Object.keys(TAMANO_LABELS) as TamanoKey[]).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => updYAvanzar("tamanoDeclarado", k)}
+                  className={`flex items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-left text-sm font-semibold transition-[border-color,background-color,transform] duration-150 active:scale-[0.98] ${
+                    data.tamanoDeclarado === k
+                      ? "border-teal bg-sky/40 text-teal-ink"
+                      : "border-ink/10 bg-white text-ink hover:border-teal/30"
+                  }`}
+                >
+                  <BreedAvatar src={TAMANO_IMAGEN[k]} nombre={TAMANO_LABELS[k]} size="md" />
+                  <span className="leading-tight">{TAMANO_LABELS[k]}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {paso.id === "contextura" && (
+            <div className="grid gap-2">
+              {(["delgado", "normal", "robusto"] as const).map((c) => (
+                <ChoiceCard key={c} checked={data.contextura === c} onClick={() => updYAvanzar("contextura", c)}>
+                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                </ChoiceCard>
+              ))}
+            </div>
+          )}
+
+          {paso.id === "pelo" && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {(Object.keys(PELO_LABELS) as TipoPelo[]).map((k) => (
+                  <ChoiceCard
+                    key={k}
+                    checked={data.tipoPelo === k}
+                    onClick={() => (k === "otro" ? upd("tipoPelo", k) : updYAvanzar("tipoPelo", k))}
+                  >
+                    {PELO_LABELS[k]}
+                  </ChoiceCard>
+                ))}
+              </div>
+              {data.tipoPelo === "otro" && (
+                <Input value={data.tipoPeloOtro} onChange={(v) => upd("tipoPeloOtro", v)} placeholder="Describe el tipo de pelo…" autoFocus onEnter={avanzar} />
+              )}
+            </div>
+          )}
+
+          {paso.id === "salud" && (
+            <div className="space-y-5">
+              {([
+                ["unasEncarnadas", "Uñas encarnadas"],
+                ["secrecionOcular", "Secreción ocular"],
+                ["tieneAlergia", "¿Enfermedad o alergia?"],
+              ] as [keyof FormData, string][]).map(([key, label]) => (
+                <div key={key} className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-bold text-ink">{label}</p>
+                  <div className="flex gap-2">
+                    {(["si", "no"] as const).map((v) => (
+                      <Chip key={v} active={data[key] === v} onClick={() => upd(key, v)}>
+                        {v === "si" ? "Sí" : "No"}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {data.tieneAlergia === "si" && (
+                <Input value={data.cualAlergia} onChange={(v) => upd("cualAlergia", v)} placeholder="¿Cuál enfermedad o alergia?" onEnter={avanzar} />
+              )}
+            </div>
+          )}
+
+          {paso.id === "temperamento" && (
+            <div className="grid gap-2">
+              {([
+                ["se_deja", "😊 Se deja — es un pan de Dios"],
+                ["no_se_deja", "😬 No se deja"],
+                ["complicado", "🌪️ Complicado o bravo"],
+                ["no_lo_se", "🤷 No lo sé, es su primera vez"],
+              ] as [string, string][]).map(([v, l]) => (
+                <ChoiceCard key={v} checked={data.temperamentoGeneral === v} onClick={() => updYAvanzar("temperamentoGeneral", v)}>
+                  {l}
+                </ChoiceCard>
+              ))}
+            </div>
+          )}
+
+          {paso.id === "zonas" && (
+            <div className="flex flex-wrap gap-2.5">
+              {ZONAS.map(({ key, label, emoji }) => {
+                const activo = data[key] === "no_se_deja";
+                return (
+                  <Chip
+                    key={key}
+                    active={activo}
+                    onClick={() => upd(key, activo ? "" : "no_se_deja")}
+                  >
+                    <span aria-hidden="true" className="mr-1">{emoji}</span>
+                    {label}
+                  </Chip>
+                );
+              })}
+            </div>
+          )}
+
+          {paso.id === "cita" && (
+            <div className="space-y-5">
+              <div>
+                <label htmlFor="fechaDeseada" className="mb-1 block text-sm font-bold text-ink">Fecha deseada</label>
+                <Input id="fechaDeseada" type="date" value={data.fechaDeseada} onChange={(v) => upd("fechaDeseada", v)} />
+              </div>
+
+              <div>
+                <p className="mb-1 text-sm font-bold text-ink">Servicio</p>
+                <div className="grid gap-2">
+                  {SERVICIOS.map((s) => (
+                    <ChoiceCard key={s} checked={data.servicio === s} onClick={() => upd("servicio", s)}>
+                      {s}
+                    </ChoiceCard>
+                  ))}
+                </div>
+              </div>
+
+              <div className={`rounded-3xl p-5 ${esManual ? "bg-[#fde4c8]" : "bg-[#d8f0e3]"}`}>
+                <p className="font-display text-base font-extrabold text-ink">
+                  {esManual ? "⚠️ Atención personalizada" : "✅ Reserva lista"}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+                  {esManual
+                    ? "El tamaño y el peso no coinciden. Rodolfo te atenderá directamente para evaluar a tu perro."
+                    : `${data.nombrePerro ? data.nombrePerro + " · " : ""}Precio estimado: ${precio ? formatCLP(precio) : "—"} · Todo listo para enviar por WhatsApp.`}
+                </p>
+              </div>
+
+              <a
+                href={WHATSAPP_BASE + encodeURIComponent(buildWhatsAppMessage(data, esManual, precio))}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex w-full items-center justify-center gap-2 rounded-full py-4 font-display text-base font-extrabold shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow] duration-150 hover:shadow-[0_5px_0_rgba(6,58,64,.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)] ${
+                  esManual
+                    ? "bg-orange text-teal-ink hover:bg-[#f7ab52]"
+                    : "bg-teal text-white hover:bg-teal-dark"
+                }`}
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                  <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.122 1.528 5.858L0 24l6.335-1.652A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.007-1.37l-.36-.213-3.727.977.994-3.634-.234-.373A9.818 9.818 0 0112 2.182c5.426 0 9.818 4.392 9.818 9.818S17.426 21.818 12 21.818z"/>
+                </svg>
+                {esManual ? "Solicitar evaluación personalizada" : "Confirmar reserva por WhatsApp"}
+              </a>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Navegación */}
-      {step < STEPS.length - 1 && (
-        <div className="mt-5 flex gap-3">
-          {step > 0 && (
-            <button
-              type="button"
-              onClick={() => setStep((s) => s - 1)}
-              className="flex-1 rounded-full border-2 border-ink/15 py-3.5 font-display text-sm font-extrabold text-ink transition-colors hover:border-ink/30"
-            >
-              ← Anterior
-            </button>
-          )}
+      <div className="mt-5 flex items-center gap-3">
+        {step > 0 && (
           <button
             type="button"
-            onClick={() => setStep((s) => s + 1)}
+            onClick={() => setStep((s) => s - 1)}
+            className="rounded-full border-2 border-ink/15 px-6 py-3 font-display text-sm font-extrabold text-ink transition-colors hover:border-ink/30"
+          >
+            ←
+          </button>
+        )}
+        {!esUltimo && (
+          <button
+            type="button"
+            onClick={avanzar}
             className="flex-1 rounded-full bg-teal py-3.5 font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,box-shadow] hover:bg-teal-dark hover:shadow-[0_5px_0_rgba(6,58,64,.25)]"
           >
-            Siguiente →
+            {paso.id === "zonas" || paso.id === "salud" ? "Continuar →" : "Siguiente →"}
           </button>
-        </div>
-      )}
-
-      {step === STEPS.length - 1 && step > 0 && (
-        <button
-          type="button"
-          onClick={() => setStep((s) => s - 1)}
-          className="mt-4 w-full rounded-full border-2 border-ink/15 py-3.5 font-display text-sm font-extrabold text-ink transition-colors hover:border-ink/30"
-        >
-          ← Anterior
-        </button>
-      )}
+        )}
+      </div>
     </div>
   );
 }

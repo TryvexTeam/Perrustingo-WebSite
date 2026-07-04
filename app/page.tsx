@@ -7,7 +7,7 @@ import { Footer } from "@/components/Footer";
 import { Hero } from "@/components/Hero";
 import { InfoInteres } from "@/components/InfoInteres";
 import { Precios } from "@/components/Precios";
-import { Proximamente } from "@/components/Proximamente";
+import { PromoBanner } from "@/components/PromoBanner";
 import { Publicidad } from "@/components/Publicidad";
 import { QuickAccess } from "@/components/QuickAccess";
 import { SiteMenu } from "@/components/SiteMenu";
@@ -23,16 +23,19 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
         <Servicios />
+        <PromoBanner slot="tras-servicios" id="proximamente" />
         <AntesDespues />
         <Banner />
         <ComoTrabajamos />
         <Resenas />
+        <PromoBanner slot="tras-resenas" />
         <Advertencias />
         <Tamanos />
+        <PromoBanner slot="tras-tamanos" />
         <Precios />
         <InfoInteres />
         <Beneficios />
-        <Proximamente />
+        <PromoBanner slot="pre-footer" />
         <Publicidad />
       </main>
       <Footer />

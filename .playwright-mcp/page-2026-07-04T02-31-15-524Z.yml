@@ -1,0 +1,195 @@
+- generic [active] [ref=f8e1]:
+  - generic:
+    - banner "Encabezado de navegación":
+      - link "Perrustingo" [ref=f8e2] [cursor=pointer]:
+        - /url: /
+        - img "Logo Perrustingo" [ref=f8e3]
+        - generic [ref=f8e4]: Perrustingo
+      - button "Abrir menú" [ref=f8e5] [cursor=pointer]:
+        - generic [ref=f8e7]:
+          - generic [ref=f8e8]: Menú
+          - generic [ref=f8e9]: Cerrar
+    - complementary [ref=f8e13]:
+      - generic [ref=f8e14]:
+        - list [ref=f8e15]:
+          - listitem [ref=f8e16]:
+            - link [ref=f8e17] [cursor=pointer]:
+              - /url: /#inicio
+              - generic [ref=f8e18]: Inicio
+          - listitem [ref=f8e19]:
+            - link [ref=f8e20] [cursor=pointer]:
+              - /url: /#servicios
+              - generic [ref=f8e21]: Servicios
+          - listitem [ref=f8e22]:
+            - link [ref=f8e23] [cursor=pointer]:
+              - /url: /#precios
+              - generic [ref=f8e24]: Tarifas
+          - listitem [ref=f8e25]:
+            - link [ref=f8e26] [cursor=pointer]:
+              - /url: /#antes-despues
+              - generic [ref=f8e27]: Antes / Después
+          - listitem [ref=f8e28]:
+            - link [ref=f8e29] [cursor=pointer]:
+              - /url: /#opiniones
+              - generic [ref=f8e30]: Opiniones
+          - listitem [ref=f8e31]:
+            - link [ref=f8e32] [cursor=pointer]:
+              - /url: /#proximamente
+              - generic [ref=f8e33]: Próximamente
+          - listitem [ref=f8e34]:
+            - link [ref=f8e35] [cursor=pointer]:
+              - /url: /#visita
+              - generic [ref=f8e36]: Visítanos
+          - listitem [ref=f8e37]:
+            - link [ref=f8e38] [cursor=pointer]:
+              - /url: /reserva
+              - generic [ref=f8e39]: Agenda tu cita
+          - listitem [ref=f8e40]:
+            - link [ref=f8e41] [cursor=pointer]:
+              - /url: /agenda
+              - generic [ref=f8e42]: Calendario
+          - listitem [ref=f8e43]:
+            - link [ref=f8e44] [cursor=pointer]:
+              - /url: /perfil
+              - generic [ref=f8e45]: Mi cuenta
+          - listitem [ref=f8e46]:
+            - link [ref=f8e47] [cursor=pointer]:
+              - /url: /login
+              - generic [ref=f8e48]: Iniciar sesión
+          - listitem [ref=f8e49]:
+            - link [ref=f8e50] [cursor=pointer]:
+              - /url: /registro
+              - generic [ref=f8e51]: Crear cuenta
+        - generic [ref=f8e52]:
+          - heading [level=3] [ref=f8e53]: Síguenos
+          - list [ref=f8e54]:
+            - listitem [ref=f8e55]:
+              - link [ref=f8e56] [cursor=pointer]:
+                - /url: https://instagram.com/perrustingo
+                - text: Instagram
+            - listitem [ref=f8e57]:
+              - link [ref=f8e58] [cursor=pointer]:
+                - /url: https://facebook.com/perrustingo
+                - text: Facebook
+            - listitem [ref=f8e59]:
+              - link [ref=f8e60] [cursor=pointer]:
+                - /url: https://wa.me/4915237152283?text=Hola%20Perrustingo%20%F0%9F%90%BE%20Quiero%20agendar%20una%20cita%20para%20mi%20perro.%20Nombre%3A%20%E2%80%A6%20Raza%2Ftama%C3%B1o%3A%20%E2%80%A6%20Servicio%3A%20%E2%80%A6
+                - text: WhatsApp
+  - main [ref=f8e61]:
+    - generic [ref=f8e62]:
+      - generic [ref=f8e63]:
+        - paragraph [ref=f8e64]: Agenda semanal
+        - heading "Encuentra la hora perfecta" [level=1] [ref=f8e65]
+      - generic [ref=f8e66]:
+        - generic [ref=f8e67]: 👋
+        - generic [ref=f8e68]:
+          - text: Estás viendo la agenda de demostración.
+          - link "Inicia sesión" [ref=f8e69] [cursor=pointer]:
+            - /url: /login
+          - text: para ver y gestionar tus citas reales.
+      - generic [ref=f8e71]:
+        - generic [ref=f8e72]:
+          - button "Hoy" [ref=f8e73]
+          - generic [ref=f8e74]:
+            - button "Semana anterior" [ref=f8e75]: ‹
+            - button "Semana siguiente" [ref=f8e76]: ›
+          - heading "Junio 2026" [level=2] [ref=f8e77]
+          - button "+ Reservar" [ref=f8e78]
+        - generic [ref=f8e80]:
+          - generic [ref=f8e81]:
+            - generic [ref=f8e83]:
+              - generic [ref=f8e84]: Lun
+              - generic [ref=f8e85]: "29"
+            - generic [ref=f8e86]:
+              - generic [ref=f8e87]: Mar
+              - generic [ref=f8e88]: "30"
+            - generic [ref=f8e89]:
+              - generic [ref=f8e90]: Mié
+              - generic [ref=f8e91]: "1"
+            - generic [ref=f8e92]:
+              - generic [ref=f8e93]: Jue
+              - generic [ref=f8e94]: "2"
+            - generic [ref=f8e95]:
+              - generic [ref=f8e96]: Vie
+              - generic [ref=f8e97]: "3"
+            - generic [ref=f8e98]:
+              - generic [ref=f8e99]: Sáb
+              - generic [ref=f8e100]: "4"
+          - generic [ref=f8e101]:
+            - generic [ref=f8e102]:
+              - generic [ref=f8e103]: 10:00
+              - generic [ref=f8e104]: 11:00
+              - generic [ref=f8e105]: 12:00
+              - generic [ref=f8e106]: 13:00
+              - generic [ref=f8e107]: 14:00
+              - generic [ref=f8e108]: 15:00
+              - generic [ref=f8e109]: 16:00
+              - generic [ref=f8e110]: 17:00
+              - generic [ref=f8e111]: 18:00
+              - generic [ref=f8e112]: 19:00
+            - button "Reservar el 2026-06-29" [ref=f8e113] [cursor=pointer]:
+              - generic [ref=f8e124]:
+                - paragraph [ref=f8e125]: Luna · Poodle Toy
+                - paragraph [ref=f8e126]: 10:00 – 11:30
+              - generic [ref=f8e127]:
+                - paragraph [ref=f8e128]: Rocky · Labrador
+                - paragraph [ref=f8e129]: 12:00 – 14:00
+            - button "Reservar el 2026-06-30" [ref=f8e130] [cursor=pointer]:
+              - generic [ref=f8e141]:
+                - paragraph [ref=f8e142]: Milo · Shih Tzu
+                - paragraph [ref=f8e143]: 9:30 – 11:30
+              - generic [ref=f8e144]:
+                - paragraph [ref=f8e145]: Kira · Samoyedo
+                - paragraph [ref=f8e146]: 14:00 – 17:00
+            - button "Reservar el 2026-07-01" [ref=f8e147] [cursor=pointer]:
+              - generic [ref=f8e158]:
+                - paragraph [ref=f8e159]: Toby · Beagle
+                - paragraph [ref=f8e160]: 11:00 – 11:30
+              - generic [ref=f8e161]:
+                - paragraph [ref=f8e162]: Nala · Golden Retriever
+                - paragraph [ref=f8e163]: 15:00 – 17:00
+            - button "Reservar el 2026-07-02" [ref=f8e164] [cursor=pointer]:
+              - generic [ref=f8e175]:
+                - paragraph [ref=f8e176]: Simón · Quiltro
+                - paragraph [ref=f8e177]: 10:00 – 12:00
+              - generic [ref=f8e178]:
+                - paragraph [ref=f8e179]: Coco · Bulldog Francés
+                - paragraph [ref=f8e180]: 16:00 – 17:00
+            - button "Reservar el 2026-07-03" [ref=f8e181] [cursor=pointer]:
+              - generic [ref=f8e192]:
+                - paragraph [ref=f8e193]: Greta · Dachshund
+                - paragraph [ref=f8e194]: 9:00 – 10:30
+              - generic [ref=f8e195]:
+                - paragraph [ref=f8e196]: Bruno · Pastor Alemán
+                - paragraph [ref=f8e197]: 12:30 – 15:00
+            - button "Reservar el 2026-07-04" [ref=f8e198] [cursor=pointer]:
+              - generic [ref=f8e209]:
+                - paragraph [ref=f8e210]: Pelusa · Bichón Frisé
+                - paragraph [ref=f8e211]: 10:00 – 11:30
+              - generic [ref=f8e212]:
+                - paragraph [ref=f8e213]: Max · Terrier Chileno
+                - paragraph [ref=f8e214]: 13:00 – 13:30
+        - paragraph [ref=f8e215]: Haz clic en un día libre para reservar esa fecha ✨
+  - contentinfo [ref=f8e216]:
+    - img [ref=f8e217]
+    - generic [ref=f8e219]:
+      - generic [ref=f8e220]:
+        - navigation "Enlaces legales" [ref=f8e221]:
+          - link "Políticas" [ref=f8e222] [cursor=pointer]:
+            - /url: /politicas
+          - link "Advertencias" [ref=f8e223] [cursor=pointer]:
+            - /url: /#advertencias
+          - link "Contacto" [ref=f8e224] [cursor=pointer]:
+            - /url: /#visita
+        - link "Perrustingo" [ref=f8e225] [cursor=pointer]:
+          - /url: /
+          - img "Logo Perrustingo" [ref=f8e226]
+        - generic [ref=f8e227]:
+          - link "Instagram" [ref=f8e228] [cursor=pointer]:
+            - /url: https://instagram.com/perrustingo
+          - link "Facebook" [ref=f8e229] [cursor=pointer]:
+            - /url: https://facebook.com/perrustingo
+      - paragraph [ref=f8e230]: Atendemos a familias de 🇨🇱 🇧🇷 🇩🇪 🌎
+      - paragraph [ref=f8e231]: © 2026 Perrustingo · Peluquería Canina · Arturo Prat 4556, Renca, Santiago
+  - button "Open Next.js Dev Tools" [ref=f8e237] [cursor=pointer]:
+    - img [ref=f8e238]

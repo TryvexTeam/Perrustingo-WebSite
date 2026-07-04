@@ -173,9 +173,14 @@ export function formatCLP(n: number): string {
   return "$" + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-export function buildWhatsAppMessage(data: FormData, esManual: boolean): string {
+export function buildWhatsAppMessage(
+  data: FormData,
+  esManual: boolean,
+  precioOverride?: number | null
+): string {
   const peso = parseFloat(data.pesoKg);
-  const precio = !isNaN(peso) && peso > 0 ? calcularPrecio(peso) : 0;
+  const precio =
+    precioOverride ?? (!isNaN(peso) && peso > 0 ? calcularPrecio(peso) : 0);
   const raza = data.raza === "Otro" ? (data.razaOtro || "Otro") : data.raza;
   const pelo =
     data.tipoPelo === "otro"

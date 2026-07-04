@@ -3,7 +3,7 @@ import { Reveal } from "./Reveal";
 
 export function InfoInteres() {
   return (
-    <section id="visita" className="scroll-mt-20 bg-white px-5 py-16">
+    <section id="visita" className="scroll-mt-20 bg-section-blend px-5 py-16">
       <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-2">
         <Reveal>
           <div>
