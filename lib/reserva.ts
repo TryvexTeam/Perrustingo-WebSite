@@ -82,6 +82,10 @@ export const RAZAS = [
   "Otro",
 ];
 
+/** Aclaración legal/comercial — mostrar junto a cualquier precio. */
+export const NOTA_PRECIOS =
+  "Precios referenciales: pueden variar según el comportamiento, el estado del pelo y las condiciones de cada sesión.";
+
 export const SERVICIOS = [
   "Baño completo (sin corte de pelo)",
   "Baño + corte de pelo",

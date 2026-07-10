@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Flotantes } from "./Flotantes";
 import { Reveal } from "@/components/ui/Reveal";
+import { NOTA_PRECIOS } from "@/lib/reserva";
 
 /* Cada servicio incluido enlaza a su card en el catálogo de imágenes */
 const INCLUYE = [
@@ -41,6 +42,9 @@ export function Precios() {
             <p className="mt-5 text-center text-xs leading-relaxed text-ink-soft">
               * Si lo solicitas, podemos colocar <strong>pinches decorativos</strong> a
               las hembras y, a veces, un accesorio a los machos.
+            </p>
+            <p className="mt-2 text-center text-xs leading-relaxed text-ink-soft">
+              {NOTA_PRECIOS}
             </p>
           </div>
         </Reveal>

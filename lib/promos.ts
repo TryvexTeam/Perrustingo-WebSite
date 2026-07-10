@@ -38,7 +38,7 @@ export const PROMOS_DEFAULT: Promo[] = [
     img: "/promos/retiro-entrega.png",
     alt: "Próximamente: servicio de retiro y entrega — vamos por tu peludito, lo consentimos y te lo devolvemos. Seguro, puntual, confiable, fácil y rápido por WhatsApp.",
     vertical: true,
-    slot: "tras-servicios",
+    slot: "tras-tamanos",
   },
   {
     id: "internacional",
@@ -54,7 +54,7 @@ export const PROMOS_DEFAULT: Promo[] = [
     img: "/promos/domicilio.png",
     alt: "Próximamente: Perrustingo a domicilio — el spa canino hasta tu casa.",
     vertical: true,
-    slot: "tras-tamanos",
+    slot: "tras-servicios",
   },
   {
     id: "recomendaciones",
@@ -62,7 +62,7 @@ export const PROMOS_DEFAULT: Promo[] = [
     img: "/promos/recomendaciones.png",
     alt: "Próximamente: recomendaciones — consejos, productos y rutinas de cuidado canino.",
     vertical: true,
-    slot: "pre-footer",
+    slot: "tras-servicios",
   },
 ];
 

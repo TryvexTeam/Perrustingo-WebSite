@@ -5,6 +5,7 @@ import { Beneficios } from "@/components/landing/Beneficios";
 import { ComoTrabajamos } from "@/components/landing/ComoTrabajamos";
 import { BotonWhatsApp } from "@/components/layout/BotonWhatsApp";
 import { Footer } from "@/components/layout/Footer";
+import { EnVivoLanding } from "@/components/landing/EnVivoLanding";
 import { Hero } from "@/components/landing/Hero";
 import { HeroParallax } from "@/components/landing/HeroParallax";
 import { HuellitasScroll } from "@/components/landing/HuellitasScroll";
@@ -34,6 +35,7 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
         <Servicios />
+        <EnVivoLanding />
         <PromoBanner slot="tras-servicios" id="proximamente" />
         <AntesDespues />
         <Banner />

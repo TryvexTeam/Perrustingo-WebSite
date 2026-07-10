@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  NOTA_PRECIOS,
   FORM_INITIAL,
   PELO_LABELS,
   SERVICIOS,
@@ -469,6 +470,7 @@ export function FormReserva({
                   <span>
                     ✅ <strong>{TAMANO_LABELS[tamanoAuto]}</strong>
                     <span className="block">Precio estimado: <strong>{formatCLP(precio)}</strong></span>
+                    <span className="mt-1 block text-xs font-normal opacity-80">{NOTA_PRECIOS}</span>
                   </span>
                 </div>
               )}
@@ -636,6 +638,7 @@ export function FormReserva({
                     ? "El tamaño y el peso no coinciden. Rodolfo te atenderá directamente para evaluar a tu perro."
                     : `${data.nombrePerro ? data.nombrePerro + " · " : ""}Precio estimado: ${precio ? formatCLP(precio) : "—"} · Todo listo para enviar por WhatsApp.`}
                 </p>
+                <p className="mt-2 text-xs leading-relaxed text-ink-soft">{NOTA_PRECIOS}</p>
               </div>
 
               <a

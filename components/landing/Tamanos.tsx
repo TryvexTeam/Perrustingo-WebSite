@@ -4,7 +4,7 @@ import { Reveal } from "@/components/ui/Reveal";
 import { BreedAvatar } from "@/components/ui/BreedAvatar";
 import { CloudCard, type CloudCardTone } from "@/components/ui/CloudCard";
 import { razaImagen, razasPorTamano, TAMANO_IMAGEN } from "@/lib/razas";
-import { TAMANO_LABELS, type TamanoKey } from "@/lib/reserva";
+import { TAMANO_LABELS, type TamanoKey, NOTA_PRECIOS } from "@/lib/reserva";
 
 interface GrupoTamano {
   key: TamanoKey;
@@ -123,6 +123,9 @@ export function Tamanos() {
             );
           })}
         </div>
+        <p className="mt-6 text-center text-xs leading-relaxed text-ink-soft">
+          {NOTA_PRECIOS}
+        </p>
       </div>
     </section>
   );
