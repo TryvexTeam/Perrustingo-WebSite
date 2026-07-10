@@ -38,7 +38,7 @@ export const PROMOS_DEFAULT: Promo[] = [
     img: "/promos/retiro-entrega.png",
     alt: "Próximamente: servicio de retiro y entrega — vamos por tu peludito, lo consentimos y te lo devolvemos. Seguro, puntual, confiable, fácil y rápido por WhatsApp.",
     vertical: true,
-    slot: "tras-tamanos",
+    slot: "oculto",
   },
   {
     id: "internacional",
