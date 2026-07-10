@@ -8,6 +8,7 @@ import {
   PROMOS_DEFAULT,
   restaurarPromos,
   SLOT_LABELS,
+  subirImagenPromo,
   type Promo,
   type PromoSlot,
 } from "@/lib/promos";
@@ -26,6 +27,8 @@ const SLOTS: PromoSlot[] = [
 export function EditorPromos() {
   const [promos, setPromos] = useState<Promo[]>(PROMOS_DEFAULT);
   const [guardado, setGuardado] = useState(false);
+  const [subiendo, setSubiendo] = useState<string | null>(null);
+  const [errorSubida, setErrorSubida] = useState<string | null>(null);
 
   useEffect(() => {
     setPromos(leerPromos());
@@ -33,6 +36,28 @@ export function EditorPromos() {
 
   const updSlot = (id: string, slot: PromoSlot) => {
     setPromos((prev) => prev.map((p) => (p.id === id ? { ...p, slot } : p)));
+    setGuardado(false);
+  };
+
+  const subirImagen = async (id: string, file: File | undefined) => {
+    if (!file) return;
+    setErrorSubida(null);
+    setSubiendo(id);
+    try {
+      const img = await subirImagenPromo(id, file);
+      setPromos((prev) => prev.map((p) => (p.id === id ? { ...p, img } : p)));
+      setGuardado(false);
+    } catch (error: unknown) {
+      setErrorSubida(error instanceof Error ? error.message : "Error al subir la imagen.");
+    } finally {
+      setSubiendo(null);
+    }
+  };
+
+  const quitarImagen = (id: string) => {
+    const original = PROMOS_DEFAULT.find((p) => p.id === id);
+    if (!original) return;
+    setPromos((prev) => prev.map((p) => (p.id === id ? { ...p, img: original.img } : p)));
     setGuardado(false);
   };
 
@@ -63,9 +88,34 @@ export function EditorPromos() {
               alt={promo.alt}
               width={400}
               height={promo.vertical ? 533 : 267}
+              unoptimized={!promo.img.startsWith("/")}
               className={`w-full rounded-xl object-cover shadow-sm ${promo.vertical ? "max-h-52 object-top" : ""}`}
             />
             <p className="text-sm font-bold leading-tight text-ink">{promo.nombre}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="cursor-pointer rounded-full border-2 border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-dark transition-colors hover:bg-sky/40">
+                {subiendo === promo.id ? "Subiendo…" : "📤 Subir imagen"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  disabled={subiendo !== null}
+                  onChange={(e) => {
+                    subirImagen(promo.id, e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {promo.img !== PROMOS_DEFAULT.find((p) => p.id === promo.id)?.img && (
+                <button
+                  type="button"
+                  onClick={() => quitarImagen(promo.id)}
+                  className="rounded-full border-2 border-ink/15 px-4 py-1.5 text-xs font-bold text-ink-soft transition-colors hover:border-red-300 hover:text-red-600"
+                >
+                  Quitar personalizada
+                </button>
+              )}
+            </div>
             <select
               value={promo.slot}
               onChange={(e) => updSlot(promo.id, e.target.value as PromoSlot)}
@@ -79,6 +129,12 @@ export function EditorPromos() {
           </div>
         ))}
       </div>
+
+      {errorSubida && (
+        <p className="mt-4 rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700">
+          {errorSubida}
+        </p>
+      )}
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <button

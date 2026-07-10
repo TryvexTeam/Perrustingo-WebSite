@@ -1,5 +1,7 @@
-/* Agenda — datos mock del flujo FE. Cuando exista Supabase, estas citas
-   saldrán de la tabla `sesiones`; la UI del calendario no cambia. */
+/* Agenda — tipos del calendario semanal. Con Supabase configurado las citas
+   salen de `sesiones` / `agenda_ocupada`; sin configurar se usa CITAS_DEMO. */
+
+import type { EstadoCita, SesionEquipo } from "@/lib/citas";
 
 export interface CitaAgenda {
   id: string;
@@ -63,4 +65,90 @@ export function fechaISO(d: Date): string {
     .getDate()
     .toString()
     .padStart(2, "0")}`;
+}
+
+/* ── Citas reales (Supabase) ──────────────────────────────── */
+
+/** Cita renderizable en el grid semanal, ya resuelta a fecha concreta. */
+export interface CitaSemana {
+  id: string;
+  /** yyyy-mm-dd local */
+  fecha: string;
+  horaInicio: number;
+  duracionHoras: number;
+  titulo: string;
+  subtitulo: string;
+  color: keyof typeof COLORES_CITA;
+  estado: EstadoCita;
+  /** Solo presente en modo equipo. */
+  sesion?: SesionEquipo;
+}
+
+export const DURACION_DEFECTO_HORAS = 1.5;
+
+export function colorPorServicio(servicio: string | null): keyof typeof COLORES_CITA {
+  const s = (servicio ?? "").toLowerCase();
+  if (s.includes("spa")) return "spa";
+  if (s.includes("uñas") || s.includes("unas")) return "unas";
+  if (s.includes("retiro") || s.includes("entrega")) return "retiro";
+  if (s.includes("corte")) return "corte";
+  return "bano";
+}
+
+/** Una solicitud creada desde el form trae solo fecha (00:00) — sin hora asignada. */
+export function tieneHoraAsignada(fechaCita: string): boolean {
+  const d = new Date(fechaCita);
+  return d.getHours() !== 0 || d.getMinutes() !== 0;
+}
+
+interface FilaAgendable {
+  id: string;
+  fecha_cita: string | null;
+  fecha_fin: string | null;
+  servicio: string | null;
+  estado: EstadoCita;
+}
+
+/** Convierte filas de `sesiones`/`agenda_ocupada` en citas del grid. */
+export function filaACitaSemana(
+  fila: FilaAgendable,
+  opts: { titulo: string; subtitulo?: string; sesion?: SesionEquipo }
+): CitaSemana | null {
+  if (!fila.fecha_cita) return null;
+  const inicio = new Date(fila.fecha_cita);
+  const horaInicio = inicio.getHours() + inicio.getMinutes() / 60;
+  const duracionHoras = fila.fecha_fin
+    ? Math.max(0.5, (new Date(fila.fecha_fin).getTime() - inicio.getTime()) / 3_600_000)
+    : DURACION_DEFECTO_HORAS;
+
+  return {
+    id: fila.id,
+    fecha: fechaISO(inicio),
+    horaInicio,
+    duracionHoras,
+    titulo: opts.titulo,
+    subtitulo: opts.subtitulo ?? fila.servicio ?? "",
+    color: colorPorServicio(fila.servicio),
+    estado: fila.estado,
+    sesion: opts.sesion,
+  };
+}
+
+/** CITAS_DEMO ancladas a la semana actual, como CitaSemana. */
+export function demoComoCitasSemana(hoy: Date): CitaSemana[] {
+  const lunes = lunesDe(hoy);
+  return CITAS_DEMO.map((c) => {
+    const fecha = new Date(lunes);
+    fecha.setDate(lunes.getDate() + c.diaSemana);
+    return {
+      id: c.id,
+      fecha: fechaISO(fecha),
+      horaInicio: c.horaInicio,
+      duracionHoras: c.duracionHoras,
+      titulo: c.titulo,
+      subtitulo: c.servicio,
+      color: c.color,
+      estado: "confirmada" as EstadoCita,
+    };
+  });
 }

@@ -1,11 +1,11 @@
 "use client";
 
+import Link from "next/link";
+
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export function RegistroForm() {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
@@ -28,6 +28,11 @@ export function RegistroForm() {
     }
 
     startTransition(async () => {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes("TU_PROYECTO")) {
+        setError("Las cuentas estarán disponibles muy pronto — seguimos configurando el sistema.");
+        return;
+      }
       const supabase = createClient();
       const { error: authError } = await supabase.auth.signUp({
         email,
@@ -58,12 +63,12 @@ export function RegistroForm() {
           Te enviamos un enlace de confirmación a <strong>{email}</strong>.
           Haz clic en él para activar tu cuenta.
         </p>
-        <a
+        <Link
           href="/"
           className="mt-4 inline-block text-sm font-semibold text-teal-dark underline underline-offset-2"
         >
           Volver al inicio
-        </a>
+        </Link>
       </div>
     );
   }

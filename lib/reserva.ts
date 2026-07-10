@@ -82,6 +82,10 @@ export const RAZAS = [
   "Otro",
 ];
 
+/** Aclaración legal/comercial — mostrar junto a cualquier precio. */
+export const NOTA_PRECIOS =
+  "Precios referenciales: el valor puede variar según el comportamiento, el estado del pelo, la frecuencia de visitas y la mantención en casa. El valor final se confirma en la puerta, siempre antes de comenzar.";
+
 export const SERVICIOS = [
   "Baño completo (sin corte de pelo)",
   "Baño + corte de pelo",
@@ -91,12 +95,17 @@ export const SERVICIOS = [
 ];
 
 export interface FormData {
+  // Contacto del dueño
+  contactoNombre: string;
+  contactoEmail: string;
+  contactoTelefono: string;
   // Paso 1 — básico
   nombrePerro: string;
   raza: string;
   razaOtro: string;
   edadAnios: string;
   edadMeses: string;
+  esPrimeraVez: "si" | "no" | "no_lo_se" | "";
   // Paso 2 — tamaño y pelo
   pesoKg: string;
   alturaCmd: string;
@@ -124,11 +133,15 @@ export interface FormData {
 }
 
 export const FORM_INITIAL: FormData = {
+  contactoNombre: "",
+  contactoEmail: "",
+  contactoTelefono: "",
   nombrePerro: "",
   raza: "",
   razaOtro: "",
   edadAnios: "",
   edadMeses: "",
+  esPrimeraVez: "",
   pesoKg: "",
   alturaCmd: "",
   contextura: "",
@@ -150,6 +163,13 @@ export const FORM_INITIAL: FormData = {
   conTijeras: "",
   fechaDeseada: "",
   servicio: "",
+};
+
+
+export const PRIMERA_VEZ_LABELS: Record<string, string> = {
+  si: "Sí, es su primera peluquería",
+  no: "Ya ha ido a peluquería antes",
+  no_lo_se: "No lo sé",
 };
 
 export function detectarTamanoPorPeso(peso: number): TamanoKey {
@@ -233,6 +253,7 @@ export function buildWhatsAppMessage(
   if (raza) lines.push(`• *Raza:* ${raza}`);
   if (pesoValido) lines.push(`• *Peso:* ${data.pesoKg} kg`);
   lines.push(`• *Edad:* ${edad}`);
+  if (data.esPrimeraVez) lines.push(`• *Primera peluquería:* ${PRIMERA_VEZ_LABELS[data.esPrimeraVez]}`);
   if (data.contextura) lines.push(`• *Contextura:* ${data.contextura}`);
   if (pelo) lines.push(`• *Tipo de pelo:* ${pelo}`);
 
@@ -249,7 +270,13 @@ export function buildWhatsAppMessage(
 
   if (precio > 0 || data.servicio || data.fechaDeseada) {
     lines.push("");
-    if (precio > 0 && pesoValido) lines.push(`*Precio estimado:* desde ${formatCLP(precio)}`);
+    if (precio > 0 && pesoValido) {
+      lines.push(`*Precio estimado:* desde ${formatCLP(precio)}`);
+      const est = calcularEstimado(data);
+      if (est && est.ajustes.length > 0) {
+        lines.push(`  (incluye: ${est.ajustes.map((a) => `+${a.pct}% ${a.etiqueta.toLowerCase()}`).join(", ")})`);
+      }
+    }
     if (data.servicio) lines.push(`*Servicio:* ${data.servicio}`);
     if (data.fechaDeseada) lines.push(`*Fecha deseada:* ${data.fechaDeseada}`);
   }
@@ -260,4 +287,130 @@ export function buildWhatsAppMessage(
   }
 
   return lines.join("\n");
+}
+
+/** Snapshot legible del formulario para `sesiones.detalle_form`. */
+export function construirDetalle(data: FormData): Record<string, string> {
+  const raza = data.raza === "Otro" ? data.razaOtro || "Otro" : data.raza;
+  const pelo =
+    data.tipoPelo === "otro"
+      ? data.tipoPeloOtro || "Otro"
+      : PELO_LABELS[data.tipoPelo as TipoPelo] || "";
+
+  const edadParts: string[] = [];
+  if (data.edadAnios) edadParts.push(`${data.edadAnios} años`);
+  if (data.edadMeses) edadParts.push(`${data.edadMeses} meses`);
+
+  const salud: string[] = [];
+  if (data.unasEncarnadas === "si") salud.push("uñas encarnadas");
+  if (data.secrecionOcular === "si") salud.push("secreción ocular");
+  if (data.tieneAlergia === "si" && data.cualAlergia) salud.push(`alergia: ${data.cualAlergia}`);
+
+  const zonas = (
+    [
+      ["patitas", data.conPatitas],
+      ["hocico", data.conHocico],
+      ["uñas", data.conUnas],
+      ["cola", data.conCola],
+      ["baño", data.conBano],
+      ["secador", data.conSecador],
+      ["máquina", data.conMaquina],
+      ["tijeras", data.conTijeras],
+    ] as [string, string][]
+  )
+    .filter(([, v]) => v === "no_se_deja")
+    .map(([k]) => k);
+
+  const tempGeneral =
+    data.temperamentoGeneral === "complicado"
+      ? "Complicado o bravo"
+      : TEMP_LABELS[data.temperamentoGeneral as Temperamento] || "";
+
+  return {
+    nombrePerro: data.nombrePerro,
+    raza,
+    edad: edadParts.join(" y "),
+    esPrimeraVez: data.esPrimeraVez ? PRIMERA_VEZ_LABELS[data.esPrimeraVez] : "",
+    pesoKg: data.pesoKg,
+    contextura: data.contextura,
+    tipoPelo: pelo,
+    salud: salud.join(", "),
+    temperamento: tempGeneral,
+    noSeDejaCon: zonas.join(", "),
+  };
+}
+
+/* ── Estimado en vivo ─────────────────────────────────────────
+   Recargos PROVISORIOS (a confirmar con Rodolfo): el estimado sube
+   mientras el cliente declara condiciones que implican más trabajo. */
+
+export interface AjustePrecio {
+  etiqueta: string;
+  pct: number;
+}
+
+export const RECARGOS_PELO: Partial<Record<TipoPelo, AjustePrecio>> = {
+  crespo_motas: { etiqueta: "Pelo con motas", pct: 15 },
+  motas_rastas: { etiqueta: "Motas / rastas", pct: 25 },
+  doble_capa: { etiqueta: "Doble capa", pct: 10 },
+};
+
+export const RECARGOS_TEMPERAMENTO: Record<string, AjustePrecio> = {
+  no_se_deja: { etiqueta: "No se deja atender", pct: 15 },
+  complicado: { etiqueta: "Complicado o bravo", pct: 25 },
+};
+
+/** % extra por cada zona sensible marcada (tope en MAX_PCT_ZONAS). */
+export const PCT_POR_ZONA = 3;
+export const MAX_PCT_ZONAS = 12;
+
+/* Regla de Rodolfo: cachorro/joven de raza conocida usa la tabla del
+   TAMAÑO ADULTO de su raza, "bajándole un poquito". % PROVISORIO. */
+export const EDAD_CACHORRO_MESES = 18;
+export const DESCUENTO_CACHORRO: AjustePrecio = {
+  etiqueta: "Cachorro en crecimiento",
+  pct: -15,
+};
+
+export interface EstimadoVivo {
+  base: number;
+  ajustes: AjustePrecio[];
+  total: number;
+}
+
+/** Redondeo comercial a la centena. */
+function redondear(n: number): number {
+  return Math.round(n / 100) * 100;
+}
+
+export function calcularEstimado(
+  data: FormData,
+  precioBase?: number | null,
+  ajustesExtra?: AjustePrecio[]
+): EstimadoVivo | null {
+  const peso = parseFloat(data.pesoKg);
+  const base = precioBase ?? (!isNaN(peso) && peso > 0 && peso <= 120 ? calcularPrecio(peso) : null);
+  if (!base) return null;
+
+  const ajustes: AjustePrecio[] = [...(ajustesExtra ?? [])];
+
+  const recargoPelo = RECARGOS_PELO[data.tipoPelo as TipoPelo];
+  if (recargoPelo) ajustes.push(recargoPelo);
+
+  const recargoTemp = RECARGOS_TEMPERAMENTO[data.temperamentoGeneral];
+  if (recargoTemp) ajustes.push(recargoTemp);
+
+  const zonas = [
+    data.conPatitas, data.conHocico, data.conUnas, data.conCola,
+    data.conBano, data.conSecador, data.conMaquina, data.conTijeras,
+  ].filter((v) => v === "no_se_deja").length;
+  if (zonas > 0) {
+    ajustes.push({
+      etiqueta: `${zonas} zona${zonas === 1 ? "" : "s"} sensible${zonas === 1 ? "" : "s"}`,
+      pct: Math.min(zonas * PCT_POR_ZONA, MAX_PCT_ZONAS),
+    });
+  }
+
+  const pctTotal = ajustes.reduce((acc, a) => acc + a.pct, 0);
+  return { base, ajustes, total: redondear(base * (1 + pctTotal / 100)) };
 }

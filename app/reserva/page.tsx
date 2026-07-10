@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Footer } from "@/components/Footer";
-import { FormReserva } from "@/components/FormReserva";
-import { SiteMenu } from "@/components/SiteMenu";
+import { Footer } from "@/components/layout/Footer";
+import { FormReserva } from "@/components/reserva/FormReserva";
+import { SiteMenu } from "@/components/layout/SiteMenu";
 
 export const metadata: Metadata = {
   title: "Reserva tu cita — Perrustingo",

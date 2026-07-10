@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { SiteMenu } from "@/components/SiteMenu";
-import { Footer } from "@/components/Footer";
+import { formatCLP } from "@/lib/reserva";
+import { ESTADO_COLOR } from "@/lib/citas";
+import { EnVivo } from "@/components/admin/EnVivo";
+import { SiteMenu } from "@/components/layout/SiteMenu";
+import { Footer } from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
   title: "Dashboard — Perrustingo",
@@ -17,11 +20,6 @@ function DashboardDemo() {
     { perro: "Rocky · Labrador · 32 kg", cliente: "Jorge M.", servicio: "Baño completo", hora: "12:00", estado: "pendiente", precio: "$40.000" },
     { perro: "Milo · Shih Tzu · 6 kg", cliente: "Fernanda T.", servicio: "Spa completo", hora: "15:30", estado: "en_proceso", precio: "$20.000" },
   ];
-  const estadoColor: Record<string, string> = {
-    pendiente: "bg-yellow-100 text-yellow-800",
-    confirmada: "bg-blue-100 text-blue-800",
-    en_proceso: "bg-purple-100 text-purple-800",
-  };
 
   return (
     <>
@@ -46,19 +44,7 @@ function DashboardDemo() {
             </p>
           </div>
 
-          <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[
-              { label: "Total hoy", value: 3, color: "bg-[#e3f1fb]" },
-              { label: "Pendientes", value: 1, color: "bg-[#fdeaf1]" },
-              { label: "Confirmadas", value: 1, color: "bg-[#ece4f7]" },
-              { label: "En proceso", value: 1, color: "bg-[#d8f0e3]" },
-            ].map((stat) => (
-              <div key={stat.label} className={`${stat.color} rounded-3xl p-5 text-center`}>
-                <p className="font-display text-3xl font-extrabold text-ink">{stat.value}</p>
-                <p className="mt-1 text-xs font-bold uppercase tracking-wide text-ink-soft">{stat.label}</p>
-              </div>
-            ))}
-          </div>
+          <EnVivo />
 
           <div className="rounded-3xl bg-white p-6 shadow-sm">
             <h2 className="mb-4 font-display text-lg font-extrabold text-ink">Citas de hoy</h2>
@@ -71,7 +57,7 @@ function DashboardDemo() {
                     <p className="mt-0.5 text-xs text-ink-soft">{cita.servicio} · {cita.hora}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${estadoColor[cita.estado] ?? ""}`}>
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ESTADO_COLOR[cita.estado as keyof typeof ESTADO_COLOR] ?? ""}`}>
                       {cita.estado}
                     </span>
                     <span className="text-xs font-semibold text-teal-dark">{cita.precio}</span>
@@ -143,10 +129,6 @@ export default async function DashboardPage() {
     .lt("fecha_cita", finHoy)
     .order("fecha_cita");
 
-  const citasPendientes = citasHoy?.filter((c) => c.estado === "pendiente") ?? [];
-  const citasConfirmadas = citasHoy?.filter((c) => c.estado === "confirmada") ?? [];
-  const citasEnProceso = citasHoy?.filter((c) => c.estado === "en_proceso") ?? [];
-
   return (
     <>
       <SiteMenu />
@@ -170,27 +152,8 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          {/* Stats del día */}
-          <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[
-              { label: "Total hoy", value: citasHoy?.length ?? 0, color: "bg-[#e3f1fb]" },
-              { label: "Pendientes", value: citasPendientes.length, color: "bg-[#fdeaf1]" },
-              { label: "Confirmadas", value: citasConfirmadas.length, color: "bg-[#ece4f7]" },
-              { label: "En proceso", value: citasEnProceso.length, color: "bg-[#d8f0e3]" },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className={`${stat.color} rounded-3xl p-5 text-center`}
-              >
-                <p className="font-display text-3xl font-extrabold text-ink">
-                  {stat.value}
-                </p>
-                <p className="mt-1 text-xs font-bold uppercase tracking-wide text-ink-soft">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </div>
+          {/* Datos reales en vivo */}
+          <EnVivo />
 
           {/* Lista de citas */}
           <div className="rounded-3xl bg-white p-6 shadow-sm">
@@ -215,14 +178,6 @@ export default async function DashboardPage() {
                   const cliente: ClienteRow | null = Array.isArray(clienteRaw)
                     ? (clienteRaw[0] as ClienteRow) ?? null
                     : (clienteRaw as ClienteRow | null);
-
-                  const estadoColor: Record<string, string> = {
-                    pendiente: "bg-yellow-100 text-yellow-800",
-                    confirmada: "bg-blue-100 text-blue-800",
-                    en_proceso: "bg-purple-100 text-purple-800",
-                    completada: "bg-green-100 text-green-800",
-                    cancelada: "bg-red-100 text-red-800",
-                  };
 
                   return (
                     <div
@@ -269,16 +224,13 @@ export default async function DashboardPage() {
 
                       <div className="flex flex-col items-end gap-1">
                         <span
-                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${estadoColor[cita.estado] ?? ""}`}
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ESTADO_COLOR[cita.estado as keyof typeof ESTADO_COLOR] ?? ""}`}
                         >
                           {cita.estado}
                         </span>
                         {cita.precio_final && (
                           <span className="text-xs font-semibold text-teal-dark">
-                            $
-                            {cita.precio_final
-                              .toString()
-                              .replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                            {formatCLP(cita.precio_final)}
                           </span>
                         )}
                       </div>
@@ -293,7 +245,7 @@ export default async function DashboardPage() {
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
             {[
               { label: "Ver todas las citas", href: "/dashboard/citas", emoji: "📅" },
-              { label: "Clientes", href: "/dashboard/clientes", emoji: "👥" },
+              { label: "Agenda semanal", href: "/agenda", emoji: "🗓️" },
               { label: "Tarifas", href: "/dashboard/tarifas", emoji: "💰", onlyAdmin: true },
               { label: "Anuncios", href: "/dashboard/anuncios", emoji: "📣", onlyAdmin: true },
             ]

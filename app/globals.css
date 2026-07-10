@@ -58,6 +58,20 @@
   );
 }
 
+/* Puentes de color entre las dos familias de fondo (celeste de marca y
+   cream/blanco de contenido) — cada frontera empalma con lo que la rodea. */
+
+/* Tras un borde de nubes blancas (hero, banner): blanco → cream */
+.bg-blend-white-to-cream {
+  background: linear-gradient(to bottom, #ffffff, #ffffff 86%, var(--color-cream));
+}
+
+/* Termina en blanco: empalma con los bordes de nubes blancas del Banner y
+   el Footer, y abre el lienzo blanco continuo Precios → Visita → Beneficios */
+.bg-blend-cream-to-white {
+  background: linear-gradient(to bottom, var(--color-cream), #ffffff 14%);
+}
+
 :focus-visible {
   outline: 3px solid var(--color-teal-bright);
   outline-offset: 2px;

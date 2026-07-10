@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { RegistroForm } from "@/components/auth/RegistroForm";
-import { SiteMenu } from "@/components/SiteMenu";
+import { SiteMenu } from "@/components/layout/SiteMenu";
 
 export const metadata: Metadata = {
   title: "Crear cuenta — Perrustingo",
