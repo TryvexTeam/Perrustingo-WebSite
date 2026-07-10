@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatCLP } from "@/lib/reserva";
 import { ESTADO_COLOR } from "@/lib/citas";
+import { EnVivo } from "@/components/admin/EnVivo";
 import { SiteMenu } from "@/components/layout/SiteMenu";
 import { Footer } from "@/components/layout/Footer";
 
@@ -43,19 +44,7 @@ function DashboardDemo() {
             </p>
           </div>
 
-          <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[
-              { label: "Total hoy", value: 3, color: "bg-[#e3f1fb]" },
-              { label: "Pendientes", value: 1, color: "bg-[#fdeaf1]" },
-              { label: "Confirmadas", value: 1, color: "bg-[#ece4f7]" },
-              { label: "En proceso", value: 1, color: "bg-[#d8f0e3]" },
-            ].map((stat) => (
-              <div key={stat.label} className={`${stat.color} rounded-3xl p-5 text-center`}>
-                <p className="font-display text-3xl font-extrabold text-ink">{stat.value}</p>
-                <p className="mt-1 text-xs font-bold uppercase tracking-wide text-ink-soft">{stat.label}</p>
-              </div>
-            ))}
-          </div>
+          <EnVivo />
 
           <div className="rounded-3xl bg-white p-6 shadow-sm">
             <h2 className="mb-4 font-display text-lg font-extrabold text-ink">Citas de hoy</h2>
@@ -140,10 +129,6 @@ export default async function DashboardPage() {
     .lt("fecha_cita", finHoy)
     .order("fecha_cita");
 
-  const citasPendientes = citasHoy?.filter((c) => c.estado === "pendiente") ?? [];
-  const citasConfirmadas = citasHoy?.filter((c) => c.estado === "confirmada") ?? [];
-  const citasEnProceso = citasHoy?.filter((c) => c.estado === "en_proceso") ?? [];
-
   return (
     <>
       <SiteMenu />
@@ -167,27 +152,8 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          {/* Stats del día */}
-          <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[
-              { label: "Total hoy", value: citasHoy?.length ?? 0, color: "bg-[#e3f1fb]" },
-              { label: "Pendientes", value: citasPendientes.length, color: "bg-[#fdeaf1]" },
-              { label: "Confirmadas", value: citasConfirmadas.length, color: "bg-[#ece4f7]" },
-              { label: "En proceso", value: citasEnProceso.length, color: "bg-[#d8f0e3]" },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className={`${stat.color} rounded-3xl p-5 text-center`}
-              >
-                <p className="font-display text-3xl font-extrabold text-ink">
-                  {stat.value}
-                </p>
-                <p className="mt-1 text-xs font-bold uppercase tracking-wide text-ink-soft">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </div>
+          {/* Datos reales en vivo */}
+          <EnVivo />
 
           {/* Lista de citas */}
           <div className="rounded-3xl bg-white p-6 shadow-sm">

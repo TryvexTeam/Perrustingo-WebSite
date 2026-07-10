@@ -21,6 +21,7 @@ export function PromoBanner({ slot, id }: { slot: PromoSlot; id?: string }) {
               alt={promo.alt}
               width={promo.vertical ? 1086 : 1536}
               height={promo.vertical ? 1448 : 1024}
+              unoptimized={!promo.img.startsWith("/")}
               className="w-full rounded-[28px] shadow-[0_2px_16px_rgba(47,62,70,0.1)] transition-transform duration-300 ease-[var(--ease-out-expo)] hover:-translate-y-1"
             />
           </Reveal>
