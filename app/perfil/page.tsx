@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { SiteMenu } from "@/components/SiteMenu";
-import { Footer } from "@/components/Footer";
+import { SiteMenu } from "@/components/layout/SiteMenu";
+import { Footer } from "@/components/layout/Footer";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 
 export const metadata: Metadata = {

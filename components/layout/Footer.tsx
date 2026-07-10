@@ -24,12 +24,12 @@ export function Footer() {
             <Link href="/politicas" className="transition-colors hover:text-teal-dark">
               Políticas
             </Link>
-            <a href="/#advertencias" className="transition-colors hover:text-teal-dark">
+            <Link href="/#advertencias" className="transition-colors hover:text-teal-dark">
               Advertencias
-            </a>
-            <a href="/#visita" className="transition-colors hover:text-teal-dark">
+            </Link>
+            <Link href="/#visita" className="transition-colors hover:text-teal-dark">
               Contacto
-            </a>
+            </Link>
           </nav>
 
           <Link href="/" aria-label={SITE.name} className="order-first justify-self-center md:order-none">

@@ -1,5 +1,5 @@
 import { ContadorVivo } from "./ContadorVivo";
-import { Reveal } from "./Reveal";
+import { Reveal } from "@/components/ui/Reveal";
 
 export function StatsBar() {
   return (

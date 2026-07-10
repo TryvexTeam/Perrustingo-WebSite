@@ -1,5 +1,5 @@
 ﻿import Image from "next/image";
-import { Reveal } from "./Reveal";
+import { Reveal } from "@/components/ui/Reveal";
 
 const AVISOS = [
   {

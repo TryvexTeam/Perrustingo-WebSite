@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Flotantes } from "./Flotantes";
-import { Reveal } from "./Reveal";
+import { Reveal } from "@/components/ui/Reveal";
 
 /* Cada servicio incluido enlaza a su card en el catálogo de imágenes */
 const INCLUYE = [

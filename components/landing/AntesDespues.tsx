@@ -1,5 +1,5 @@
 import { BeforeAfterSlider } from "./BeforeAfterSlider";
-import { Reveal } from "./Reveal";
+import { Reveal } from "@/components/ui/Reveal";
 
 export function AntesDespues() {
   return (

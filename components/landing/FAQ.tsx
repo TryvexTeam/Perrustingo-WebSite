@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Reveal } from "./Reveal";
+import { Reveal } from "@/components/ui/Reveal";
 
 const PREGUNTAS = [
   {

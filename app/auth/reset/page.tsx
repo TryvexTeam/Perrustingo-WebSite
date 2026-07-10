@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { NuevaPasswordForm } from "@/components/auth/NuevaPasswordForm";
-import { SiteMenu } from "@/components/SiteMenu";
+import { SiteMenu } from "@/components/layout/SiteMenu";
 
 export const metadata: Metadata = {
   title: "Nueva contraseña — Perrustingo",

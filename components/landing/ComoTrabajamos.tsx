@@ -1,6 +1,6 @@
 ﻿import Image from "next/image";
 import { Flotantes } from "./Flotantes";
-import { Reveal } from "./Reveal";
+import { Reveal } from "@/components/ui/Reveal";
 
 const PILARES = [
   {

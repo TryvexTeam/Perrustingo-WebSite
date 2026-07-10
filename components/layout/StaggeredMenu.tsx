@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import "./StaggeredMenu.css";
@@ -380,10 +381,10 @@ export function StaggeredMenu({
         ))}
       </div>
       <header className="staggered-menu-header" aria-label="Encabezado de navegación">
-        <a href="/" className="sm-logo" aria-label={logoLabel}>
+        <Link href="/" className="sm-logo" aria-label={logoLabel}>
           <Image src={logoUrl} alt={`Logo ${logoLabel}`} width={44} height={44} className="sm-logo-img" draggable={false} />
           <span className="sm-logo-text">{logoLabel}</span>
-        </a>
+        </Link>
         <button
           ref={toggleBtnRef}
           className="sm-toggle"

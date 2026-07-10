@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Figtree } from "next/font/google";
-import { CookieBanner } from "@/components/CookieBanner";
-import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+import { CookieBanner } from "@/components/layout/CookieBanner";
+import { ServiceWorkerRegister } from "@/components/layout/ServiceWorkerRegister";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({

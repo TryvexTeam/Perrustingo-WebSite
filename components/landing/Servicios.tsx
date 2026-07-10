@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Reveal } from "./Reveal";
+import { Reveal } from "@/components/ui/Reveal";
 
 interface Servicio {
   /** Ancla — las cards de "¿Qué incluye?" enlazan aquí */

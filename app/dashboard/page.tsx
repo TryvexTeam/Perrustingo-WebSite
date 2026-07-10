@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { SiteMenu } from "@/components/SiteMenu";
-import { Footer } from "@/components/Footer";
+import { formatCLP } from "@/lib/reserva";
+import { SiteMenu } from "@/components/layout/SiteMenu";
+import { Footer } from "@/components/layout/Footer";
+
+const ESTADO_COLOR: Record<string, string> = {
+  pendiente: "bg-yellow-100 text-yellow-800",
+  confirmada: "bg-blue-100 text-blue-800",
+  en_proceso: "bg-purple-100 text-purple-800",
+  completada: "bg-green-100 text-green-800",
+  cancelada: "bg-red-100 text-red-800",
+};
 
 export const metadata: Metadata = {
   title: "Dashboard — Perrustingo",
@@ -17,11 +26,6 @@ function DashboardDemo() {
     { perro: "Rocky · Labrador · 32 kg", cliente: "Jorge M.", servicio: "Baño completo", hora: "12:00", estado: "pendiente", precio: "$40.000" },
     { perro: "Milo · Shih Tzu · 6 kg", cliente: "Fernanda T.", servicio: "Spa completo", hora: "15:30", estado: "en_proceso", precio: "$20.000" },
   ];
-  const estadoColor: Record<string, string> = {
-    pendiente: "bg-yellow-100 text-yellow-800",
-    confirmada: "bg-blue-100 text-blue-800",
-    en_proceso: "bg-purple-100 text-purple-800",
-  };
 
   return (
     <>
@@ -71,7 +75,7 @@ function DashboardDemo() {
                     <p className="mt-0.5 text-xs text-ink-soft">{cita.servicio} · {cita.hora}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${estadoColor[cita.estado] ?? ""}`}>
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ESTADO_COLOR[cita.estado] ?? ""}`}>
                       {cita.estado}
                     </span>
                     <span className="text-xs font-semibold text-teal-dark">{cita.precio}</span>
@@ -216,14 +220,6 @@ export default async function DashboardPage() {
                     ? (clienteRaw[0] as ClienteRow) ?? null
                     : (clienteRaw as ClienteRow | null);
 
-                  const estadoColor: Record<string, string> = {
-                    pendiente: "bg-yellow-100 text-yellow-800",
-                    confirmada: "bg-blue-100 text-blue-800",
-                    en_proceso: "bg-purple-100 text-purple-800",
-                    completada: "bg-green-100 text-green-800",
-                    cancelada: "bg-red-100 text-red-800",
-                  };
-
                   return (
                     <div
                       key={cita.id}
@@ -269,16 +265,13 @@ export default async function DashboardPage() {
 
                       <div className="flex flex-col items-end gap-1">
                         <span
-                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${estadoColor[cita.estado] ?? ""}`}
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ESTADO_COLOR[cita.estado] ?? ""}`}
                         >
                           {cita.estado}
                         </span>
                         {cita.precio_final && (
                           <span className="text-xs font-semibold text-teal-dark">
-                            $
-                            {cita.precio_final
-                              .toString()
-                              .replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                            {formatCLP(cita.precio_final)}
                           </span>
                         )}
                       </div>

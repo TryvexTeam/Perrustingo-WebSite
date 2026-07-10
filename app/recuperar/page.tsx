@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { RecuperarForm } from "@/components/auth/RecuperarForm";
-import { SiteMenu } from "@/components/SiteMenu";
+import { SiteMenu } from "@/components/layout/SiteMenu";
 
 export const metadata: Metadata = {
   title: "Recuperar contraseña — Perrustingo",

@@ -16,7 +16,7 @@ import {
 } from "@/lib/reserva";
 import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
-import { BreedAvatar } from "./ui/BreedAvatar";
+import { BreedAvatar } from "@/components/ui/BreedAvatar";
 
 const WHATSAPP_BASE = "https://wa.me/4915237152283?text=";
 

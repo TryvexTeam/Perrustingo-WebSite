@@ -1,7 +1,7 @@
-import { Reveal } from "./Reveal";
-import { CloudCard, type CloudCardTone } from "./ui/CloudCard";
-import { IluSlot } from "./ui/IluSlot";
-import { IluCorazon, IluEstrella, IluEtiqueta, IluWhatsApp } from "./ui/Ilustraciones";
+import { Reveal } from "@/components/ui/Reveal";
+import { CloudCard, type CloudCardTone } from "@/components/ui/CloudCard";
+import { IluSlot } from "@/components/ui/IluSlot";
+import { IluCorazon, IluEstrella, IluEtiqueta, IluWhatsApp } from "@/components/ui/Ilustraciones";
 
 const BENEFICIOS: {
   tone: CloudCardTone;

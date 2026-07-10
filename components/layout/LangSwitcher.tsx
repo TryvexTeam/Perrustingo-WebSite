@@ -37,6 +37,16 @@ const TRANSLATIONS: Record<string, Record<string, string>> = {
 
 const LANG_KEY = "perrustingo_lang";
 
+function applyLang(code: string) {
+  const t = TRANSLATIONS[code];
+  if (!t) return;
+  document.documentElement.lang = code === "es" ? "es" : code === "pt" ? "pt-BR" : "de";
+  // Inject translations via CSS custom properties available to JS components
+  Object.entries(t).forEach(([k, v]) => {
+    document.documentElement.setAttribute(`data-t-${k}`, v);
+  });
+}
+
 export function LangSwitcher() {
   const [lang, setLang] = useState("es");
   const [open, setOpen] = useState(false);
@@ -48,16 +58,6 @@ export function LangSwitcher() {
       applyLang(saved);
     }
   }, []);
-
-  function applyLang(code: string) {
-    const t = TRANSLATIONS[code];
-    if (!t) return;
-    document.documentElement.lang = code === "es" ? "es" : code === "pt" ? "pt-BR" : "de";
-    // Inject translations via CSS custom properties available to JS components
-    Object.entries(t).forEach(([k, v]) => {
-      document.documentElement.setAttribute(`data-t-${k}`, v);
-    });
-  }
 
   function switchLang(code: string) {
     setLang(code);

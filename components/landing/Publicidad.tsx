@@ -1,4 +1,4 @@
-import { Reveal } from "./Reveal";
+import { Reveal } from "@/components/ui/Reveal";
 
 const WHATSAPP_PUBLICIDAD = `https://wa.me/4915237152283?text=${encodeURIComponent(
   "Hola Perrustingo, me interesa publicitar mi negocio en su sitio web. ¿Podría darme más información?"

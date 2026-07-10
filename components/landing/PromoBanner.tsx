@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { usePromos, type PromoSlot } from "@/lib/promos";
-import { Reveal } from "./Reveal";
+import { Reveal } from "@/components/ui/Reveal";
 
 /* Banner promocional intermedio — renderiza el anuncio que el admin asignó
    a esta posición de la landing. Si no hay ninguno, no ocupa espacio. */

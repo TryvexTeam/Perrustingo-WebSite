@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarioSemanal } from "@/components/agenda/CalendarioSemanal";
-import { Footer } from "@/components/Footer";
-import { SiteMenu } from "@/components/SiteMenu";
+import { Footer } from "@/components/layout/Footer";
+import { SiteMenu } from "@/components/layout/SiteMenu";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {

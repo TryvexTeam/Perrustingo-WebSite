@@ -1,8 +1,8 @@
 import { Flotantes } from "./Flotantes";
 import { PrecioDinamico } from "./PrecioDinamico";
-import { Reveal } from "./Reveal";
-import { BreedAvatar } from "./ui/BreedAvatar";
-import { CloudCard, type CloudCardTone } from "./ui/CloudCard";
+import { Reveal } from "@/components/ui/Reveal";
+import { BreedAvatar } from "@/components/ui/BreedAvatar";
+import { CloudCard, type CloudCardTone } from "@/components/ui/CloudCard";
 import { razaImagen, razasPorTamano, TAMANO_IMAGEN } from "@/lib/razas";
 import { TAMANO_LABELS, type TamanoKey } from "@/lib/reserva";
 

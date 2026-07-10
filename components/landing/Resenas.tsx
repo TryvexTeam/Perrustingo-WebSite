@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { SITE } from "@/lib/site";
-import { Reveal } from "./Reveal";
+import { Reveal } from "@/components/ui/Reveal";
 
 interface Resena {
   autor: string;

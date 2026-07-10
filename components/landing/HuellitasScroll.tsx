@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { PawIcon } from "./PawIcon";
+import { PawIcon } from "@/components/ui/PawIcon";
 
 const PUNTOS = [
   { left: "5vw", top: "24vh", rot: "-18deg", color: "fill-teal-dark/50" },

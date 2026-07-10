@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PawIcon } from "./PawIcon";
+import { PawIcon } from "@/components/ui/PawIcon";
 
 /** Pantalla de carga con huellita rebotando; se desvanece al cargar la página. */
 export function LoaderHuellita() {
