@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { LangSwitcher } from "./LangSwitcher";
 import { SITE } from "@/lib/site";
 
 export function Footer() {
@@ -69,7 +68,6 @@ export function Footer() {
             <span aria-label="Alemania">🇩🇪</span>{" "}
             <span aria-label="y el mundo">🌎</span>
           </p>
-          <LangSwitcher />
         </div>
         <p className="mt-3 text-center text-xs text-teal-ink/70">
           © {new Date().getFullYear()} {SITE.name} · {SITE.tagline} · {SITE.address}
