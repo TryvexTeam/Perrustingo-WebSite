@@ -16,7 +16,7 @@ const PILARES = [
       "No usamos jaula de secado, brazo de sujeción ni correa abdominal. Tu perro no tiene que estar sujeto y quieto todo el tiempo: tiene total libertad para moverse y sentarse.",
   },
   {
-    foto: "/Trabajadora.jfif",
+    foto: "/equipo-trabajadora.jpg",
     titulo: "Familiarización para cachorros",
     detalle:
       "Presentamos de forma lúdica el cepillo, la bañera, la mesa, el secador y la máquina, y acostumbramos a tu cachorro a que le toquen las patas, el hocico y la cara. Así sus visitas crecen sin miedo ni estrés.",
