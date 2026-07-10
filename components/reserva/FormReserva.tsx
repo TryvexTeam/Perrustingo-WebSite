@@ -10,6 +10,7 @@ import {
   TamanoKey,
   TipoPelo,
   buildWhatsAppMessage,
+  calcularEstimado,
   construirDetalle,
   detectarTamanoPorPeso,
   formatCLP,
@@ -265,6 +266,7 @@ export function FormReserva({
       ? CATALOGO_RAZAS.find((r) => r.nombre === data.raza) ?? null
       : null;
   const precio = pesoValido ? precioDe(peso) : null;
+  const estimado = calcularEstimado(data, precio);
 
   const paso = PASOS[step];
   const pct = ((step + 1) / PASOS.length) * 100;
@@ -294,7 +296,7 @@ export function FormReserva({
         },
         fechaDeseada: data.fechaDeseada,
         servicio: data.servicio,
-        precioEstimado: precio,
+        precioEstimado: estimado?.total ?? precio,
         detalle: construirDetalle(data),
       }),
     })
@@ -334,6 +336,38 @@ export function FormReserva({
           {step + 1}/{PASOS.length}
         </span>
       </div>
+
+      {/* Estimado en vivo — se actualiza con cada respuesta */}
+      {estimado && step > 0 && !esUltimo && (
+        <div
+          aria-live="polite"
+          className="sticky top-20 z-30 mb-5 rounded-2xl bg-teal-ink px-5 py-3.5 text-white shadow-lg"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs font-bold uppercase tracking-wide opacity-80">
+              💰 Estimado en vivo
+            </span>
+            <span className="font-display text-xl font-extrabold">
+              {formatCLP(estimado.total)}
+            </span>
+          </div>
+          {estimado.ajustes.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold">
+                Base {formatCLP(estimado.base)}
+              </span>
+              {estimado.ajustes.map((a) => (
+                <span key={a.etiqueta} className="rounded-full bg-orange/90 px-2.5 py-0.5 text-[11px] font-bold text-teal-ink">
+                  +{a.pct}% {a.etiqueta}
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="mt-1.5 text-[11px] leading-snug opacity-70">
+            Referencial — el valor final se confirma en la puerta.
+          </p>
+        </div>
+      )}
 
       {/* Servicio preseleccionado */}
       {data.servicio && !esUltimo && step === 0 && (
@@ -669,13 +703,13 @@ export function FormReserva({
                 <p className="mt-1 text-sm leading-relaxed text-ink-soft">
                   {esManual
                     ? "El tamaño y el peso no coinciden. Rodolfo te atenderá directamente para evaluar a tu perro."
-                    : `${data.nombrePerro ? data.nombrePerro + " · " : ""}Precio estimado: ${precio ? formatCLP(precio) : "—"} · Todo listo para enviar por WhatsApp.`}
+                    : `${data.nombrePerro ? data.nombrePerro + " · " : ""}Precio estimado: ${estimado ? formatCLP(estimado.total) : "—"} · Todo listo para enviar por WhatsApp.`}
                 </p>
                 <p className="mt-2 text-xs leading-relaxed text-ink-soft">{NOTA_PRECIOS}</p>
               </div>
 
               <a
-                href={WHATSAPP_BASE + encodeURIComponent(buildWhatsAppMessage(data, esManual, precio))}
+                href={WHATSAPP_BASE + encodeURIComponent(buildWhatsAppMessage(data, esManual, estimado?.total ?? precio))}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={registrarSolicitud}

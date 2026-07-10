@@ -270,7 +270,13 @@ export function buildWhatsAppMessage(
 
   if (precio > 0 || data.servicio || data.fechaDeseada) {
     lines.push("");
-    if (precio > 0 && pesoValido) lines.push(`*Precio estimado:* desde ${formatCLP(precio)}`);
+    if (precio > 0 && pesoValido) {
+      lines.push(`*Precio estimado:* desde ${formatCLP(precio)}`);
+      const est = calcularEstimado(data);
+      if (est && est.ajustes.length > 0) {
+        lines.push(`  (incluye: ${est.ajustes.map((a) => `+${a.pct}% ${a.etiqueta.toLowerCase()}`).join(", ")})`);
+      }
+    }
     if (data.servicio) lines.push(`*Servicio:* ${data.servicio}`);
     if (data.fechaDeseada) lines.push(`*Fecha deseada:* ${data.fechaDeseada}`);
   }
@@ -332,4 +338,67 @@ export function construirDetalle(data: FormData): Record<string, string> {
     temperamento: tempGeneral,
     noSeDejaCon: zonas.join(", "),
   };
+}
+
+/* ── Estimado en vivo ─────────────────────────────────────────
+   Recargos PROVISORIOS (a confirmar con Rodolfo): el estimado sube
+   mientras el cliente declara condiciones que implican más trabajo. */
+
+export interface AjustePrecio {
+  etiqueta: string;
+  pct: number;
+}
+
+export const RECARGOS_PELO: Partial<Record<TipoPelo, AjustePrecio>> = {
+  crespo_motas: { etiqueta: "Pelo con motas", pct: 15 },
+  motas_rastas: { etiqueta: "Motas / rastas", pct: 25 },
+  doble_capa: { etiqueta: "Doble capa", pct: 10 },
+};
+
+export const RECARGOS_TEMPERAMENTO: Record<string, AjustePrecio> = {
+  no_se_deja: { etiqueta: "No se deja atender", pct: 15 },
+  complicado: { etiqueta: "Complicado o bravo", pct: 25 },
+};
+
+/** % extra por cada zona sensible marcada (tope en MAX_PCT_ZONAS). */
+export const PCT_POR_ZONA = 3;
+export const MAX_PCT_ZONAS = 12;
+
+export interface EstimadoVivo {
+  base: number;
+  ajustes: AjustePrecio[];
+  total: number;
+}
+
+/** Redondeo comercial a la centena. */
+function redondear(n: number): number {
+  return Math.round(n / 100) * 100;
+}
+
+export function calcularEstimado(data: FormData, precioBase?: number | null): EstimadoVivo | null {
+  const peso = parseFloat(data.pesoKg);
+  const base = precioBase ?? (!isNaN(peso) && peso > 0 && peso <= 120 ? calcularPrecio(peso) : null);
+  if (!base) return null;
+
+  const ajustes: AjustePrecio[] = [];
+
+  const recargoPelo = RECARGOS_PELO[data.tipoPelo as TipoPelo];
+  if (recargoPelo) ajustes.push(recargoPelo);
+
+  const recargoTemp = RECARGOS_TEMPERAMENTO[data.temperamentoGeneral];
+  if (recargoTemp) ajustes.push(recargoTemp);
+
+  const zonas = [
+    data.conPatitas, data.conHocico, data.conUnas, data.conCola,
+    data.conBano, data.conSecador, data.conMaquina, data.conTijeras,
+  ].filter((v) => v === "no_se_deja").length;
+  if (zonas > 0) {
+    ajustes.push({
+      etiqueta: `${zonas} zona${zonas === 1 ? "" : "s"} sensible${zonas === 1 ? "" : "s"}`,
+      pct: Math.min(zonas * PCT_POR_ZONA, MAX_PCT_ZONAS),
+    });
+  }
+
+  const pctTotal = ajustes.reduce((acc, a) => acc + a.pct, 0);
+  return { base, ajustes, total: redondear(base * (1 + pctTotal / 100)) };
 }
