@@ -16,6 +16,7 @@ const CAMPOS_DETALLE: Record<string, string> = {
   nombrePerro: "Perro",
   raza: "Raza",
   edad: "Edad",
+  esPrimeraVez: "Primera peluquería",
   pesoKg: "Peso (kg)",
   contextura: "Contextura",
   tipoPelo: "Tipo de pelo",

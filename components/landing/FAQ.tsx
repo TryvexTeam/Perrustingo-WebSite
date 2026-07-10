@@ -13,8 +13,16 @@ const PREGUNTAS = [
     a: "Depende del tamaño y el estado del pelo. Un Mini/Toy puede tomar 1 hora; un perro Gigante con pelo enredado puede tomar 3–4 horas. Te avisamos por WhatsApp cuando tu perro esté listo.",
   },
   {
+    q: "¿Por qué los precios son estimados y pueden variar?",
+    a: "El precio de la web es un estimado para que agendes con confianza. El valor final depende del estado real del pelo, el comportamiento y el tamaño de tu perro, y se confirma en la puerta, siempre antes de comenzar. Además premiamos la constancia: un perrito que viene con frecuencia o que recibe mantención en casa (cepillado, desenredado) requiere menos trabajo, y eso se nota en el precio.",
+  },
+  {
     q: "¿El precio se puede cambiar el día del servicio?",
     a: "El precio se confirma antes de comenzar, según el tamaño, el peso y el estado real del pelo. Si hay diferencia respecto al estimado, te avisamos primero y no procedemos sin tu aprobación.",
+  },
+  {
+    q: "¿Los cachorros pagan según su peso actual?",
+    a: "No siempre. Un cachorro de raza grande (por ejemplo un Pastor Alemán de 6 meses) todavía no alcanza su peso adulto, así que el estimado por peso puede quedar corto. En esos casos usamos la tabla de su raza y ajustamos el valor en puerta según su desarrollo.",
   },
   {
     q: "¿Qué pasa si mi perro no se deja atender?",

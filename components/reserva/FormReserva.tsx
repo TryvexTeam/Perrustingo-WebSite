@@ -181,13 +181,14 @@ function MiniCalendario({ value, onChange }: { value: string; onChange: (v: stri
 // ─── Definición de micro-pasos ─────────────────────────────────────────────
 
 type PasoId =
-  | "nombre" | "raza" | "edad" | "peso" | "tamano" | "contextura"
+  | "nombre" | "raza" | "edad" | "primera" | "peso" | "tamano" | "contextura"
   | "pelo" | "salud" | "temperamento" | "zonas" | "contacto" | "cita";
 
 const PASOS: { id: PasoId; pregunta: string; hint?: string }[] = [
   { id: "nombre", pregunta: "¿Cómo se llama tu perro?" },
   { id: "raza", pregunta: "¿Qué raza es?" },
   { id: "edad", pregunta: "¿Qué edad tiene?", hint: "Aproximada está bien" },
+  { id: "primera", pregunta: "¿Es su primera peluquería? ✨", hint: "En Perrustingo las primeras visitas son especiales: presentamos todo con calma para que crezca sin miedo" },
   { id: "peso", pregunta: "¿Cuánto pesa?", hint: "Con el peso calculamos el precio al instante" },
   { id: "tamano", pregunta: "¿Cómo describirías su tamaño?", hint: "Opcional — toca el que más se parezca" },
   { id: "contextura", pregunta: "¿Y su contextura?" },
@@ -258,6 +259,11 @@ export function FormReserva({
   const pesoInvalido = data.pesoKg !== "" && !pesoValido;
   const tamanoAuto = pesoValido ? detectarTamanoPorPeso(peso) : null;
   const esManual = !!(data.tamanoDeclarado && pesoValido && hayConflicto(data.tamanoDeclarado as TamanoKey, peso));
+  const edadMesesTotal = (parseInt(data.edadAnios) || 0) * 12 + (parseInt(data.edadMeses) || 0);
+  const razaJoven =
+    edadMesesTotal > 0 && edadMesesTotal <= 18
+      ? CATALOGO_RAZAS.find((r) => r.nombre === data.raza) ?? null
+      : null;
   const precio = pesoValido ? precioDe(peso) : null;
 
   const paso = PASOS[step];
@@ -441,6 +447,26 @@ export function FormReserva({
             </div>
           )}
 
+          {paso.id === "primera" && (
+            <div className="grid gap-2">
+              {([
+                ["si", "🎀 Sí, ¡es su primera vez!"],
+                ["no", "🐾 Ya ha ido a peluquería antes"],
+                ["no_lo_se", "🤷 No lo sé"],
+              ] as [string, string][]).map(([v, l]) => (
+                <ChoiceCard key={v} checked={data.esPrimeraVez === v} onClick={() => updYAvanzar("esPrimeraVez", v)}>
+                  {l}
+                </ChoiceCard>
+              ))}
+              {data.esPrimeraVez === "si" && (
+                <div className="rise-in mt-2 rounded-2xl bg-sky/40 px-5 py-4 text-sm font-semibold text-teal-ink">
+                  🌟 ¡Qué emoción! Las primeras visitas las hacemos con juego y
+                  paciencia extra — es nuestro sello.
+                </div>
+              )}
+            </div>
+          )}
+
           {paso.id === "peso" && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -472,6 +498,13 @@ export function FormReserva({
                     <span className="block">Precio estimado: <strong>{formatCLP(precio)}</strong></span>
                     <span className="mt-1 block text-xs font-normal opacity-80">{NOTA_PRECIOS}</span>
                   </span>
+                </div>
+              )}
+              {razaJoven && tamanoAuto && razaJoven.tamano !== tamanoAuto && !pesoInvalido && (
+                <div className="rise-in rounded-2xl bg-[#fde4c8] px-5 py-3 text-xs font-semibold leading-relaxed text-[#7a4d10]">
+                  🐶 Un {razaJoven.nombre} joven sigue creciendo: por su raza es de
+                  tamaño <strong>{TAMANO_LABELS[razaJoven.tamano]}</strong> adulto, así
+                  que el valor se ajusta en puerta según su desarrollo.
                 </div>
               )}
             </div>

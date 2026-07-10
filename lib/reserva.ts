@@ -84,7 +84,7 @@ export const RAZAS = [
 
 /** Aclaración legal/comercial — mostrar junto a cualquier precio. */
 export const NOTA_PRECIOS =
-  "Precios referenciales: pueden variar según el comportamiento, el estado del pelo y las condiciones de cada sesión.";
+  "Precios referenciales: el valor puede variar según el comportamiento, el estado del pelo, la frecuencia de visitas y la mantención en casa. El valor final se confirma en la puerta, siempre antes de comenzar.";
 
 export const SERVICIOS = [
   "Baño completo (sin corte de pelo)",
@@ -105,6 +105,7 @@ export interface FormData {
   razaOtro: string;
   edadAnios: string;
   edadMeses: string;
+  esPrimeraVez: "si" | "no" | "no_lo_se" | "";
   // Paso 2 — tamaño y pelo
   pesoKg: string;
   alturaCmd: string;
@@ -140,6 +141,7 @@ export const FORM_INITIAL: FormData = {
   razaOtro: "",
   edadAnios: "",
   edadMeses: "",
+  esPrimeraVez: "",
   pesoKg: "",
   alturaCmd: "",
   contextura: "",
@@ -161,6 +163,13 @@ export const FORM_INITIAL: FormData = {
   conTijeras: "",
   fechaDeseada: "",
   servicio: "",
+};
+
+
+export const PRIMERA_VEZ_LABELS: Record<string, string> = {
+  si: "Sí, es su primera peluquería",
+  no: "Ya ha ido a peluquería antes",
+  no_lo_se: "No lo sé",
 };
 
 export function detectarTamanoPorPeso(peso: number): TamanoKey {
@@ -244,6 +253,7 @@ export function buildWhatsAppMessage(
   if (raza) lines.push(`• *Raza:* ${raza}`);
   if (pesoValido) lines.push(`• *Peso:* ${data.pesoKg} kg`);
   lines.push(`• *Edad:* ${edad}`);
+  if (data.esPrimeraVez) lines.push(`• *Primera peluquería:* ${PRIMERA_VEZ_LABELS[data.esPrimeraVez]}`);
   if (data.contextura) lines.push(`• *Contextura:* ${data.contextura}`);
   if (pelo) lines.push(`• *Tipo de pelo:* ${pelo}`);
 
@@ -314,6 +324,7 @@ export function construirDetalle(data: FormData): Record<string, string> {
     nombrePerro: data.nombrePerro,
     raza,
     edad: edadParts.join(" y "),
+    esPrimeraVez: data.esPrimeraVez ? PRIMERA_VEZ_LABELS[data.esPrimeraVez] : "",
     pesoKg: data.pesoKg,
     contextura: data.contextura,
     tipoPelo: pelo,
