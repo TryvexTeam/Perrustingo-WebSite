@@ -64,7 +64,7 @@ function CardServicio({ s }: { s: Servicio }) {
 
 export function Servicios() {
   return (
-    <section id="servicios" className="scroll-mt-20 bg-section-blend px-5 py-16">
+    <section id="servicios" className="scroll-mt-20 bg-blend-white-to-cream px-5 py-16">
       <div className="mx-auto max-w-6xl">
         <Reveal>
           <p className="text-center text-xs font-extrabold uppercase tracking-[0.22em] text-teal-dark">

@@ -16,7 +16,7 @@ const INCLUYE = [
 
 export function Precios() {
   return (
-    <section id="precios" className="relative scroll-mt-20 overflow-hidden bg-section-blend px-5 py-16">
+    <section id="precios" className="relative scroll-mt-20 overflow-hidden bg-blend-cream-to-white px-5 py-16">
       <Flotantes />
       <div className="relative mx-auto max-w-6xl">
         <Reveal>

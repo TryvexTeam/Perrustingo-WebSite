@@ -27,7 +27,7 @@ function Sparkle({ className }: { className?: string }) {
 
 export function Hero() {
   return (
-    <section id="inicio" className="relative overflow-hidden bg-[#b6dfea] md:bg-[#bfe3f2]">
+    <section id="inicio" className="relative overflow-hidden bg-[#bfe3f2]">
       <Image
         src="/hero/hero-bg.png"
         alt="Perro recién peluqueado sentado sobre nubes en un cielo celeste"

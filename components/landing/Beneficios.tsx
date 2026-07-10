@@ -61,7 +61,7 @@ const BENEFICIOS: {
 
 export function Beneficios() {
   return (
-    <section className="bg-section-blend px-5 py-14">
+    <section className="bg-blend-white-to-cream px-5 py-14">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
         {BENEFICIOS.map((b, i) => (
           <Reveal key={b.titulo} delay={i * 60} className="h-full">

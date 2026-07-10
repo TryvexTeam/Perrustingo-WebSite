@@ -9,7 +9,7 @@ const AVISOS = [
       "Calculamos el valor final según el tamaño, el peso y el estado del pelo de tu perro. Te confirmamos el precio antes de empezar.",
   },
   {
-    foto: "/cards/foto-conducta.png",
+    foto: "/Trabajador.jfif",
     titulo: "Conducta del perro",
     detalle:
       "Si tu perro se pone nervioso o difícil durante la sesión, podemos aplicar un recargo. Siempre te avisamos con el motivo.",
