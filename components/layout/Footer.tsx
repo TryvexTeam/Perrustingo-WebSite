@@ -10,7 +10,7 @@ export function Footer() {
         aria-hidden="true"
         viewBox="0 0 1440 90"
         preserveAspectRatio="none"
-        className="h-[50px] w-full rotate-180 fill-white md:h-[70px]"
+        className="h-[50px] w-full rotate-180 fill-cream md:h-[70px]"
       >
         <path d="M0,90 L0,58 Q 60,26 140,52 Q 200,14 300,44 Q 380,10 470,42 Q 560,20 650,48 Q 730,10 830,40 Q 920,22 1010,50 Q 1090,12 1190,44 Q 1280,18 1360,48 Q 1410,34 1440,54 L1440,90 Z" />
       </svg>

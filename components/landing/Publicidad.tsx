@@ -24,7 +24,7 @@ const SPOTS = [
 
 export function Publicidad() {
   return (
-    <section className="bg-blend-cream-to-white px-5 py-14">
+    <section className="bg-section-blend px-5 py-14">
       <div className="mx-auto max-w-6xl">
         <Reveal>
           <p className="text-center text-xs font-extrabold uppercase tracking-[0.22em] text-teal-dark">
