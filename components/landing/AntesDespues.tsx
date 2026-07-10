@@ -23,8 +23,8 @@ export function AntesDespues() {
 
         <Reveal className="mt-8">
           <BeforeAfterSlider
-            beforeSrc="/antes-card.png"
-            afterSrc="/despues-card.png"
+            beforeSrc="/antes-despues/antes-card.png"
+            afterSrc="/antes-despues/despues-card.png"
             beforeAlt="Perro antes de su sesión de peluquería, con el pelo largo y enredado"
             afterAlt="El mismo perro después: limpio, con corte parejo y feliz"
           />

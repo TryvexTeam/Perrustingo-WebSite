@@ -2,16 +2,9 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatCLP } from "@/lib/reserva";
+import { ESTADO_COLOR } from "@/lib/citas";
 import { SiteMenu } from "@/components/layout/SiteMenu";
 import { Footer } from "@/components/layout/Footer";
-
-const ESTADO_COLOR: Record<string, string> = {
-  pendiente: "bg-yellow-100 text-yellow-800",
-  confirmada: "bg-blue-100 text-blue-800",
-  en_proceso: "bg-purple-100 text-purple-800",
-  completada: "bg-green-100 text-green-800",
-  cancelada: "bg-red-100 text-red-800",
-};
 
 export const metadata: Metadata = {
   title: "Dashboard — Perrustingo",
@@ -75,7 +68,7 @@ function DashboardDemo() {
                     <p className="mt-0.5 text-xs text-ink-soft">{cita.servicio} · {cita.hora}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ESTADO_COLOR[cita.estado] ?? ""}`}>
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ESTADO_COLOR[cita.estado as keyof typeof ESTADO_COLOR] ?? ""}`}>
                       {cita.estado}
                     </span>
                     <span className="text-xs font-semibold text-teal-dark">{cita.precio}</span>
@@ -265,7 +258,7 @@ export default async function DashboardPage() {
 
                       <div className="flex flex-col items-end gap-1">
                         <span
-                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ESTADO_COLOR[cita.estado] ?? ""}`}
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ESTADO_COLOR[cita.estado as keyof typeof ESTADO_COLOR] ?? ""}`}
                         >
                           {cita.estado}
                         </span>
@@ -286,7 +279,7 @@ export default async function DashboardPage() {
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
             {[
               { label: "Ver todas las citas", href: "/dashboard/citas", emoji: "📅" },
-              { label: "Clientes", href: "/dashboard/clientes", emoji: "👥" },
+              { label: "Agenda semanal", href: "/agenda", emoji: "🗓️" },
               { label: "Tarifas", href: "/dashboard/tarifas", emoji: "💰", onlyAdmin: true },
               { label: "Anuncios", href: "/dashboard/anuncios", emoji: "📣", onlyAdmin: true },
             ]

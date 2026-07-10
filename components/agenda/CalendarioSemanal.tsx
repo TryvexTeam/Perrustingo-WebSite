@@ -3,18 +3,31 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CITAS_DEMO,
   COLORES_CITA,
   DIAS_SEMANA,
   HORA_APERTURA,
   HORA_CIERRE,
+  demoComoCitasSemana,
   fechaISO,
   formatearHora,
   lunesDe,
+  type CitaSemana,
 } from "@/lib/agenda";
+import { PanelCita } from "./PanelCita";
 
-/* Calendario semanal estilo Google Calendar — vista FE con citas demo.
+/* Calendario semanal estilo Google Calendar.
+   - Sin `citas` → demo (CITAS_DEMO anclada a la semana actual).
+   - Con `citas` → datos reales; en modoEquipo cada cita abre PanelCita.
    Clic en un hueco libre → /reserva con la fecha preseleccionada. */
+
+interface CalendarioSemanalProps {
+  /** Citas reales de sesiones/agenda_ocupada. Si falta, se muestra la demo. */
+  citas?: CitaSemana[];
+  /** Solicitudes 'pendiente' aún sin hora asignada (solo equipo). */
+  pendientesSinHora?: CitaSemana[];
+  /** Vista del equipo: citas clicables con panel de gestión. */
+  modoEquipo?: boolean;
+}
 
 const ALTO_HORA = 56; // px por hora
 const TOTAL_HORAS = HORA_CIERRE - HORA_APERTURA;
@@ -65,10 +78,20 @@ function MiniMes({ referencia, hoy }: { referencia: Date; hoy: Date }) {
   );
 }
 
-export function CalendarioSemanal() {
+export function CalendarioSemanal({
+  citas,
+  pendientesSinHora = [],
+  modoEquipo = false,
+}: CalendarioSemanalProps) {
   const router = useRouter();
   const hoy = useMemo(() => new Date(), []);
   const [semanaOffset, setSemanaOffset] = useState(0);
+  const [citaAbierta, setCitaAbierta] = useState<CitaSemana | null>(null);
+
+  const citasVisibles = useMemo(
+    () => citas ?? demoComoCitasSemana(hoy),
+    [citas, hoy]
+  );
 
   const lunes = useMemo(() => {
     const base = lunesDe(hoy);
@@ -129,6 +152,27 @@ export function CalendarioSemanal() {
 
       {/* Calendario */}
       <div className="min-w-0 flex-1">
+        {/* Solicitudes pendientes sin hora (solo equipo) */}
+        {modoEquipo && pendientesSinHora.length > 0 && (
+          <div className="mb-4 rounded-2xl border-2 border-dashed border-yellow-300 bg-yellow-50 p-4">
+            <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-yellow-800">
+              Solicitudes por confirmar ({pendientesSinHora.length})
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {pendientesSinHora.map((cita) => (
+                <button
+                  key={cita.id}
+                  type="button"
+                  onClick={() => setCitaAbierta(cita)}
+                  className="rounded-full bg-white px-4 py-2 text-sm font-bold text-ink shadow-sm transition-transform hover:-translate-y-0.5"
+                >
+                  {cita.titulo} · {cita.fecha}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Toolbar */}
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <button
@@ -233,22 +277,34 @@ export function CalendarioSemanal() {
                     />
                   ))}
 
-                  {/* Citas demo (solo semana actual) */}
-                  {semanaOffset === 0 &&
-                    CITAS_DEMO.filter((c) => c.diaSemana === colIdx).map((cita) => {
+                  {/* Citas del día */}
+                  {citasVisibles
+                    .filter((c) => c.fecha === fechaISO(fecha))
+                    .map((cita) => {
                       const c = COLORES_CITA[cita.color];
+                      const esPendiente = cita.estado === "pendiente";
                       return (
                         <div
                           key={cita.id}
-                          className={`absolute inset-x-1 overflow-hidden rounded-lg border-l-4 ${c.bg} ${c.border} px-2 py-1 shadow-sm transition-transform duration-150 hover:scale-[1.02]`}
+                          className={`absolute inset-x-1 overflow-hidden rounded-lg border-l-4 ${c.bg} ${c.border} px-2 py-1 shadow-sm transition-transform duration-150 hover:scale-[1.02] ${
+                            esPendiente ? "border-dashed opacity-80" : ""
+                          } ${modoEquipo ? "cursor-pointer" : ""}`}
                           style={{
                             top: (cita.horaInicio - HORA_APERTURA) * ALTO_HORA + 2,
                             height: cita.duracionHoras * ALTO_HORA - 4,
                           }}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (modoEquipo) setCitaAbierta(cita);
+                          }}
+                          role={modoEquipo ? "button" : undefined}
+                          aria-label={
+                            modoEquipo ? `Ver detalle de ${cita.titulo}` : undefined
+                          }
                         >
                           <p className={`truncate text-[11px] font-extrabold ${c.text}`}>
-                            {cita.titulo} · {cita.perro}
+                            {cita.titulo}
+                            {esPendiente && " · por confirmar"}
                           </p>
                           <p className={`truncate text-[10px] font-semibold ${c.text} opacity-80`}>
                             {formatearHora(cita.horaInicio)} –{" "}
@@ -279,6 +335,10 @@ export function CalendarioSemanal() {
           Haz clic en un día libre para reservar esa fecha ✨
         </p>
       </div>
+
+      {modoEquipo && citaAbierta && (
+        <PanelCita cita={citaAbierta} onCerrar={() => setCitaAbierta(null)} />
+      )}
     </div>
   );
 }

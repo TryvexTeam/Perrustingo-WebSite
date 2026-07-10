@@ -29,7 +29,7 @@ export function Hero() {
   return (
     <section id="inicio" className="relative overflow-hidden bg-[#b6dfea] md:bg-[#bfe3f2]">
       <Image
-        src="/hero-bg.png"
+        src="/hero/hero-bg.png"
         alt="Perro recién peluqueado sentado sobre nubes en un cielo celeste"
         fill
         priority
@@ -127,7 +127,7 @@ export function Hero() {
         </div>
 
         <Image
-          src="/hero-bg.png"
+          src="/hero/hero-bg.png"
           alt="Perro recién peluqueado sentado sobre nubes en un cielo celeste"
           width={1612}
           height={976}

@@ -91,6 +91,10 @@ export const SERVICIOS = [
 ];
 
 export interface FormData {
+  // Contacto del dueño
+  contactoNombre: string;
+  contactoEmail: string;
+  contactoTelefono: string;
   // Paso 1 — básico
   nombrePerro: string;
   raza: string;
@@ -124,6 +128,9 @@ export interface FormData {
 }
 
 export const FORM_INITIAL: FormData = {
+  contactoNombre: "",
+  contactoEmail: "",
+  contactoTelefono: "",
   nombrePerro: "",
   raza: "",
   razaOtro: "",
@@ -260,4 +267,54 @@ export function buildWhatsAppMessage(
   }
 
   return lines.join("\n");
+}
+
+/** Snapshot legible del formulario para `sesiones.detalle_form`. */
+export function construirDetalle(data: FormData): Record<string, string> {
+  const raza = data.raza === "Otro" ? data.razaOtro || "Otro" : data.raza;
+  const pelo =
+    data.tipoPelo === "otro"
+      ? data.tipoPeloOtro || "Otro"
+      : PELO_LABELS[data.tipoPelo as TipoPelo] || "";
+
+  const edadParts: string[] = [];
+  if (data.edadAnios) edadParts.push(`${data.edadAnios} años`);
+  if (data.edadMeses) edadParts.push(`${data.edadMeses} meses`);
+
+  const salud: string[] = [];
+  if (data.unasEncarnadas === "si") salud.push("uñas encarnadas");
+  if (data.secrecionOcular === "si") salud.push("secreción ocular");
+  if (data.tieneAlergia === "si" && data.cualAlergia) salud.push(`alergia: ${data.cualAlergia}`);
+
+  const zonas = (
+    [
+      ["patitas", data.conPatitas],
+      ["hocico", data.conHocico],
+      ["uñas", data.conUnas],
+      ["cola", data.conCola],
+      ["baño", data.conBano],
+      ["secador", data.conSecador],
+      ["máquina", data.conMaquina],
+      ["tijeras", data.conTijeras],
+    ] as [string, string][]
+  )
+    .filter(([, v]) => v === "no_se_deja")
+    .map(([k]) => k);
+
+  const tempGeneral =
+    data.temperamentoGeneral === "complicado"
+      ? "Complicado o bravo"
+      : TEMP_LABELS[data.temperamentoGeneral as Temperamento] || "";
+
+  return {
+    nombrePerro: data.nombrePerro,
+    raza,
+    edad: edadParts.join(" y "),
+    pesoKg: data.pesoKg,
+    contextura: data.contextura,
+    tipoPelo: pelo,
+    salud: salud.join(", "),
+    temperamento: tempGeneral,
+    noSeDejaCon: zonas.join(", "),
+  };
 }

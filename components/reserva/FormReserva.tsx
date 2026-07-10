@@ -9,6 +9,7 @@ import {
   TamanoKey,
   TipoPelo,
   buildWhatsAppMessage,
+  construirDetalle,
   detectarTamanoPorPeso,
   formatCLP,
   hayConflicto,
@@ -180,7 +181,7 @@ function MiniCalendario({ value, onChange }: { value: string; onChange: (v: stri
 
 type PasoId =
   | "nombre" | "raza" | "edad" | "peso" | "tamano" | "contextura"
-  | "pelo" | "salud" | "temperamento" | "zonas" | "cita";
+  | "pelo" | "salud" | "temperamento" | "zonas" | "contacto" | "cita";
 
 const PASOS: { id: PasoId; pregunta: string; hint?: string }[] = [
   { id: "nombre", pregunta: "¿Cómo se llama tu perro?" },
@@ -193,6 +194,7 @@ const PASOS: { id: PasoId; pregunta: string; hint?: string }[] = [
   { id: "salud", pregunta: "Un chequeo rápido de salud", hint: "Nos ayuda a preparar su sesión" },
   { id: "temperamento", pregunta: "¿Cómo se porta en la peluquería?" },
   { id: "zonas", pregunta: "¿Con qué NO se deja tocar?", hint: "Marca todas las que apliquen — o ninguna" },
+  { id: "contacto", pregunta: "¿Cómo te contactamos?", hint: "Para confirmarte la cita" },
   { id: "cita", pregunta: "¡Último paso! Tu cita" },
 ];
 
@@ -217,6 +219,7 @@ export function FormReserva({
   initialFecha?: string;
 }) {
   const [step, setStep] = useState(0);
+  const [solicitudEstado, setSolicitudEstado] = useState<"idle" | "registrada" | "error">("idle");
   const [data, setData] = useState<FormData>(() => ({
     ...FORM_INITIAL,
     servicio: SERVICIOS.includes(initialServicio) ? initialServicio : "",
@@ -259,7 +262,40 @@ export function FormReserva({
   const paso = PASOS[step];
   const pct = ((step + 1) / PASOS.length) * 100;
   const esUltimo = step === PASOS.length - 1;
-  const bloqueaAvance = paso.id === "peso" && pesoInvalido;
+  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.contactoEmail.trim());
+  const telefonoValido = /^\+?[\d\s]{8,15}$/.test(data.contactoTelefono.trim());
+  const contactoIncompleto =
+    data.contactoNombre.trim().length < 2 || !emailValido || !telefonoValido;
+  const bloqueaAvance =
+    (paso.id === "peso" && pesoInvalido) ||
+    (paso.id === "contacto" && contactoIncompleto);
+
+  /* Guarda la solicitud en la base (pendiente) sin bloquear la navegación
+     a WhatsApp: keepalive mantiene viva la petición al abrir la otra pestaña. */
+  const registrarSolicitud = useCallback(() => {
+    if (!data.fechaDeseada || !data.servicio) return;
+    setSolicitudEstado("registrada");
+    fetch("/api/reservas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,
+      body: JSON.stringify({
+        contacto: {
+          nombre: data.contactoNombre.trim(),
+          email: data.contactoEmail.trim(),
+          telefono: data.contactoTelefono.trim(),
+        },
+        fechaDeseada: data.fechaDeseada,
+        servicio: data.servicio,
+        precioEstimado: precio,
+        detalle: construirDetalle(data),
+      }),
+    })
+      .then((r) => {
+        if (!r.ok && r.status !== 503) setSolicitudEstado("error");
+      })
+      .catch(() => setSolicitudEstado("error"));
+  }, [data, precio]);
 
   /* El perrito acompaña todo el formulario: raza elegida > tamaño declarado */
   const razaSel = CATALOGO_RAZAS.find((r) => r.nombre === data.raza);
@@ -545,6 +581,28 @@ export function FormReserva({
             </div>
           )}
 
+          {paso.id === "contacto" && (
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="contactoNombre" className="mb-1 block text-sm font-bold text-ink">Tu nombre</label>
+                <Input id="contactoNombre" value={data.contactoNombre} onChange={(v) => upd("contactoNombre", v)} placeholder="Ej: Camila Rojas" autoFocus onEnter={avanzar} />
+              </div>
+              <div>
+                <label htmlFor="contactoTelefono" className="mb-1 block text-sm font-bold text-ink">Teléfono / WhatsApp</label>
+                <Input id="contactoTelefono" type="tel" value={data.contactoTelefono} onChange={(v) => upd("contactoTelefono", v)} placeholder="+56 9 1234 5678" onEnter={avanzar} />
+              </div>
+              <div>
+                <label htmlFor="contactoEmail" className="mb-1 block text-sm font-bold text-ink">Correo</label>
+                <Input id="contactoEmail" type="email" value={data.contactoEmail} onChange={(v) => upd("contactoEmail", v)} placeholder="tu@correo.cl" onEnter={avanzar} />
+              </div>
+              {contactoIncompleto && (data.contactoNombre || data.contactoEmail || data.contactoTelefono) && (
+                <p className="text-xs font-semibold text-ink-soft">
+                  Completa nombre, teléfono válido y correo para continuar.
+                </p>
+              )}
+            </div>
+          )}
+
           {paso.id === "cita" && (
             <div className="space-y-5">
               <div>
@@ -584,6 +642,7 @@ export function FormReserva({
                 href={WHATSAPP_BASE + encodeURIComponent(buildWhatsAppMessage(data, esManual, precio))}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={registrarSolicitud}
                 className={`flex w-full items-center justify-center gap-2 rounded-full py-4 font-display text-base font-extrabold shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow] duration-150 hover:shadow-[0_5px_0_rgba(6,58,64,.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)] ${
                   esManual
                     ? "bg-orange text-teal-ink hover:bg-[#f7ab52]"
@@ -596,6 +655,19 @@ export function FormReserva({
                 </svg>
                 {esManual ? "Solicitar evaluación personalizada" : "Confirmar reserva por WhatsApp"}
               </a>
+
+              {solicitudEstado === "registrada" && (
+                <p className="rise-in rounded-2xl bg-[#d8f0e3] px-5 py-3 text-center text-sm font-semibold text-teal-ink">
+                  🐾 Tu solicitud quedó registrada como <strong>pendiente</strong> —
+                  el equipo la confirmará pronto.
+                </p>
+              )}
+              {solicitudEstado === "error" && (
+                <p className="rise-in rounded-2xl bg-[#fde4c8] px-5 py-3 text-center text-sm font-semibold text-[#a34d00]">
+                  No pudimos registrar la solicitud en línea, pero tu mensaje de
+                  WhatsApp salió igual — el equipo te responderá por ahí.
+                </p>
+              )}
             </div>
           )}
         </div>

@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     siteName: "Perrustingo",
     images: [
       {
-        url: "/hero-bg.png",
+        url: "/hero/hero-bg.png",
         width: 1612,
         height: 976,
         alt: "Perrustingo — Peluquería Canina en Renca",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     title: "Perrustingo — Peluquería Canina en Renca",
     description:
       "Bañamos, cortamos y consentimos a tu perro en Renca. 4.6★ · +135 opiniones en Google.",
-    images: ["/hero-bg.png"],
+    images: ["/hero/hero-bg.png"],
   },
 };
 
