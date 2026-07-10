@@ -364,6 +364,14 @@ export const RECARGOS_TEMPERAMENTO: Record<string, AjustePrecio> = {
 export const PCT_POR_ZONA = 3;
 export const MAX_PCT_ZONAS = 12;
 
+/* Regla de Rodolfo: cachorro/joven de raza conocida usa la tabla del
+   TAMAÑO ADULTO de su raza, "bajándole un poquito". % PROVISORIO. */
+export const EDAD_CACHORRO_MESES = 18;
+export const DESCUENTO_CACHORRO: AjustePrecio = {
+  etiqueta: "Cachorro en crecimiento",
+  pct: -15,
+};
+
 export interface EstimadoVivo {
   base: number;
   ajustes: AjustePrecio[];
@@ -375,12 +383,16 @@ function redondear(n: number): number {
   return Math.round(n / 100) * 100;
 }
 
-export function calcularEstimado(data: FormData, precioBase?: number | null): EstimadoVivo | null {
+export function calcularEstimado(
+  data: FormData,
+  precioBase?: number | null,
+  ajustesExtra?: AjustePrecio[]
+): EstimadoVivo | null {
   const peso = parseFloat(data.pesoKg);
   const base = precioBase ?? (!isNaN(peso) && peso > 0 && peso <= 120 ? calcularPrecio(peso) : null);
   if (!base) return null;
 
-  const ajustes: AjustePrecio[] = [];
+  const ajustes: AjustePrecio[] = [...(ajustesExtra ?? [])];
 
   const recargoPelo = RECARGOS_PELO[data.tipoPelo as TipoPelo];
   if (recargoPelo) ajustes.push(recargoPelo);

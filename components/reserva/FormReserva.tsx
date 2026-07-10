@@ -9,6 +9,8 @@ import {
   TAMANO_LABELS,
   TamanoKey,
   TipoPelo,
+  DESCUENTO_CACHORRO,
+  EDAD_CACHORRO_MESES,
   buildWhatsAppMessage,
   calcularEstimado,
   construirDetalle,
@@ -262,11 +264,23 @@ export function FormReserva({
   const esManual = !!(data.tamanoDeclarado && pesoValido && hayConflicto(data.tamanoDeclarado as TamanoKey, peso));
   const edadMesesTotal = (parseInt(data.edadAnios) || 0) * 12 + (parseInt(data.edadMeses) || 0);
   const razaJoven =
-    edadMesesTotal > 0 && edadMesesTotal <= 18
+    edadMesesTotal > 0 && edadMesesTotal <= EDAD_CACHORRO_MESES
       ? CATALOGO_RAZAS.find((r) => r.nombre === data.raza) ?? null
       : null;
+  /* Regla de Rodolfo: cachorro de raza conocida cotiza por la tabla de su
+     tamaño ADULTO con descuento, no por su peso actual. */
+  const baseCachorro =
+    razaJoven && tamanoAuto && razaJoven.tamano !== tamanoAuto
+      ? tarifas.base[razaJoven.tamano]
+      : null;
   const precio = pesoValido ? precioDe(peso) : null;
-  const estimado = calcularEstimado(data, precio);
+  const estimado = pesoValido
+    ? calcularEstimado(
+        data,
+        baseCachorro ?? precio,
+        baseCachorro ? [DESCUENTO_CACHORRO] : undefined
+      )
+    : null;
 
   const paso = PASOS[step];
   const pct = ((step + 1) / PASOS.length) * 100;
@@ -357,8 +371,13 @@ export function FormReserva({
                 Base {formatCLP(estimado.base)}
               </span>
               {estimado.ajustes.map((a) => (
-                <span key={a.etiqueta} className="rounded-full bg-orange/90 px-2.5 py-0.5 text-[11px] font-bold text-teal-ink">
-                  +{a.pct}% {a.etiqueta}
+                <span
+                  key={a.etiqueta}
+                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold text-teal-ink ${
+                    a.pct < 0 ? "bg-[#b8e4cd]" : "bg-orange/90"
+                  }`}
+                >
+                  {a.pct > 0 ? `+${a.pct}` : a.pct}% {a.etiqueta}
                 </span>
               ))}
             </div>
@@ -529,16 +548,21 @@ export function FormReserva({
                   <BreedAvatar src={TAMANO_IMAGEN[tamanoAuto]} nombre={TAMANO_LABELS[tamanoAuto]} size="lg" />
                   <span>
                     ✅ <strong>{TAMANO_LABELS[tamanoAuto]}</strong>
-                    <span className="block">Precio estimado: <strong>{formatCLP(precio)}</strong></span>
+                    <span className="block">
+                      Precio estimado:{" "}
+                      <strong>{formatCLP(estimado?.total ?? precio)}</strong>
+                    </span>
                     <span className="mt-1 block text-xs font-normal opacity-80">{NOTA_PRECIOS}</span>
                   </span>
                 </div>
               )}
-              {razaJoven && tamanoAuto && razaJoven.tamano !== tamanoAuto && !pesoInvalido && (
+              {baseCachorro && razaJoven && estimado && !pesoInvalido && (
                 <div className="rise-in rounded-2xl bg-[#fde4c8] px-5 py-3 text-xs font-semibold leading-relaxed text-[#7a4d10]">
-                  🐶 Un {razaJoven.nombre} joven sigue creciendo: por su raza es de
-                  tamaño <strong>{TAMANO_LABELS[razaJoven.tamano]}</strong> adulto, así
-                  que el valor se ajusta en puerta según su desarrollo.
+                  🐶 Un {razaJoven.nombre} joven sigue creciendo: cotizamos por su
+                  tamaño adulto (<strong>{TAMANO_LABELS[razaJoven.tamano]}</strong>) con
+                  descuento de cachorro — estimado{" "}
+                  <strong>{formatCLP(estimado.total)}</strong>. El valor final se
+                  confirma en puerta según su desarrollo.
                 </div>
               )}
             </div>
