@@ -22,20 +22,39 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
+  // Nunca interceptar los assets del framework — sus hashes cambian por build
+  // y servirlos desde caché rompe la hidratación (reloads infinitos).
+  if (url.pathname.startsWith("/_next/")) return;
 
+  const network = () =>
+    fetch(e.request).then((res) => {
+      if (res.ok) {
+        const clone = res.clone();
+        caches.open(CACHE).then((c) => c.put(e.request, clone));
+      }
+      return res;
+    });
+
+  // Navegaciones: red primero (HTML siempre fresco), caché solo si no hay conexión
+  if (e.request.mode === "navigate") {
+    e.respondWith(
+      network().catch(() =>
+        caches
+          .match(e.request)
+          .then((r) => r ?? caches.match("/offline"))
+          .then((r) => r ?? Response.error())
+      )
+    );
+    return;
+  }
+
+  // Assets: caché primero con actualización en segundo plano
   e.respondWith(
     caches.match(e.request).then((cached) => {
-      const network = fetch(e.request)
-        .then((res) => {
-          if (res.ok) {
-            const clone = res.clone();
-            caches.open(CACHE).then((c) => c.put(e.request, clone));
-          }
-          return res;
-        })
-        .catch(() => caches.match("/offline").then((r) => r ?? Response.error()));
-
-      return cached ?? network;
+      const fresh = network().catch(
+        () => cached ?? Response.error()
+      );
+      return cached ?? fresh;
     })
   );
 });

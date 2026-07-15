@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { SiteMenu } from "@/components/SiteMenu";
-import { Footer } from "@/components/Footer";
+import { supabaseConfigurado } from "@/lib/citas";
+import { SiteMenu } from "@/components/layout/SiteMenu";
+import { Footer } from "@/components/layout/Footer";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 
 export const metadata: Metadata = {
@@ -11,6 +13,27 @@ export const metadata: Metadata = {
 };
 
 export default async function PerfilPage() {
+  if (!supabaseConfigurado()) {
+    return (
+      <>
+        <SiteMenu />
+        <main className="min-h-screen bg-cream px-5 pb-16 pt-28">
+          <div className="mx-auto max-w-3xl">
+            <div className="rounded-2xl bg-[#fde4c8] px-5 py-4 text-sm font-semibold text-[#7a4d10]">
+              🔧 Las cuentas de usuario se activan al conectar la base de datos.
+              Mientras tanto puedes{" "}
+              <Link href="/reserva" className="underline underline-offset-2">
+                reservar por el formulario
+              </Link>{" "}
+              sin necesidad de cuenta.
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   const supabase = await createClient();
 
   const {

@@ -42,3 +42,9 @@ next-env.d.ts
 
 # screenshots de verificación (dev artifacts)
 .verify/
+
+# Artefactos de sesiones de Playwright MCP
+.playwright-mcp/
+
+# Imagenes intermedias de generacion
+generated_imgs/

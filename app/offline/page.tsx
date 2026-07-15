@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function OfflinePage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-cream px-5 text-center">
@@ -8,12 +10,12 @@ export default function OfflinePage() {
       <p className="mt-3 max-w-xs text-[15px] leading-relaxed text-ink-soft">
         Parece que no tienes internet. Revisa tu conexión y vuelve a intentarlo.
       </p>
-      <a
+      <Link
         href="/"
         className="mt-8 rounded-full bg-teal-dark px-7 py-3 font-display text-sm font-bold text-white"
       >
         Reintentar →
-      </a>
+      </Link>
     </main>
   );
 }

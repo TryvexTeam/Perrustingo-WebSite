@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Figtree } from "next/font/google";
-import { CookieBanner } from "@/components/CookieBanner";
-import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+import { CookieBanner } from "@/components/layout/CookieBanner";
+import { ServiceWorkerRegister } from "@/components/layout/ServiceWorkerRegister";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     siteName: "Perrustingo",
     images: [
       {
-        url: "/hero-bg.png",
+        url: "/hero/hero-bg.png",
         width: 1612,
         height: 976,
         alt: "Perrustingo — Peluquería Canina en Renca",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     title: "Perrustingo — Peluquería Canina en Renca",
     description:
       "Bañamos, cortamos y consentimos a tu perro en Renca. 4.6★ · +135 opiniones en Google.",
-    images: ["/hero-bg.png"],
+    images: ["/hero/hero-bg.png"],
   },
 };
 

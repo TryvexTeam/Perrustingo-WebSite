@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Footer } from "@/components/Footer";
-import { FormReserva } from "@/components/FormReserva";
-import { SiteMenu } from "@/components/SiteMenu";
+import { Footer } from "@/components/layout/Footer";
+import { FormReserva } from "@/components/reserva/FormReserva";
+import { SiteMenu } from "@/components/layout/SiteMenu";
 
 export const metadata: Metadata = {
   title: "Reserva tu cita — Perrustingo",
@@ -9,7 +9,13 @@ export const metadata: Metadata = {
     "Completa el formulario con los datos de tu perro y recibe tu reserva lista para enviar por WhatsApp. Precio estimado en tiempo real.",
 };
 
-export default function ReservaPage() {
+export default async function ReservaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ servicio?: string; fecha?: string }>;
+}) {
+  const { servicio = "", fecha = "" } = await searchParams;
+
   return (
     <>
       <SiteMenu />
@@ -28,7 +34,7 @@ export default function ReservaPage() {
         </div>
 
         <div className="mt-10">
-          <FormReserva />
+          <FormReserva initialServicio={servicio} initialFecha={fecha} />
         </div>
       </main>
       <Footer />

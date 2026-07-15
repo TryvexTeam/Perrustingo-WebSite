@@ -1,15 +1,99 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { SiteMenu } from "@/components/SiteMenu";
-import { Footer } from "@/components/Footer";
+import { formatCLP } from "@/lib/reserva";
+import { ESTADO_COLOR } from "@/lib/citas";
+import { EnVivo } from "@/components/admin/EnVivo";
+import { SiteMenu } from "@/components/layout/SiteMenu";
+import { Footer } from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
   title: "Dashboard — Perrustingo",
   robots: { index: false, follow: false },
 };
 
+/* Maqueta del panel del equipo mientras no hay base de datos conectada. */
+function DashboardDemo() {
+  const hoy = new Date();
+  const citasDemo = [
+    { perro: "Luna · Poodle Toy · 4 kg", cliente: "Camila R.", servicio: "Baño + corte de pelo", hora: "10:00", estado: "confirmada", precio: "$20.000" },
+    { perro: "Rocky · Labrador · 32 kg", cliente: "Jorge M.", servicio: "Baño completo", hora: "12:00", estado: "pendiente", precio: "$40.000" },
+    { perro: "Milo · Shih Tzu · 6 kg", cliente: "Fernanda T.", servicio: "Spa completo", hora: "15:30", estado: "en_proceso", precio: "$20.000" },
+  ];
+
+  return (
+    <>
+      <SiteMenu />
+      <main className="min-h-screen bg-cream px-5 pb-16 pt-28">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-6 flex items-center gap-2 rounded-2xl bg-[#fde4c8] px-5 py-4 text-sm font-semibold text-[#7a4d10]">
+            <span aria-hidden="true">🔧</span>
+            Panel en modo demostración — sin base de datos conectada. Las citas
+            que ves son de ejemplo.
+          </div>
+
+          <div className="mb-8">
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-teal-dark">
+              Panel del equipo
+            </p>
+            <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-ink">
+              Hola, equipo 👋
+            </h1>
+            <p className="mt-1 text-sm text-ink-soft">
+              {hoy.toLocaleDateString("es-CL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+            </p>
+          </div>
+
+          <EnVivo />
+
+          <div className="rounded-3xl bg-white p-6 shadow-sm">
+            <h2 className="mb-4 font-display text-lg font-extrabold text-ink">Citas de hoy</h2>
+            <div className="space-y-3">
+              {citasDemo.map((cita) => (
+                <div key={cita.perro} className="flex flex-wrap items-center gap-3 rounded-2xl border border-zinc-100 p-4 transition-colors hover:bg-cream/60">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-ink">{cita.perro}</p>
+                    <p className="mt-0.5 text-xs text-ink-soft">Cliente: {cita.cliente}</p>
+                    <p className="mt-0.5 text-xs text-ink-soft">{cita.servicio} · {cita.hora}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ESTADO_COLOR[cita.estado as keyof typeof ESTADO_COLOR] ?? ""}`}>
+                      {cita.estado}
+                    </span>
+                    <span className="text-xs font-semibold text-teal-dark">{cita.precio}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {[
+              { label: "Agenda semanal", href: "/agenda", emoji: "📅" },
+              { label: "Costos y tarifas", href: "/dashboard/tarifas", emoji: "💰" },
+              { label: "Anuncios", href: "/dashboard/anuncios", emoji: "📣" },
+              { label: "Reserva inteligente", href: "/reserva", emoji: "🐾" },
+            ].map((accion) => (
+              <a key={accion.label} href={accion.href} className="flex items-center gap-3 rounded-2xl bg-white px-5 py-4 shadow-sm transition-transform hover:-translate-y-0.5">
+                <span className="text-xl">{accion.emoji}</span>
+                <span className="text-sm font-semibold text-ink">{accion.label}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </>
+  );
+}
+
 export default async function DashboardPage() {
+  // Sin Supabase configurado → maqueta del panel con datos demo
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl || supabaseUrl.includes("TU_PROYECTO")) {
+    return <DashboardDemo />;
+  }
+
   const supabase = await createClient();
 
   const {
@@ -45,10 +129,6 @@ export default async function DashboardPage() {
     .lt("fecha_cita", finHoy)
     .order("fecha_cita");
 
-  const citasPendientes = citasHoy?.filter((c) => c.estado === "pendiente") ?? [];
-  const citasConfirmadas = citasHoy?.filter((c) => c.estado === "confirmada") ?? [];
-  const citasEnProceso = citasHoy?.filter((c) => c.estado === "en_proceso") ?? [];
-
   return (
     <>
       <SiteMenu />
@@ -72,27 +152,8 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          {/* Stats del día */}
-          <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[
-              { label: "Total hoy", value: citasHoy?.length ?? 0, color: "bg-[#e3f1fb]" },
-              { label: "Pendientes", value: citasPendientes.length, color: "bg-[#fdeaf1]" },
-              { label: "Confirmadas", value: citasConfirmadas.length, color: "bg-[#ece4f7]" },
-              { label: "En proceso", value: citasEnProceso.length, color: "bg-[#d8f0e3]" },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className={`${stat.color} rounded-3xl p-5 text-center`}
-              >
-                <p className="font-display text-3xl font-extrabold text-ink">
-                  {stat.value}
-                </p>
-                <p className="mt-1 text-xs font-bold uppercase tracking-wide text-ink-soft">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </div>
+          {/* Datos reales en vivo */}
+          <EnVivo />
 
           {/* Lista de citas */}
           <div className="rounded-3xl bg-white p-6 shadow-sm">
@@ -117,14 +178,6 @@ export default async function DashboardPage() {
                   const cliente: ClienteRow | null = Array.isArray(clienteRaw)
                     ? (clienteRaw[0] as ClienteRow) ?? null
                     : (clienteRaw as ClienteRow | null);
-
-                  const estadoColor: Record<string, string> = {
-                    pendiente: "bg-yellow-100 text-yellow-800",
-                    confirmada: "bg-blue-100 text-blue-800",
-                    en_proceso: "bg-purple-100 text-purple-800",
-                    completada: "bg-green-100 text-green-800",
-                    cancelada: "bg-red-100 text-red-800",
-                  };
 
                   return (
                     <div
@@ -171,16 +224,13 @@ export default async function DashboardPage() {
 
                       <div className="flex flex-col items-end gap-1">
                         <span
-                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${estadoColor[cita.estado] ?? ""}`}
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ESTADO_COLOR[cita.estado as keyof typeof ESTADO_COLOR] ?? ""}`}
                         >
                           {cita.estado}
                         </span>
                         {cita.precio_final && (
                           <span className="text-xs font-semibold text-teal-dark">
-                            $
-                            {cita.precio_final
-                              .toString()
-                              .replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                            {formatCLP(cita.precio_final)}
                           </span>
                         )}
                       </div>
@@ -195,8 +245,9 @@ export default async function DashboardPage() {
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
             {[
               { label: "Ver todas las citas", href: "/dashboard/citas", emoji: "📅" },
-              { label: "Clientes", href: "/dashboard/clientes", emoji: "👥" },
+              { label: "Agenda semanal", href: "/agenda", emoji: "🗓️" },
               { label: "Tarifas", href: "/dashboard/tarifas", emoji: "💰", onlyAdmin: true },
+              { label: "Anuncios", href: "/dashboard/anuncios", emoji: "📣", onlyAdmin: true },
             ]
               .filter((a) => !a.onlyAdmin || perfil.rol === "admin")
               .map((accion) => (

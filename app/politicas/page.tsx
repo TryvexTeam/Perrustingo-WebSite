@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Footer } from "@/components/Footer";
-import { SiteMenu } from "@/components/SiteMenu";
+import { Footer } from "@/components/layout/Footer";
+import { SiteMenu } from "@/components/layout/SiteMenu";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {

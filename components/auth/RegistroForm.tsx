@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -16,6 +18,11 @@ export function RegistroForm() {
     setError("");
 
     startTransition(async () => {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes("TU_PROYECTO")) {
+        setError("Las cuentas estarán disponibles muy pronto — seguimos configurando el sistema.");
+        return;
+      }
       const supabase = createClient();
       const { error: err } = await supabase.auth.signInWithOtp({
         email,

@@ -41,7 +41,7 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     screenshots: [
       {
-        src: "/hero-bg.png",
+        src: "/hero/hero-bg.png",
         sizes: "1612x976",
         type: "image/png",
         form_factor: "wide",
