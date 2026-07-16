@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { offsetNegocio } from "@/lib/agenda";
 import type { EstadoCita } from "@/lib/citas";
 
 const TRANSICIONES_EQUIPO: Record<string, EstadoCita[]> = {
@@ -16,7 +17,7 @@ interface ResultadoAccion {
 }
 
 interface OpcionesHorario {
-  /** yyyy-mm-ddThh:mm:ss local — al confirmar, fija la hora real de la cita. */
+  /** yyyy-mm-ddThh:mm:ss en hora de Chile — al confirmar, fija la hora real de la cita. */
   fechaCita?: string;
   duracionHoras?: number;
 }
@@ -60,7 +61,9 @@ export async function cambiarEstadoCita(
     updated_at: new Date().toISOString(),
   };
   if (horario?.fechaCita) {
-    const inicio = new Date(horario.fechaCita);
+    // El panel envía hora de Chile sin offset; se ancla a TZ del negocio para
+    // que el instante guardado sea correcto aunque el servidor corra en UTC.
+    const inicio = new Date(`${horario.fechaCita}${offsetNegocio(horario.fechaCita.slice(0, 10))}`);
     if (isNaN(inicio.getTime())) return { success: false, error: "Horario inválido." };
     cambios.fecha_cita = inicio.toISOString();
     const duracion = horario.duracionHoras ?? 1.5;

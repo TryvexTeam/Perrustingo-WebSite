@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { offsetNegocio } from "@/lib/agenda";
 import { solicitudCitaSchema, supabaseConfigurado } from "@/lib/citas";
 
 /* POST /api/reservas — crea una solicitud de cita en estado 'pendiente'.
@@ -66,7 +67,8 @@ export async function POST(request: NextRequest) {
     .insert({
       estado: "pendiente",
       cliente_id: user?.id ?? null,
-      fecha_cita: `${fechaDeseada}T00:00:00-04:00`,
+      // Medianoche en Chile con el offset real de esa fecha (DST: -04:00/-03:00).
+      fecha_cita: `${fechaDeseada}T00:00:00${offsetNegocio(fechaDeseada)}`,
       servicio,
       precio_base: precioEstimado,
       contacto_nombre: contacto.nombre,
