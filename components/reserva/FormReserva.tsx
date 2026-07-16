@@ -23,7 +23,10 @@ import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
 import { BreedAvatar } from "@/components/ui/BreedAvatar";
 
-const WHATSAPP_BASE = "https://wa.me/4915237152283?text=";
+/* Número del negocio — configurable por env para no tocar código al cambiarlo.
+   TODO: confirmar el número real de Perrustingo (el fallback actual es de prueba). */
+const WHATSAPP_PHONE = process.env.NEXT_PUBLIC_WHATSAPP_PHONE ?? "4915237152283";
+const WHATSAPP_BASE = `https://wa.me/${WHATSAPP_PHONE}?text=`;
 
 /* Wizard progresivo — una pregunta por pantalla, avance automático en
    selecciones únicas y multiselección de chips para las zonas sensibles.
@@ -318,7 +321,7 @@ export function FormReserva({
         if (!r.ok && r.status !== 503) setSolicitudEstado("error");
       })
       .catch(() => setSolicitudEstado("error"));
-  }, [data, precio]);
+  }, [data, precio, estimado?.total]);
 
   /* El perrito acompaña todo el formulario: raza elegida > tamaño declarado */
   const razaSel = CATALOGO_RAZAS.find((r) => r.nombre === data.raza);
@@ -752,8 +755,8 @@ export function FormReserva({
 
               {solicitudEstado === "registrada" && (
                 <p className="rise-in rounded-2xl bg-[#d8f0e3] px-5 py-3 text-center text-sm font-semibold text-teal-ink">
-                  🐾 Tu solicitud quedó registrada como <strong>pendiente</strong> —
-                  el equipo la confirmará pronto.
+                  🐾 Tu solicitud quedó registrada como <strong>borrador</strong> —
+                  el equipo de Perrustingo la confirmará pronto.
                 </p>
               )}
               {solicitudEstado === "error" && (

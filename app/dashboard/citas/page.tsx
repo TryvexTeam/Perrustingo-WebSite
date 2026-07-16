@@ -87,8 +87,8 @@ export default async function CitasPage() {
             </h1>
             <p className="mt-1 text-sm text-ink-soft">
               {pendientes > 0
-                ? `${pendientes} solicitud${pendientes === 1 ? "" : "es"} esperando confirmación.`
-                : "No hay solicitudes pendientes."}{" "}
+                ? `${pendientes} borrador${pendientes === 1 ? "" : "es"} esperando confirmación.`
+                : "No hay borradores por confirmar."}{" "}
               <Link href="/agenda" className="text-teal-dark underline underline-offset-2">
                 Ver en calendario →
               </Link>

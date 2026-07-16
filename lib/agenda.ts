@@ -67,6 +67,58 @@ export function fechaISO(d: Date): string {
     .padStart(2, "0")}`;
 }
 
+/* ── Zona horaria del negocio ─────────────────────────────── */
+
+/* Perrustingo opera en Chile. Las horas de `fecha_cita` deben leerse y
+   escribirse SIEMPRE en esta zona: el servidor (Vercel) corre en UTC, así
+   que usar Date#getHours() directo desplaza toda la agenda +3/+4 horas y
+   hace que los borradores del formulario (medianoche -04:00 = 04:00 UTC)
+   parezcan citas con hora asignada. */
+export const TZ_NEGOCIO = "America/Santiago";
+
+const FMT_ZONA = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TZ_NEGOCIO,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** Fecha (yyyy-mm-dd) y hora del instante `d` vistos desde Chile. */
+export function partesEnZona(d: Date): { fecha: string; hora: number; minuto: number } {
+  const p: Record<string, string> = {};
+  for (const parte of FMT_ZONA.formatToParts(d)) p[parte.type] = parte.value;
+  return {
+    fecha: `${p.year}-${p.month}-${p.day}`,
+    hora: Number(p.hour),
+    minuto: Number(p.minute),
+  };
+}
+
+/** Offset UTC vigente en Chile para esa fecha ("-04:00" o "-03:00" según DST). */
+export function offsetNegocio(fechaYmd: string): string {
+  // Referencia a mediodía UTC: lejos del cambio de hora local (siempre madrugada).
+  const ref = new Date(`${fechaYmd}T12:00:00Z`);
+  const p = partesEnZona(ref);
+  const diff = p.hora * 60 + p.minuto - 12 * 60;
+  const signo = diff < 0 ? "-" : "+";
+  const abs = Math.abs(diff);
+  return `${signo}${String(Math.floor(abs / 60)).padStart(2, "0")}:${String(abs % 60).padStart(2, "0")}`;
+}
+
+/** "2026-07-16" → "mié 16 jul" (para chips y listas del equipo). */
+export function formatearFechaCorta(fechaYmd: string): string {
+  const d = new Date(`${fechaYmd}T12:00:00Z`);
+  return new Intl.DateTimeFormat("es-CL", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  }).format(d);
+}
+
 /* ── Citas reales (Supabase) ──────────────────────────────── */
 
 /** Cita renderizable en el grid semanal, ya resuelta a fecha concreta. */
@@ -95,10 +147,11 @@ export function colorPorServicio(servicio: string | null): keyof typeof COLORES_
   return "bano";
 }
 
-/** Una solicitud creada desde el form trae solo fecha (00:00) — sin hora asignada. */
+/** Una solicitud creada desde el form trae solo fecha (medianoche en Chile) —
+    sin hora asignada. Se evalúa en TZ_NEGOCIO, no en la del servidor. */
 export function tieneHoraAsignada(fechaCita: string): boolean {
-  const d = new Date(fechaCita);
-  return d.getHours() !== 0 || d.getMinutes() !== 0;
+  const p = partesEnZona(new Date(fechaCita));
+  return p.hora !== 0 || p.minuto !== 0;
 }
 
 interface FilaAgendable {
@@ -116,14 +169,15 @@ export function filaACitaSemana(
 ): CitaSemana | null {
   if (!fila.fecha_cita) return null;
   const inicio = new Date(fila.fecha_cita);
-  const horaInicio = inicio.getHours() + inicio.getMinutes() / 60;
+  const enZona = partesEnZona(inicio);
+  const horaInicio = enZona.hora + enZona.minuto / 60;
   const duracionHoras = fila.fecha_fin
     ? Math.max(0.5, (new Date(fila.fecha_fin).getTime() - inicio.getTime()) / 3_600_000)
     : DURACION_DEFECTO_HORAS;
 
   return {
     id: fila.id,
-    fecha: fechaISO(inicio),
+    fecha: enZona.fecha,
     horaInicio,
     duracionHoras,
     titulo: opts.titulo,
