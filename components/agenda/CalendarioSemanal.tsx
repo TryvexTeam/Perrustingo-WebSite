@@ -9,6 +9,7 @@ import {
   HORA_CIERRE,
   demoComoCitasSemana,
   fechaISO,
+  formatearFechaCorta,
   formatearHora,
   lunesDe,
   type CitaSemana,
@@ -148,15 +149,33 @@ export function CalendarioSemanal({
             ))}
           </ul>
         </div>
+
+        {modoEquipo && (
+          <div className="mt-6">
+            <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-ink-soft">
+              Estados
+            </p>
+            <ul className="space-y-1.5 text-sm font-semibold text-ink">
+              <li className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-[4px] border-2 border-dashed border-ink/40 bg-white" />
+                Borrador (por confirmar)
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-[4px] bg-teal" />
+                Confirmada / en proceso
+              </li>
+            </ul>
+          </div>
+        )}
       </aside>
 
       {/* Calendario */}
       <div className="min-w-0 flex-1">
-        {/* Solicitudes pendientes sin hora (solo equipo) */}
+        {/* Borradores del formulario aún sin hora asignada (solo equipo) */}
         {modoEquipo && pendientesSinHora.length > 0 && (
           <div className="mb-4 rounded-2xl border-2 border-dashed border-yellow-300 bg-yellow-50 p-4">
             <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-yellow-800">
-              Solicitudes por confirmar ({pendientesSinHora.length})
+              Borradores por confirmar ({pendientesSinHora.length})
             </p>
             <div className="flex flex-wrap gap-2">
               {pendientesSinHora.map((cita) => (
@@ -166,10 +185,14 @@ export function CalendarioSemanal({
                   onClick={() => setCitaAbierta(cita)}
                   className="rounded-full bg-white px-4 py-2 text-sm font-bold text-ink shadow-sm transition-transform hover:-translate-y-0.5"
                 >
-                  {cita.titulo} · {cita.fecha}
+                  {cita.titulo} · {formatearFechaCorta(cita.fecha)}
                 </button>
               ))}
             </div>
+            <p className="mt-2 text-[11px] font-semibold text-yellow-800/80">
+              Llegaron desde el formulario web — al confirmar se les asigna hora y
+              pasan al calendario.
+            </p>
           </div>
         )}
 
@@ -304,7 +327,7 @@ export function CalendarioSemanal({
                         >
                           <p className={`truncate text-[11px] font-extrabold ${c.text}`}>
                             {cita.titulo}
-                            {esPendiente && " · por confirmar"}
+                            {esPendiente && (modoEquipo ? " · borrador" : " · por confirmar")}
                           </p>
                           <p className={`truncate text-[10px] font-semibold ${c.text} opacity-80`}>
                             {formatearHora(cita.horaInicio)} –{" "}

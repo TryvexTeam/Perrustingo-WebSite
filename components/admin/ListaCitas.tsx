@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { CitaSemana } from "@/lib/agenda";
+import { formatearFechaCorta, formatearHora, type CitaSemana } from "@/lib/agenda";
 import { ESTADO_COLOR, ESTADO_LABEL, type EstadoCita } from "@/lib/citas";
 import { formatCLP } from "@/lib/reserva";
 import { PanelCita } from "@/components/agenda/PanelCita";
@@ -67,7 +67,11 @@ export function ListaCitas({ citas }: ListaCitasProps) {
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-ink">{cita.titulo}</p>
                 <p className="mt-0.5 text-xs text-ink-soft">
-                  {cita.subtitulo || "Servicio sin definir"} · {cita.fecha}
+                  {cita.subtitulo || "Servicio sin definir"} ·{" "}
+                  {formatearFechaCorta(cita.fecha)}
+                  {cita.horaInicio > 0
+                    ? ` · ${formatearHora(cita.horaInicio)}`
+                    : " · sin hora asignada"}
                 </p>
                 {cita.sesion?.contacto_nombre && (
                   <p className="mt-0.5 text-xs text-ink-soft">

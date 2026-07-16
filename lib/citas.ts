@@ -9,8 +9,10 @@ export type EstadoCita =
   | "completada"
   | "cancelada";
 
+/* En BD el estado sigue siendo 'pendiente'; el equipo lo llama "Borrador":
+   cita creada por el formulario que espera confirmación del admin. */
 export const ESTADO_LABEL: Record<EstadoCita, string> = {
-  pendiente: "Pendiente",
+  pendiente: "Borrador",
   confirmada: "Confirmada",
   en_proceso: "En proceso",
   completada: "Completada",
