@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { offsetNegocio } from "@/lib/agenda";
+import { eliminarEventoCita, upsertEventoCita } from "@/lib/google/calendar";
 import type { EstadoCita } from "@/lib/citas";
 
 const TRANSICIONES_EQUIPO: Record<string, EstadoCita[]> = {
@@ -46,7 +47,7 @@ export async function cambiarEstadoCita(
 
   const { data: cita } = await supabase
     .from("sesiones")
-    .select("estado")
+    .select("estado, servicio, contacto_nombre, contacto_telefono, contacto_email, detalle_form")
     .eq("id", citaId)
     .single();
   if (!cita) return { success: false, error: "Cita no encontrada." };
@@ -76,6 +77,32 @@ export async function cambiarEstadoCita(
     .eq("id", citaId);
 
   if (error) return { success: false, error: "No se pudo actualizar." };
+
+  // Espejo en Google Calendar (MISIÓN 3) — el respaldo nunca bloquea al panel:
+  // si Google falla, la cita ya quedó actualizada en la BD y solo se loguea.
+  try {
+    if (nuevoEstado === "cancelada") {
+      await eliminarEventoCita(citaId);
+    } else if (nuevoEstado === "confirmada" && typeof cambios.fecha_cita === "string") {
+      const perro = cita.detalle_form?.nombrePerro ?? cita.contacto_nombre ?? "Cita";
+      await upsertEventoCita({
+        citaId,
+        titulo: `🐾 ${perro} — ${cita.servicio ?? "Perrustingo"}`,
+        descripcion: [
+          cita.contacto_nombre && `Contacto: ${cita.contacto_nombre}`,
+          cita.contacto_telefono && `Teléfono: ${cita.contacto_telefono}`,
+          cita.contacto_email && `Email: ${cita.contacto_email}`,
+          "Origen: plataforma Perrustingo",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        inicioISO: cambios.fecha_cita,
+        finISO: cambios.fecha_fin as string,
+      });
+    }
+  } catch (e) {
+    console.warn("[google-calendar] respaldo falló:", e);
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/citas");

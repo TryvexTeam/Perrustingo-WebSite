@@ -1,1 +1,1 @@
-{"allowedPatterns": ["lib/supabase/", "middleware.ts", "app/login/", "app/registro/", "app/dashboard/", "supabase/", "components/auth/", "components\\auth\\"], "paths": ["NEXT_PUBLIC_WHATSAPP_PHONE"], "domains": [], "commands": []}
+{"allowedPatterns": ["lib/supabase/", "middleware.ts", "app/login/", "app/registro/", "app/dashboard/", "supabase/", "components/auth/", "components\\auth\\"], "paths": ["NEXT_PUBLIC_WHATSAPP_PHONE", "GOOGLE_OAUTH_CLIENT", "GOOGLE_CALENDAR_REFRESH_TOKEN", "GOOGLE_CALENDAR_ID"], "domains": [], "commands": []}
