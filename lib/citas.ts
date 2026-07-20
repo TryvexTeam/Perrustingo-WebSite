@@ -60,6 +60,16 @@ export interface SesionEquipo {
   contacto_telefono: string | null;
   detalle_form: Record<string, string> | null;
   notas_cliente: string | null;
+  notas_equipo?: string | null;
+  perro_id?: string | null;
+}
+
+/** Foto adjunta a una sesión (subida por el cliente o el equipo). */
+export interface FotoSesion {
+  id: string;
+  tipo: "antes" | "durante" | "despues" | "referencia";
+  url: string;
+  notas: string | null;
 }
 
 /** Bloque anónimo de la agenda pública (vista agenda_ocupada). */

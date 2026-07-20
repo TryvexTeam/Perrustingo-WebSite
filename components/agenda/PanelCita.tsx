@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { CitaSemana } from "@/lib/agenda";
-import { ESTADO_COLOR, ESTADO_LABEL } from "@/lib/citas";
+import { ESTADO_COLOR, ESTADO_LABEL, type FotoSesion } from "@/lib/citas";
 import { formatCLP } from "@/lib/reserva";
-import { cambiarEstadoCita } from "@/app/dashboard/citas/actions";
+import { cambiarEstadoCita, guardarNotasEquipo } from "@/app/dashboard/citas/actions";
+import { createClient } from "@/lib/supabase/client";
 
 interface PanelCitaProps {
   cita: CitaSemana;
@@ -32,9 +33,55 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
   const [error, setError] = useState<string | null>(null);
   const [hora, setHora] = useState("10:00");
   const [duracion, setDuracion] = useState("1.5");
+  const [fotos, setFotos] = useState<FotoSesion[]>([]);
+  const [notas, setNotas] = useState(cita.sesion?.notas_equipo ?? "");
+  const [notasEstado, setNotasEstado] = useState<"idle" | "guardando" | "ok" | "error">("idle");
+  const [historial, setHistorial] = useState<{ fecha: string; notas: string }[]>([]);
+
+  const sesionId = cita.sesion?.id;
+  const perroId = cita.sesion?.perro_id;
+
+  /* Fotos de la cita + notas de visitas anteriores del mismo perrito
+     (RLS: solo el equipo llega a este panel). */
+  useEffect(() => {
+    if (!sesionId) return;
+    const supabase = createClient();
+    supabase
+      .from("fotos_sesion")
+      .select("id, tipo, url, notas")
+      .eq("sesion_id", sesionId)
+      .then(({ data }) => setFotos((data as FotoSesion[]) ?? []));
+
+    if (perroId) {
+      supabase
+        .from("sesiones")
+        .select("fecha_cita, notas_equipo")
+        .eq("perro_id", perroId)
+        .neq("id", sesionId)
+        .not("notas_equipo", "is", null)
+        .order("fecha_cita", { ascending: false })
+        .limit(5)
+        .then(({ data }) =>
+          setHistorial(
+            (data ?? []).map((s) => ({
+              fecha: s.fecha_cita ? new Date(s.fecha_cita).toLocaleDateString("es-CL") : "—",
+              notas: s.notas_equipo as string,
+            }))
+          )
+        );
+    }
+  }, [sesionId, perroId]);
 
   const sesion = cita.sesion;
   if (!sesion) return null;
+
+  const guardarNotas = () => {
+    setNotasEstado("guardando");
+    startTransition(async () => {
+      const res = await guardarNotasEquipo(sesion.id, notas);
+      setNotasEstado(res.success ? "ok" : "error");
+    });
+  };
 
   const accion = (nuevoEstado: "confirmada" | "cancelada" | "en_proceso" | "completada") => {
     setError(null);
@@ -129,6 +176,76 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
               </div>
             )}
           </dl>
+        </section>
+
+        {/* Fotos que dejó el cliente (actual + referencia del corte) */}
+        {fotos.length > 0 && (
+          <section className="mb-4 rounded-2xl border border-zinc-100 p-4">
+            <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-teal-dark">
+              Fotos del cliente
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {fotos.map((f) => (
+                <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={f.url}
+                    alt={f.tipo === "referencia" ? "Referencia de corte" : `Foto ${f.tipo}`}
+                    className="h-28 w-full rounded-xl object-cover"
+                  />
+                  <span className="mt-1 block text-[11px] font-bold capitalize text-ink-soft">
+                    {f.tipo === "referencia" ? "✂️ Corte deseado" : `📷 ${f.tipo}`}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Historial del perrito: lo que dejaron los colegas en visitas previas */}
+        {historial.length > 0 && (
+          <section className="mb-4 rounded-2xl bg-sky/30 p-4">
+            <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-teal-dark">
+              Visitas anteriores
+            </h3>
+            <ul className="space-y-2 text-sm">
+              {historial.map((h, i) => (
+                <li key={i}>
+                  <span className="font-bold text-ink-soft">{h.fecha}:</span>{" "}
+                  <span className="text-ink">{h.notas}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Notas del equipo sobre esta cita */}
+        <section className="mb-4 rounded-2xl border border-zinc-100 p-4">
+          <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-teal-dark">
+            Notas del equipo
+          </h3>
+          <textarea
+            value={notas}
+            onChange={(e) => { setNotas(e.target.value); setNotasEstado("idle"); }}
+            rows={3}
+            maxLength={2000}
+            placeholder="Detalles del servicio, tips para la próxima visita…"
+            className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm text-ink outline-none focus:border-teal"
+          />
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-xs font-semibold text-ink-soft">
+              {notasEstado === "ok" && "✓ Guardada"}
+              {notasEstado === "error" && "No se pudo guardar"}
+            </span>
+            <button
+              type="button"
+              disabled={pending || notasEstado === "guardando"}
+              onClick={guardarNotas}
+              className="rounded-full border-2 border-teal px-4 py-1.5 text-xs font-extrabold text-teal-dark transition-colors hover:bg-sky/40 disabled:opacity-50"
+            >
+              {notasEstado === "guardando" ? "Guardando…" : "Guardar nota"}
+            </button>
+          </div>
         </section>
 
         {error && (
