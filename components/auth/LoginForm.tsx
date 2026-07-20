@@ -1,12 +1,14 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next");
   const [isPending, startTransition] = useTransition();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +33,7 @@ export function LoginForm() {
         setError("Correo o contrasena incorrectos. Intentalo de nuevo.");
         return;
       }
-      router.push("/dashboard");
+      router.push(next && next.startsWith("/") ? next : "/dashboard");
     });
   }
 
@@ -90,7 +92,10 @@ export function LoginForm() {
 
       <p className="text-center text-sm text-ink-soft">
         No tienes cuenta?{" "}
-        <Link href="/registro" className="font-bold text-teal-dark hover:underline">
+        <Link
+          href={next ? `/registro?next=${encodeURIComponent(next)}` : "/registro"}
+          className="font-bold text-teal-dark hover:underline"
+        >
           Registrate gratis
         </Link>
       </p>

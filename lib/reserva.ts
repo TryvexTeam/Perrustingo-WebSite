@@ -372,6 +372,14 @@ export const DESCUENTO_CACHORRO: AjustePrecio = {
   pct: -15,
 };
 
+/* Incentivo por registro (pedido de Rodolfo 19-jul): 10% dcto en la
+   primera cita de la cuenta. La foto obligatoria del perrito es el
+   anti-abuso (cuentas nuevas solo para canjear no pasan). */
+export const DESCUENTO_PRIMERA_CITA: AjustePrecio = {
+  etiqueta: "Primera cita con cuenta",
+  pct: -10,
+};
+
 export interface EstimadoVivo {
   base: number;
   ajustes: AjustePrecio[];
@@ -413,4 +421,61 @@ export function calcularEstimado(
 
   const pctTotal = ajustes.reduce((acc, a) => acc + a.pct, 0);
   return { base, ajustes, total: redondear(base * (1 + pctTotal / 100)) };
+}
+
+/* ── Reserva multi-perrito ────────────────────────────────────
+   Un mensaje de WhatsApp con un bloque por perrito + total. */
+
+export interface PerroReserva {
+  data: FormData;
+  esManual: boolean;
+  estimado: EstimadoVivo | null;
+}
+
+export function buildWhatsAppMessageMulti(
+  perros: PerroReserva[],
+  compartido: { fechaDeseada: string; servicio: string; contactoNombre: string }
+): string {
+  if (perros.length === 1) {
+    const unico = {
+      ...perros[0].data,
+      fechaDeseada: compartido.fechaDeseada,
+      servicio: compartido.servicio,
+    };
+    return buildWhatsAppMessage(unico, perros[0].esManual, perros[0].estimado?.total);
+  }
+
+  const lines: string[] = [];
+  lines.push(
+    `Hola Perrustingo, quiero agendar una cita para mis ${perros.length} perros.`
+  );
+
+  let total = 0;
+  let algunoManual = false;
+  perros.forEach(({ data, esManual, estimado }, i) => {
+    const raza = data.raza === "Otro" ? data.razaOtro || "Otro" : data.raza;
+    lines.push("");
+    lines.push(`*Perro ${i + 1}: ${data.nombrePerro || "—"}*`);
+    if (raza) lines.push(`• Raza: ${raza}`);
+    if (data.pesoKg) lines.push(`• Peso: ${data.pesoKg} kg`);
+    if (estimado) {
+      lines.push(`• Estimado: ${formatCLP(estimado.total)}`);
+      total += estimado.total;
+    }
+    if (esManual) {
+      algunoManual = true;
+      lines.push("• Nota: tamaño y peso no coinciden — necesita evaluación.");
+    }
+  });
+
+  lines.push("");
+  if (total > 0) lines.push(`*Total estimado:* ${formatCLP(total)}`);
+  if (compartido.servicio) lines.push(`*Servicio:* ${compartido.servicio}`);
+  if (compartido.fechaDeseada) lines.push(`*Fecha deseada:* ${compartido.fechaDeseada}`);
+  if (algunoManual) {
+    lines.push("");
+    lines.push("Solicito evaluación personalizada para los casos marcados.");
+  }
+
+  return lines.join("\n");
 }

@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { solicitudCitaSchema, supabaseConfigurado } from "@/lib/citas";
+import { supabaseConfigurado } from "@/lib/citas";
 
-/* POST /api/reservas — crea una solicitud de cita en estado 'pendiente'.
-   Funciona logueado (liga cliente_id) o anónimo (solo datos de contacto). */
+/* POST /api/reservas v2 — reserva multi-perrito (1-3). Crea UNA sesión
+   'pendiente' por perrito; si el usuario está logueado además guarda/actualiza
+   la ficha en `perros` y adjunta las fotos en `fotos_sesion`.
+
+   Degradación: si la DB del cliente aún no tiene las migraciones 002/004
+   (columnas contacto_* / cupon_*), reintenta con el set mínimo de columnas
+   de schema.sql para no perder la solicitud. */
 
 const VENTANA_MS = 10 * 60 * 1000;
-const MAX_POR_VENTANA = 5;
+const MAX_POR_VENTANA = 8;
 const intentos = new Map<string, { count: number; desde: number }>();
 
 function excedeLimite(ip: string): boolean {
@@ -18,6 +24,57 @@ function excedeLimite(ip: string): boolean {
   }
   reg.count += 1;
   return reg.count > MAX_POR_VENTANA;
+}
+
+const perroSchema = z.object({
+  detalle: z.record(z.string(), z.string()),
+  precioEstimado: z.number().int().min(0).max(500000).nullable(),
+  esManual: z.boolean().optional().default(false),
+  fotoActualUrl: z.string().url().nullable().optional().default(null),
+  fotoReferenciaUrl: z.string().url().nullable().optional().default(null),
+  ficha: z
+    .object({
+      nombre: z.string().trim().max(60).optional().default(""),
+      raza: z.string().trim().max(60).nullable().optional().default(null),
+      pesoKg: z.number().min(0).max(120).nullable().optional().default(null),
+      contextura: z.enum(["delgado", "normal", "robusto"]).nullable().optional().default(null),
+      tipoPelo: z.string().trim().max(40).nullable().optional().default(null),
+      temperamento: z
+        .enum(["se_deja", "no_se_deja", "complicado", "no_lo_se"])
+        .nullable()
+        .optional()
+        .default(null),
+      alergias: z.string().trim().max(200).nullable().optional().default(null),
+    })
+    .optional(),
+});
+
+const reservaSchema = z.object({
+  contacto: z.object({
+    nombre: z.string().trim().min(2).max(80),
+    email: z.string().trim().email().max(120),
+    telefono: z
+      .string()
+      .trim()
+      .regex(/^\+?[\d\s]{8,15}$/, "Teléfono inválido"),
+  }),
+  fechaDeseada: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  servicio: z.string().trim().min(3).max(80),
+  cupon: z
+    .object({
+      codigo: z.string().trim().max(40),
+      pct: z.number().int().min(1).max(50),
+    })
+    .nullable()
+    .optional()
+    .default(null),
+  perros: z.array(perroSchema).min(1).max(3),
+  /** Honeypot anti-spam: los humanos lo dejan vacío. */
+  apellidoPaterno: z.string().max(0).optional(),
+});
+
+interface FilaSesion {
+  [key: string]: unknown;
 }
 
 export async function POST(request: NextRequest) {
@@ -46,7 +103,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const parsed = solicitudCitaSchema.safeParse(body);
+  const parsed = reservaSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { success: false, error: "Datos de solicitud inválidos." },
@@ -54,35 +111,113 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { contacto, fechaDeseada, servicio, precioEstimado, detalle } = parsed.data;
+  const { contacto, fechaDeseada, servicio, cupon, perros } = parsed.data;
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data, error } = await supabase
-    .from("sesiones")
-    .insert({
+  const ids: string[] = [];
+  let parcial = false;
+
+  for (const [i, perro] of perros.entries()) {
+    /* Ficha del perrito (solo logueado; el registro es obligatorio en el
+       flujo nuevo, pero la API tolera anónimo por compatibilidad). */
+    let perroId: string | null = null;
+    if (user && perro.ficha?.nombre) {
+      const { data: fila } = await supabase
+        .from("perros")
+        .insert({
+          cliente_id: user.id,
+          nombre: perro.ficha.nombre,
+          raza: perro.ficha.raza,
+          peso_kg: perro.ficha.pesoKg,
+          contextura: perro.ficha.contextura,
+          tipo_pelo: perro.ficha.tipoPelo,
+          temperamento: perro.ficha.temperamento,
+          alergias: perro.ficha.alergias,
+          foto_url: perro.fotoActualUrl,
+        })
+        .select("id")
+        .single();
+      perroId = fila?.id ?? null;
+      if (!perroId) parcial = true;
+    }
+
+    const filaCompleta: FilaSesion = {
       estado: "pendiente",
       cliente_id: user?.id ?? null,
+      perro_id: perroId,
       fecha_cita: `${fechaDeseada}T00:00:00-04:00`,
       servicio,
-      precio_base: precioEstimado,
+      precio_base: perro.precioEstimado,
       contacto_nombre: contacto.nombre,
       contacto_email: contacto.email,
       contacto_telefono: contacto.telefono,
-      detalle_form: detalle,
-    })
-    .select("id")
-    .single();
+      detalle_form: perro.detalle,
+      cupon_codigo: cupon?.codigo ?? null,
+      descuento_pct: cupon?.pct ?? 0,
+    };
 
-  if (error) {
-    return NextResponse.json(
-      { success: false, error: "No se pudo registrar la solicitud." },
-      { status: 500 }
-    );
+    let sesionId: string | null = null;
+    const intento1 = await supabase
+      .from("sesiones")
+      .insert(filaCompleta)
+      .select("id")
+      .single();
+
+    if (intento1.error) {
+      /* 42703 = columna inexistente (migraciones pendientes) → set mínimo */
+      const { data: fila2 } = await supabase
+        .from("sesiones")
+        .insert({
+          estado: "pendiente",
+          cliente_id: user?.id ?? null,
+          perro_id: perroId,
+          fecha_cita: `${fechaDeseada}T00:00:00-04:00`,
+          servicio,
+          precio_base: perro.precioEstimado,
+          notas_cliente: `${contacto.nombre} · ${contacto.telefono} · ${contacto.email}`,
+        })
+        .select("id")
+        .single();
+      sesionId = fila2?.id ?? null;
+      parcial = true;
+    } else {
+      sesionId = intento1.data.id;
+    }
+
+    if (!sesionId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `No se pudo registrar la solicitud del perrito ${i + 1}.`,
+        },
+        { status: 500 }
+      );
+    }
+    ids.push(sesionId);
+
+    /* Fotos: actual = 'antes', referencia del corte = 'referencia' */
+    const fotosRows = [
+      perro.fotoActualUrl && { sesion_id: sesionId, tipo: "antes", url: perro.fotoActualUrl },
+      perro.fotoReferenciaUrl && {
+        sesion_id: sesionId,
+        tipo: "referencia",
+        url: perro.fotoReferenciaUrl,
+        notas: "Referencia de corte elegida por el cliente",
+      },
+    ].filter(Boolean) as { sesion_id: string; tipo: string; url: string; notas?: string }[];
+
+    if (fotosRows.length > 0) {
+      const { error: errFotos } = await supabase.from("fotos_sesion").insert(fotosRows);
+      if (errFotos) parcial = true;
+    }
   }
 
-  return NextResponse.json({ success: true, data: { id: data.id } }, { status: 201 });
+  return NextResponse.json(
+    { success: true, data: { ids, parcial } },
+    { status: 201 }
+  );
 }

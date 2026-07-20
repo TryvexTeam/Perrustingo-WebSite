@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { SiteMenu } from "@/components/layout/SiteMenu";
 
@@ -24,7 +25,9 @@ export default function LoginPage() {
               Accede para ver tu historial, datos de tu perro y agendar más rápido.
             </p>
           </div>
-          <LoginForm />
+          <Suspense>
+            <LoginForm />
+          </Suspense>
           <p className="mt-6 text-center text-sm text-ink-soft">
             ¿Primera vez?{" "}
             <a href="/registro" className="font-semibold text-teal-dark underline underline-offset-2">
