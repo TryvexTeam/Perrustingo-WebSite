@@ -174,6 +174,11 @@ CREATE TRIGGER trg_protege_rol
   BEFORE UPDATE ON public.perfiles
   FOR EACH ROW EXECUTE FUNCTION public.protege_rol();
 
+-- Endurecimiento (revisión de Spike): SECURITY DEFINER sin search_path
+-- fijo = patrón clásico de schema-hijacking en Postgres.
+ALTER FUNCTION public.protege_rol() SET search_path = public, pg_temp;
+ALTER FUNCTION public.get_rol() SET search_path = public, pg_temp;
+
 -- ── E) Restaurar admin (el test del 15-jul lo dejó 'trabajador') ──
 -- El SQL editor pasa el guard (auth.uid() es NULL ahí).
 UPDATE public.perfiles SET rol = 'admin'
