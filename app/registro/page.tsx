@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { RegistroForm } from "@/components/auth/RegistroForm";
 import { SiteMenu } from "@/components/layout/SiteMenu";
 
@@ -24,7 +25,9 @@ export default function RegistroPage() {
               Guarda los datos de tu perro y agenda más rápido la próxima vez.
             </p>
           </div>
-          <RegistroForm />
+          <Suspense>
+            <RegistroForm />
+          </Suspense>
           <p className="mt-6 text-center text-sm text-ink-soft">
             ¿Ya tienes cuenta?{" "}
             <a href="/login" className="font-semibold text-teal-dark underline underline-offset-2">

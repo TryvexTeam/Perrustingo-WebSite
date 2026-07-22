@@ -1,13 +1,17 @@
-"use client";
+﻿"use client";
 
-import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next");
   const [isPending, startTransition] = useTransition();
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -15,48 +19,29 @@ export function LoginForm() {
     setError("");
 
     startTransition(async () => {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseUrl = process["env"]["NEXT_PUBLIC_SUPABASE_URL"] as string;
       if (!supabaseUrl || supabaseUrl.includes("TU_PROYECTO")) {
-        setError("Las cuentas estarán disponibles muy pronto — seguimos configurando el sistema.");
+        setError("Las cuentas estaran disponibles muy pronto.");
         return;
       }
       const supabase = createClient();
-      const { error: err } = await supabase.auth.signInWithOtp({
+      const { error: err } = await supabase.auth.signInWithPassword({
         email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          shouldCreateUser: false,
-        },
+        password,
       });
       if (err) {
-        setError("No encontramos esa cuenta. ¿Aún no te has registrado?");
+        setError("Correo o contrasena incorrectos. Intentalo de nuevo.");
         return;
       }
-      setSent(true);
+      router.push(next && next.startsWith("/") ? next : "/dashboard");
     });
-  }
-
-  if (sent) {
-    return (
-      <div className="rounded-3xl bg-[#d8f0e3] p-8 text-center">
-        <p className="text-3xl">📬</p>
-        <h2 className="mt-3 font-display text-lg font-extrabold text-ink">
-          ¡Revisa tu correo!
-        </h2>
-        <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-          Enviamos un enlace mágico a <strong>{email}</strong>.
-          Aprieta el botón del correo y quedarás dentro automáticamente.
-        </p>
-        <p className="mt-4 text-xs text-ink-soft">El enlace expira en 1 hora.</p>
-      </div>
-    );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="email" className="mb-1.5 block text-sm font-semibold text-ink">
-          Correo electrónico
+          Correo electronico
         </label>
         <input
           id="email"
@@ -70,12 +55,30 @@ export function LoginForm() {
         />
       </div>
 
+      <div>
+        <label htmlFor="password" className="mb-1.5 block text-sm font-semibold text-ink">
+          Contrasena
+        </label>
+        <input
+          id="password"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Tu contrasena"
+          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-[15px] text-ink outline-none transition focus:border-teal-dark focus:ring-2 focus:ring-teal-dark/20"
+        />
+        <div className="mt-1.5 text-right">
+          <Link href="/recuperar-contrasena" className="text-xs text-teal-dark hover:underline">
+            Olvide mi contrasena
+          </Link>
+        </div>
+      </div>
+
       {error && (
         <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
-          {error}{" "}
-          <Link href="/registro" className="font-bold underline underline-offset-2">
-            Regístrate aquí
-          </Link>
+          {error}
         </p>
       )}
 
@@ -84,13 +87,16 @@ export function LoginForm() {
         disabled={isPending}
         className="w-full rounded-full bg-teal-dark px-8 py-3.5 font-display text-base font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.4)] transition-[background-color,transform,box-shadow] duration-150 hover:bg-teal hover:shadow-[0_5px_0_rgba(6,58,64,.4)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.4)] disabled:opacity-60"
       >
-        {isPending ? "Enviando…" : "Enviar enlace mágico →"}
+        {isPending ? "Entrando..." : "Iniciar sesion"}
       </button>
 
       <p className="text-center text-sm text-ink-soft">
-        ¿No tienes cuenta?{" "}
-        <Link href="/registro" className="font-bold text-teal-dark hover:underline">
-          Regístrate gratis
+        No tienes cuenta?{" "}
+        <Link
+          href={next ? `/registro?next=${encodeURIComponent(next)}` : "/registro"}
+          className="font-bold text-teal-dark hover:underline"
+        >
+          Registrate gratis
         </Link>
       </p>
     </form>

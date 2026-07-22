@@ -1,1 +1,1 @@
-{"allowedPatterns": ["lib/supabase/", "middleware.ts", "app/login/", "app/registro/", "app/dashboard/", "supabase/"]}
+{"allowedPatterns": ["lib/supabase/", "middleware.ts", "app/login/", "app/registro/", "app/dashboard/", "supabase/", "components/auth/", "components\\auth\\"]}

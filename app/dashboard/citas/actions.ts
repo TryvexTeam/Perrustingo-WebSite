@@ -79,3 +79,37 @@ export async function cambiarEstadoCita(
   revalidatePath("/agenda");
   return { success: true };
 }
+
+/** Notas del peluquero sobre la cita (pedido de Rodolfo 19-jul): detalles
+    del servicio y tips entre colegas — se ven en la próxima visita. */
+export async function guardarNotasEquipo(
+  citaId: string,
+  notas: string
+): Promise<ResultadoAccion> {
+  if (notas.length > 2000) return { success: false, error: "Nota demasiado larga." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Sesión expirada." };
+
+  const { data: perfil } = await supabase
+    .from("perfiles")
+    .select("rol")
+    .eq("id", user.id)
+    .single();
+  if (!perfil || !["admin", "trabajador"].includes(perfil.rol)) {
+    return { success: false, error: "Sin permisos." };
+  }
+
+  const { error } = await supabase
+    .from("sesiones")
+    .update({ notas_equipo: notas.trim() || null, updated_at: new Date().toISOString() })
+    .eq("id", citaId);
+
+  if (error) return { success: false, error: "No se pudo guardar la nota." };
+
+  revalidatePath("/dashboard/citas");
+  return { success: true };
+}

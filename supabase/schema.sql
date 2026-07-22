@@ -193,3 +193,18 @@ CREATE INDEX idx_sesiones_estado     ON public.sesiones(estado);
 CREATE INDEX idx_perros_cliente      ON public.perros(cliente_id);
 CREATE INDEX idx_conducta_sesion     ON public.conducta(sesion_id);
 CREATE INDEX idx_fotos_sesion_id     ON public.fotos_sesion(sesion_id);
+
+-- ============================================================
+-- GRANTS (privilegios de tabla)
+-- ------------------------------------------------------------
+-- CRÍTICO: en Postgres los privilegios de tabla se evalúan ANTES que RLS.
+-- Sin estos GRANT, cualquier query de anon/authenticated muere con
+-- "42501: permission denied for table ..." y RLS nunca llega a ejecutarse.
+-- Síntoma real cazado (2026-07-15): la lectura del perfil devolvía null →
+-- un admin válido era redirigido a /perfil en vez de entrar al /dashboard.
+-- RLS (arriba) sigue filtrando cada fila; estos GRANT solo la habilitan.
+-- ============================================================
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;

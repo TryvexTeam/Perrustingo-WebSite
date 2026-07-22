@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { TAMANO_PRECIOS, type TamanoKey } from "./reserva";
 
-/* Tarifas dinámicas — maqueta del flujo admin→landing sin base de datos:
-   el panel del admin guarda los precios en localStorage y los templates
-   públicos (sección Precios, formulario) los leen en el cliente. Cuando exista
-   Supabase, este módulo cambia localStorage por una tabla `tarifas` y el resto
-   de la UI no se toca. */
+/* Tarifas dinámicas — antes vivían en localStorage (maqueta sin DB: un
+   cambio del admin solo se veía en el navegador donde lo hizo). Ahora se
+   leen/escriben en las tablas `tarifas` + `tarifas_extras` de Supabase, así
+   que se ven desde cualquier dispositivo/sesión. Ver migración 006. La
+   escritura vive en app/dashboard/tarifas/actions.ts (server action, rol
+   admin exigido) — este módulo es solo lectura + el hook de consumo. */
 
 export interface Tarifas {
   base: Record<TamanoKey, number>;
@@ -23,47 +25,59 @@ export const TARIFAS_DEFAULT: Tarifas = {
   accesorio: 3000,
 };
 
-const STORAGE_KEY = "perrustingo:tarifas";
 const EVENTO = "perrustingo:tarifas-actualizadas";
 
-export function leerTarifas(): Tarifas {
-  if (typeof window === "undefined") return TARIFAS_DEFAULT;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return TARIFAS_DEFAULT;
-    const parsed = JSON.parse(raw) as Partial<Tarifas>;
-    return {
-      base: { ...TARIFAS_DEFAULT.base, ...parsed.base },
-      recargoMotas: parsed.recargoMotas ?? TARIFAS_DEFAULT.recargoMotas,
-      accesorio: parsed.accesorio ?? TARIFAS_DEFAULT.accesorio,
-    };
-  } catch {
-    return TARIFAS_DEFAULT;
+/** Avisa a los `useTarifas()` montados en esta pestaña que hay datos nuevos. */
+export function notificarTarifasActualizadas(): void {
+  window.dispatchEvent(new CustomEvent(EVENTO));
+}
+
+/** Lee el estado vigente desde Supabase (tabla pública, RLS deja SELECT libre). */
+export async function obtenerTarifas(
+  supabase: ReturnType<typeof createClient>
+): Promise<Tarifas> {
+  const [{ data: filasBase }, { data: extras }] = await Promise.all([
+    supabase.from("tarifas").select("tamano, precio").eq("activo", true),
+    supabase
+      .from("tarifas_extras")
+      .select("recargo_motas_pct, precio_accesorio")
+      .eq("singleton", true)
+      .maybeSingle(),
+  ]);
+
+  const base = { ...TARIFAS_DEFAULT.base };
+  for (const fila of filasBase ?? []) {
+    if (fila.tamano in base) {
+      base[fila.tamano as TamanoKey] = fila.precio;
+    }
   }
+
+  return {
+    base,
+    recargoMotas: extras?.recargo_motas_pct ?? TARIFAS_DEFAULT.recargoMotas,
+    accesorio: extras?.precio_accesorio ?? TARIFAS_DEFAULT.accesorio,
+  };
 }
 
-export function guardarTarifas(tarifas: Tarifas): void {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tarifas));
-  window.dispatchEvent(new CustomEvent(EVENTO));
-}
-
-export function restaurarTarifas(): void {
-  window.localStorage.removeItem(STORAGE_KEY);
-  window.dispatchEvent(new CustomEvent(EVENTO));
-}
-
-/** Hook: tarifas vigentes, reactivo a cambios del panel admin (misma pestaña u otra). */
+/** Hook: tarifas vigentes, reactivo a guardados del panel admin (misma pestaña u otra). */
 export function useTarifas(): Tarifas {
   const [tarifas, setTarifas] = useState<Tarifas>(TARIFAS_DEFAULT);
 
   useEffect(() => {
-    const sync = () => setTarifas(leerTarifas());
-    sync();
-    window.addEventListener(EVENTO, sync);
-    window.addEventListener("storage", sync);
+    let cancelado = false;
+    const supabase = createClient();
+
+    const cargar = () => {
+      obtenerTarifas(supabase).then((t) => {
+        if (!cancelado) setTarifas(t);
+      });
+    };
+
+    cargar();
+    window.addEventListener(EVENTO, cargar);
     return () => {
-      window.removeEventListener(EVENTO, sync);
-      window.removeEventListener("storage", sync);
+      cancelado = true;
+      window.removeEventListener(EVENTO, cargar);
     };
   }, []);
 

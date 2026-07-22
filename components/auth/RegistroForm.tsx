@@ -1,16 +1,27 @@
 "use client";
 
 import Link from "next/link";
-
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+/* Registro comunitario (pedido de Rodolfo 19-jul): nombre y apellido,
+   comuna, telefono, email + contrasena. Nada mas — no invade. */
+
+const inputClass =
+  "w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-[15px] text-ink outline-none transition focus:border-teal-dark focus:ring-2 focus:ring-teal-dark/20";
+
 export function RegistroForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next");
   const [isPending, startTransition] = useTransition();
   const [nombre, setNombre] = useState("");
+  const [apellido, setApellido] = useState("");
+  const [comuna, setComuna] = useState("");
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -18,81 +29,102 @@ export function RegistroForm() {
     setError("");
 
     startTransition(async () => {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseUrl = process["env"]["NEXT_PUBLIC_SUPABASE_URL"] as string;
       if (!supabaseUrl || supabaseUrl.includes("TU_PROYECTO")) {
-        setError("Las cuentas estarán disponibles muy pronto — seguimos configurando el sistema.");
+        setError("Las cuentas estaran disponibles muy pronto.");
         return;
       }
       const supabase = createClient();
-      const { error: err } = await supabase.auth.signInWithOtp({
+      const { error: err } = await supabase.auth.signUp({
         email,
+        password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          shouldCreateUser: true,
-          data: { nombre, telefono },
+          data: { nombre, apellido, comuna, telefono },
         },
       });
       if (err) {
-        setError("No pudimos crear tu cuenta. Intenta de nuevo.");
+        if (err.message.toLowerCase().includes("already registered") || err.message.toLowerCase().includes("already exists")) {
+          setError("Ya tienes una cuenta con ese correo.");
+        } else {
+          setError("No pudimos crear tu cuenta. Intenta de nuevo.");
+        }
         return;
       }
-      setSent(true);
+      router.push(next && next.startsWith("/") ? next : "/perfil");
     });
-  }
-
-  if (sent) {
-    return (
-      <div className="rounded-3xl bg-[#d8f0e3] p-8 text-center">
-        <p className="text-3xl">📬</p>
-        <h2 className="mt-3 font-display text-lg font-extrabold text-ink">
-          ¡Ya casi está!
-        </h2>
-        <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-          Enviamos un enlace de activación a <strong>{email}</strong>.
-          Aprieta el botón del correo para activar tu cuenta y entrar.
-        </p>
-        <p className="mt-4 text-xs text-ink-soft">El enlace expira en 1 hora.</p>
-      </div>
-    );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="nombre" className="mb-1.5 block text-sm font-semibold text-ink">
+            Nombre
+          </label>
+          <input
+            id="nombre"
+            type="text"
+            autoComplete="given-name"
+            required
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            placeholder="Ej: Maria"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="apellido" className="mb-1.5 block text-sm font-semibold text-ink">
+            Apellido
+          </label>
+          <input
+            id="apellido"
+            type="text"
+            autoComplete="family-name"
+            required
+            value={apellido}
+            onChange={(e) => setApellido(e.target.value)}
+            placeholder="Ej: Rojas"
+            className={inputClass}
+          />
+        </div>
+      </div>
+
       <div>
-        <label htmlFor="nombre" className="mb-1.5 block text-sm font-semibold text-ink">
-          Tu nombre
+        <label htmlFor="comuna" className="mb-1.5 block text-sm font-semibold text-ink">
+          Comuna
         </label>
         <input
-          id="nombre"
+          id="comuna"
           type="text"
-          autoComplete="given-name"
+          autoComplete="address-level2"
           required
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          placeholder="Ej: María"
-          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-[15px] text-ink outline-none transition focus:border-teal-dark focus:ring-2 focus:ring-teal-dark/20"
+          value={comuna}
+          onChange={(e) => setComuna(e.target.value)}
+          placeholder="Ej: Renca"
+          className={inputClass}
         />
       </div>
 
       <div>
         <label htmlFor="telefono" className="mb-1.5 block text-sm font-semibold text-ink">
-          Teléfono{" "}
-          <span className="font-normal text-ink-soft">(opcional)</span>
+          Telefono
         </label>
         <input
           id="telefono"
           type="tel"
           autoComplete="tel"
+          required
+          pattern="^\+?[\d\s]{8,15}$"
           value={telefono}
           onChange={(e) => setTelefono(e.target.value)}
           placeholder="+56 9 1234 5678"
-          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-[15px] text-ink outline-none transition focus:border-teal-dark focus:ring-2 focus:ring-teal-dark/20"
+          className={inputClass}
         />
       </div>
 
       <div>
         <label htmlFor="email" className="mb-1.5 block text-sm font-semibold text-ink">
-          Correo electrónico
+          Correo electronico
         </label>
         <input
           id="email"
@@ -102,13 +134,38 @@ export function RegistroForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@correo.com"
-          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-[15px] text-ink outline-none transition focus:border-teal-dark focus:ring-2 focus:ring-teal-dark/20"
+          className={inputClass}
+        />
+      </div>
+
+      <div>
+        <label htmlFor="password" className="mb-1.5 block text-sm font-semibold text-ink">
+          Contrasena
+        </label>
+        <input
+          id="password"
+          type="password"
+          autoComplete="new-password"
+          required
+          minLength={6}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Minimo 6 caracteres"
+          className={inputClass}
         />
       </div>
 
       {error && (
         <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
-          {error}
+          {error}{" "}
+          {error.includes("Ya tienes una cuenta") && (
+            <Link
+              href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+              className="font-bold underline underline-offset-2"
+            >
+              Iniciar sesion
+            </Link>
+          )}
         </p>
       )}
 
@@ -117,13 +174,13 @@ export function RegistroForm() {
         disabled={isPending}
         className="w-full rounded-full bg-orange px-8 py-3.5 font-display text-base font-extrabold text-teal-ink shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow] duration-150 hover:bg-[#f7ab52] hover:shadow-[0_5px_0_rgba(6,58,64,.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)] disabled:opacity-60"
       >
-        {isPending ? "Creando cuenta…" : "Crear cuenta gratis →"}
+        {isPending ? "Creando cuenta..." : "Crear cuenta gratis"}
       </button>
 
       <p className="text-center text-xs leading-relaxed text-ink-soft">
         Al registrarte aceptas nuestras{" "}
         <a href="/politicas" className="underline underline-offset-2">
-          políticas de privacidad
+          politicas de privacidad
         </a>
         .
       </p>

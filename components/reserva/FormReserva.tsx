@@ -10,26 +10,34 @@ import {
   TamanoKey,
   TipoPelo,
   DESCUENTO_CACHORRO,
+  DESCUENTO_PRIMERA_CITA,
   EDAD_CACHORRO_MESES,
-  buildWhatsAppMessage,
+  buildWhatsAppMessageMulti,
   calcularEstimado,
   construirDetalle,
   detectarTamanoPorPeso,
   formatCLP,
   hayConflicto,
+  type AjustePrecio,
+  type EstimadoVivo,
   type FormData,
 } from "@/lib/reserva";
 import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
+import { fotoValida, subirFotoReserva } from "@/lib/fotos";
+import { WHATSAPP_NUMBER } from "@/lib/site";
+import { createClient } from "@/lib/supabase/client";
 import { BreedAvatar } from "@/components/ui/BreedAvatar";
 
-const WHATSAPP_BASE = "https://wa.me/4915237152283?text=";
+const WHATSAPP_BASE = `https://wa.me/${WHATSAPP_NUMBER}?text=`;
 
-/* Wizard progresivo — una pregunta por pantalla, avance automático en
-   selecciones únicas y multiselección de chips para las zonas sensibles.
-   Menos densidad = menos fatiga visual. */
+/* Wizard progresivo v2 — reserva multi-perrito (pedido de Rodolfo 19-jul):
+   se pregunta cuántos perritos vienen y el bloque de preguntas se repite
+   por cada uno; las fotos (actual + referencia de corte) van por perrito;
+   la cuenta ya viene puesta (el gate vive en app/reserva/page.tsx). */
 
 const AUTO_ADVANCE_MS = 350;
+const MAX_PERROS = 3;
 
 // ─── UI helpers ────────────────────────────────────────────────────────────
 
@@ -105,9 +113,86 @@ function Chip({
   );
 }
 
-/* Mini-calendario de fechas disponibles — domingos y días pasados
-   deshabilitados. Cuando exista la agenda real, este componente marcará la
-   disponibilidad verdadera del equipo. */
+function FotoPicker({
+  id, label, hint, file, onFile, requerida,
+}: {
+  id: string; label: string; hint: string; file: File | null;
+  onFile: (f: File | null) => void; requerida?: boolean;
+}) {
+  const [error, setError] = useState("");
+  const [preview, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  return (
+    <div>
+      <p className="mb-1 text-sm font-bold text-ink">
+        {label}{" "}
+        {!requerida && <span className="font-normal text-ink/40">opcional</span>}
+      </p>
+      <p className="mb-2 text-xs text-ink-soft">{hint}</p>
+      <label
+        htmlFor={id}
+        className={`flex cursor-pointer items-center gap-4 rounded-2xl border-2 border-dashed px-4 py-4 transition-colors ${
+          file ? "border-teal bg-sky/30" : "border-ink/15 bg-white hover:border-teal/40"
+        }`}
+      >
+        {preview ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={preview}
+            alt=""
+            className="h-16 w-16 flex-none rounded-xl object-cover"
+          />
+        ) : (
+          <span
+            className="flex h-16 w-16 flex-none items-center justify-center rounded-xl bg-cream text-2xl"
+            aria-hidden="true"
+          >
+            📷
+          </span>
+        )}
+        <span className="text-sm font-semibold text-ink">
+          {file ? file.name : "Toca para elegir una foto"}
+          <span className="block text-xs font-normal text-ink-soft">
+            JPG, PNG o WebP · máx 8 MB
+          </span>
+        </span>
+      </label>
+      <input
+        id={id}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={(e) => {
+          const f = e.target.files?.[0] ?? null;
+          if (!f) return;
+          const err = fotoValida(f);
+          if (err) {
+            setError(err);
+            onFile(null);
+            return;
+          }
+          setError("");
+          onFile(f);
+        }}
+      />
+      {error && (
+        <p className="mt-1.5 text-xs font-semibold text-[#a34d00]">{error}</p>
+      )}
+    </div>
+  );
+}
+
+/* Mini-calendario — domingos y días pasados deshabilitados. */
 function MiniCalendario({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
@@ -184,10 +269,11 @@ function MiniCalendario({ value, onChange }: { value: string; onChange: (v: stri
 // ─── Definición de micro-pasos ─────────────────────────────────────────────
 
 type PasoId =
-  | "nombre" | "raza" | "edad" | "primera" | "peso" | "tamano" | "contextura"
-  | "pelo" | "salud" | "temperamento" | "zonas" | "contacto" | "cita";
+  | "cuantos" | "nombre" | "raza" | "edad" | "primera" | "peso" | "tamano"
+  | "contextura" | "pelo" | "salud" | "temperamento" | "zonas" | "fotos" | "cita";
 
-const PASOS: { id: PasoId; pregunta: string; hint?: string }[] = [
+/** Pasos que se repiten por perrito, en orden. */
+const PASOS_PERRO: { id: PasoId; pregunta: string; hint?: string }[] = [
   { id: "nombre", pregunta: "¿Cómo se llama tu perro?" },
   { id: "raza", pregunta: "¿Qué raza es?" },
   { id: "edad", pregunta: "¿Qué edad tiene?", hint: "Aproximada está bien" },
@@ -199,8 +285,7 @@ const PASOS: { id: PasoId; pregunta: string; hint?: string }[] = [
   { id: "salud", pregunta: "Un chequeo rápido de salud", hint: "Nos ayuda a preparar su sesión" },
   { id: "temperamento", pregunta: "¿Cómo se porta en la peluquería?" },
   { id: "zonas", pregunta: "¿Con qué NO se deja tocar?", hint: "Marca todas las que apliquen — o ninguna" },
-  { id: "contacto", pregunta: "¿Cómo te contactamos?", hint: "Para confirmarte la cita" },
-  { id: "cita", pregunta: "¡Último paso! Tu cita" },
+  { id: "fotos", pregunta: "Una fotito 📸", hint: "Así el equipo llega preparado y tu descuento queda validado" },
 ];
 
 const ZONAS: { key: keyof FormData; label: string; emoji: string }[] = [
@@ -214,22 +299,58 @@ const ZONAS: { key: keyof FormData; label: string; emoji: string }[] = [
   { key: "conTijeras", label: "Tijeras", emoji: "✄" },
 ];
 
+interface FotosPerro {
+  actual: File | null;
+  referencia: File | null;
+}
+
+interface CuponAplicado {
+  codigo: string;
+  pct: number;
+  etiqueta: string;
+}
+
 // ─── Main ──────────────────────────────────────────────────────────────────
 
 export function FormReserva({
   initialServicio = "",
   initialFecha = "",
+  contacto,
 }: {
   initialServicio?: string;
   initialFecha?: string;
+  contacto: { nombre: string; email: string; telefono: string };
 }) {
+  /* Posición global: paso "cuantos" → perros[i] × PASOS_PERRO → "cita" */
+  const [fase, setFase] = useState<"cuantos" | "perro" | "cita">("cuantos");
+  const [dogIdx, setDogIdx] = useState(0);
   const [step, setStep] = useState(0);
+  const [cantidad, setCantidad] = useState(1);
+
+  const contactoData = {
+    contactoNombre: contacto.nombre,
+    contactoEmail: contacto.email,
+    contactoTelefono: contacto.telefono,
+  };
+
+  const [perros, setPerros] = useState<FormData[]>([
+    { ...FORM_INITIAL, ...contactoData },
+  ]);
+  const [fotos, setFotos] = useState<FotosPerro[]>([{ actual: null, referencia: null }]);
+  const [fechaDeseada, setFechaDeseada] = useState(
+    /^\d{4}-\d{2}-\d{2}$/.test(initialFecha) ? initialFecha : ""
+  );
+  const [servicio, setServicio] = useState(
+    SERVICIOS.includes(initialServicio) ? initialServicio : ""
+  );
+
+  const [esPrimeraCita, setEsPrimeraCita] = useState(false);
+  const [cuponInput, setCuponInput] = useState("");
+  const [cupon, setCupon] = useState<CuponAplicado | null>(null);
+  const [cuponError, setCuponError] = useState("");
+  const [enviando, setEnviando] = useState(false);
   const [solicitudEstado, setSolicitudEstado] = useState<"idle" | "registrada" | "error">("idle");
-  const [data, setData] = useState<FormData>(() => ({
-    ...FORM_INITIAL,
-    servicio: SERVICIOS.includes(initialServicio) ? initialServicio : "",
-    fechaDeseada: /^\d{4}-\d{2}-\d{2}$/.test(initialFecha) ? initialFecha : "",
-  }));
+
   const tarifas = useTarifas();
   const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -237,90 +358,260 @@ export function FormReserva({
     if (autoTimer.current) clearTimeout(autoTimer.current);
   }, []);
 
-  const upd = useCallback((key: keyof FormData, value: string) => {
-    setData((prev) => ({ ...prev, [key]: value }));
+  /* Descuento de bienvenida: primera cita de la cuenta (RLS solo deja ver
+     las sesiones propias, el conteo es del usuario). */
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("sesiones")
+      .select("id", { count: "exact", head: true })
+      .then(({ count, error }) => {
+        if (!error && count === 0) setEsPrimeraCita(true);
+      });
   }, []);
+
+  const data = perros[dogIdx];
+
+  const upd = useCallback((key: keyof FormData, value: string) => {
+    setPerros((prev) =>
+      prev.map((p, i) => (i === dogIdx ? { ...p, [key]: value } : p))
+    );
+  }, [dogIdx]);
+
+  const totalPasosPerro = PASOS_PERRO.length;
+  const pasoGlobal =
+    fase === "cuantos"
+      ? 0
+      : fase === "perro"
+        ? 1 + dogIdx * totalPasosPerro + step
+        : 1 + cantidad * totalPasosPerro;
+  const totalGlobal = 1 + cantidad * totalPasosPerro + 1;
 
   const avanzar = useCallback(() => {
-    setStep((s) => Math.min(s + 1, PASOS.length - 1));
-  }, []);
+    if (fase === "cuantos") {
+      setFase("perro");
+      return;
+    }
+    if (fase === "perro") {
+      if (step < totalPasosPerro - 1) {
+        setStep((s) => s + 1);
+      } else if (dogIdx < cantidad - 1) {
+        setDogIdx((i) => i + 1);
+        setStep(0);
+      } else {
+        setFase("cita");
+      }
+    }
+  }, [fase, step, dogIdx, cantidad, totalPasosPerro]);
 
-  /** Actualiza y avanza solo tras una pausa breve (feedback visual primero) */
+  const retroceder = useCallback(() => {
+    if (fase === "cita") {
+      setFase("perro");
+      setDogIdx(cantidad - 1);
+      setStep(totalPasosPerro - 1);
+      return;
+    }
+    if (fase === "perro") {
+      if (step > 0) {
+        setStep((s) => s - 1);
+      } else if (dogIdx > 0) {
+        setDogIdx((i) => i - 1);
+        setStep(totalPasosPerro - 1);
+      } else {
+        setFase("cuantos");
+      }
+    }
+  }, [fase, step, dogIdx, cantidad, totalPasosPerro]);
+
   const updYAvanzar = useCallback((key: keyof FormData, value: string) => {
-    setData((prev) => ({ ...prev, [key]: value }));
+    upd(key, value);
     if (autoTimer.current) clearTimeout(autoTimer.current);
     autoTimer.current = setTimeout(avanzar, AUTO_ADVANCE_MS);
-  }, [avanzar]);
+  }, [upd, avanzar]);
 
-  const precioDe = useCallback(
-    (p: number) => tarifas.base[detectarTamanoPorPeso(p)],
-    [tarifas]
+  const elegirCantidad = useCallback((n: number) => {
+    setCantidad(n);
+    setPerros((prev) => {
+      const next = [...prev];
+      while (next.length < n) next.push({ ...FORM_INITIAL, ...contactoData });
+      return next.slice(0, Math.max(n, 1));
+    });
+    setFotos((prev) => {
+      const next = [...prev];
+      while (next.length < n) next.push({ actual: null, referencia: null });
+      return next.slice(0, Math.max(n, 1));
+    });
+    if (autoTimer.current) clearTimeout(autoTimer.current);
+    autoTimer.current = setTimeout(() => setFase("perro"), AUTO_ADVANCE_MS);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Cálculos por perrito ────────────────────────────────────────────────
+  const descuentoGlobal: AjustePrecio | null = cupon
+    ? { etiqueta: cupon.etiqueta, pct: -Math.abs(cupon.pct) }
+    : esPrimeraCita
+      ? DESCUENTO_PRIMERA_CITA
+      : null;
+
+  const estimadoDe = useCallback(
+    (d: FormData): { estimado: EstimadoVivo | null; esManual: boolean } => {
+      const peso = parseFloat(d.pesoKg);
+      const pesoOk = !isNaN(peso) && peso > 0.4 && peso <= 120;
+      const esManual = !!(
+        d.tamanoDeclarado && pesoOk && hayConflicto(d.tamanoDeclarado as TamanoKey, peso)
+      );
+      if (!pesoOk) return { estimado: null, esManual };
+
+      const edadMeses = (parseInt(d.edadAnios) || 0) * 12 + (parseInt(d.edadMeses) || 0);
+      const razaJoven =
+        edadMeses > 0 && edadMeses <= EDAD_CACHORRO_MESES
+          ? CATALOGO_RAZAS.find((r) => r.nombre === d.raza) ?? null
+          : null;
+      const tamanoAuto = detectarTamanoPorPeso(peso);
+      const baseCachorro =
+        razaJoven && razaJoven.tamano !== tamanoAuto ? tarifas.base[razaJoven.tamano] : null;
+
+      const extra: AjustePrecio[] = [];
+      if (baseCachorro) extra.push(DESCUENTO_CACHORRO);
+      if (descuentoGlobal) extra.push(descuentoGlobal);
+
+      return {
+        estimado: calcularEstimado(d, baseCachorro ?? tarifas.base[tamanoAuto], extra),
+        esManual,
+      };
+    },
+    [tarifas, descuentoGlobal]
   );
 
+  const actual = estimadoDe(data);
   const peso = parseFloat(data.pesoKg);
   const pesoValido = !isNaN(peso) && peso > 0.4 && peso <= 120;
   const pesoInvalido = data.pesoKg !== "" && !pesoValido;
   const tamanoAuto = pesoValido ? detectarTamanoPorPeso(peso) : null;
-  const esManual = !!(data.tamanoDeclarado && pesoValido && hayConflicto(data.tamanoDeclarado as TamanoKey, peso));
-  const edadMesesTotal = (parseInt(data.edadAnios) || 0) * 12 + (parseInt(data.edadMeses) || 0);
-  const razaJoven =
-    edadMesesTotal > 0 && edadMesesTotal <= EDAD_CACHORRO_MESES
-      ? CATALOGO_RAZAS.find((r) => r.nombre === data.raza) ?? null
-      : null;
-  /* Regla de Rodolfo: cachorro de raza conocida cotiza por la tabla de su
-     tamaño ADULTO con descuento, no por su peso actual. */
-  const baseCachorro =
-    razaJoven && tamanoAuto && razaJoven.tamano !== tamanoAuto
-      ? tarifas.base[razaJoven.tamano]
-      : null;
-  const precio = pesoValido ? precioDe(peso) : null;
-  const estimado = pesoValido
-    ? calcularEstimado(
-        data,
-        baseCachorro ?? precio,
-        baseCachorro ? [DESCUENTO_CACHORRO] : undefined
-      )
-    : null;
 
-  const paso = PASOS[step];
-  const pct = ((step + 1) / PASOS.length) * 100;
-  const esUltimo = step === PASOS.length - 1;
-  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.contactoEmail.trim());
-  const telefonoValido = /^\+?[\d\s]{8,15}$/.test(data.contactoTelefono.trim());
-  const contactoIncompleto =
-    data.contactoNombre.trim().length < 2 || !emailValido || !telefonoValido;
+  const resumen = perros.slice(0, cantidad).map((p) => estimadoDe(p));
+  const totalEstimado = resumen.reduce((acc, r) => acc + (r.estimado?.total ?? 0), 0);
+  const algunoManual = resumen.some((r) => r.esManual);
+
+  const paso = fase === "perro" ? PASOS_PERRO[step] : null;
+  const fotoActualFalta = fase === "perro" && paso?.id === "fotos" && !fotos[dogIdx]?.actual;
   const bloqueaAvance =
-    (paso.id === "peso" && pesoInvalido) ||
-    (paso.id === "contacto" && contactoIncompleto);
+    (paso?.id === "peso" && pesoInvalido) || fotoActualFalta;
 
-  /* Guarda la solicitud en la base (pendiente) sin bloquear la navegación
-     a WhatsApp: keepalive mantiene viva la petición al abrir la otra pestaña. */
-  const registrarSolicitud = useCallback(() => {
-    if (!data.fechaDeseada || !data.servicio) return;
-    setSolicitudEstado("registrada");
-    fetch("/api/reservas", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      keepalive: true,
-      body: JSON.stringify({
-        contacto: {
-          nombre: data.contactoNombre.trim(),
-          email: data.contactoEmail.trim(),
-          telefono: data.contactoTelefono.trim(),
-        },
-        fechaDeseada: data.fechaDeseada,
-        servicio: data.servicio,
-        precioEstimado: estimado?.total ?? precio,
-        detalle: construirDetalle(data),
-      }),
-    })
-      .then((r) => {
-        if (!r.ok && r.status !== 503) setSolicitudEstado("error");
+  // ── Cupón ───────────────────────────────────────────────────────────────
+  const validarCupon = useCallback(async () => {
+    const codigo = cuponInput.trim().toUpperCase();
+    if (!codigo) return;
+    setCuponError("");
+    try {
+      const supabase = createClient();
+      const { data: fila, error } = await supabase
+        .from("cupones")
+        .select("codigo, descripcion, descuento_pct")
+        .eq("codigo", codigo)
+        .maybeSingle();
+      if (error || !fila) {
+        setCuponError("Ese cupón no existe o ya no está activo.");
+        return;
+      }
+      setCupon({
+        codigo: fila.codigo,
+        pct: fila.descuento_pct,
+        etiqueta: fila.descripcion || `Cupón ${fila.codigo}`,
+      });
+    } catch {
+      setCuponError("No pudimos validar el cupón. Intenta de nuevo.");
+    }
+  }, [cuponInput]);
+
+  // ── Confirmar: sube fotos, registra en DB y abre WhatsApp ───────────────
+  const confirmarReserva = useCallback(() => {
+    if (!fechaDeseada || !servicio || enviando) return;
+    setEnviando(true);
+
+    /* La pestaña se abre de inmediato (gesto del usuario) y se redirige al
+       terminar las subidas — así el popup-blocker no se la come. */
+    const win = window.open("about:blank", "_blank");
+
+    void (async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const perrosPayload = await Promise.all(
+        perros.slice(0, cantidad).map(async (p, i) => {
+          const { estimado, esManual } = estimadoDe(p);
+          const f = fotos[i];
+          const [fotoActualUrl, fotoReferenciaUrl] = user
+            ? await Promise.all([
+                f?.actual ? subirFotoReserva(supabase, user.id, f.actual, i, "actual") : null,
+                f?.referencia ? subirFotoReserva(supabase, user.id, f.referencia, i, "referencia") : null,
+              ])
+            : [null, null];
+          return {
+            detalle: construirDetalle(p),
+            precioEstimado: estimado?.total ?? null,
+            esManual,
+            fotoActualUrl,
+            fotoReferenciaUrl,
+            ficha: {
+              nombre: p.nombrePerro,
+              raza: p.raza === "Otro" ? p.razaOtro || "Otro" : p.raza,
+              pesoKg: pesoDe(p),
+              contextura: p.contextura || null,
+              tipoPelo: p.tipoPelo || null,
+              temperamento: normalizarTemperamento(p.temperamentoGeneral),
+              alergias: p.tieneAlergia === "si" ? p.cualAlergia || "sí" : null,
+            },
+          };
+        })
+      );
+
+      fetch("/api/reservas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({
+          contacto: {
+            nombre: contacto.nombre,
+            email: contacto.email,
+            telefono: contacto.telefono,
+          },
+          fechaDeseada,
+          servicio,
+          cupon: descuentoGlobal
+            ? {
+                codigo: cupon?.codigo ?? "PRIMERA_CITA",
+                pct: Math.abs(descuentoGlobal.pct),
+              }
+            : null,
+          perros: perrosPayload,
+        }),
       })
-      .catch(() => setSolicitudEstado("error"));
-  }, [data, precio]);
+        .then((r) => {
+          setSolicitudEstado(r.ok ? "registrada" : r.status === 503 ? "registrada" : "error");
+        })
+        .catch(() => setSolicitudEstado("error"));
 
-  /* El perrito acompaña todo el formulario: raza elegida > tamaño declarado */
+      const mensaje = buildWhatsAppMessageMulti(
+        perros.slice(0, cantidad).map((p) => {
+          const { estimado, esManual } = estimadoDe(p);
+          return { data: p, esManual, estimado };
+        }),
+        { fechaDeseada, servicio, contactoNombre: contacto.nombre }
+      );
+      const waUrl = WHATSAPP_BASE + encodeURIComponent(mensaje);
+      if (win) {
+        win.location.href = waUrl;
+      } else {
+        window.location.href = waUrl;
+      }
+      setEnviando(false);
+    })();
+  }, [fechaDeseada, servicio, enviando, perros, cantidad, fotos, estimadoDe, contacto, cupon, descuentoGlobal]);
+
+  /* El perrito acompaña el formulario */
   const razaSel = CATALOGO_RAZAS.find((r) => r.nombre === data.raza);
   const acompanante = razaSel
     ? { src: razaImagen(razaSel.slug), nombre: razaSel.nombre }
@@ -328,49 +619,59 @@ export function FormReserva({
       ? { src: TAMANO_IMAGEN[data.tamanoDeclarado as TamanoKey], nombre: TAMANO_LABELS[data.tamanoDeclarado as TamanoKey] }
       : null;
 
+  const tituloPerro = cantidad > 1 ? `Perrito ${dogIdx + 1} de ${cantidad}` : null;
+
   return (
     <div className="mx-auto w-full max-w-lg">
-      {/* Progreso minimalista — con tu perrito acompañando */}
+      {/* Progreso */}
       <div className="mb-6 flex items-center gap-3">
-        {acompanante && step > 0 && (
+        {acompanante && fase === "perro" && (
           <BreedAvatar src={acompanante.src} nombre={acompanante.nombre} size="sm" />
         )}
         <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink/10">
           <div
             className="h-full rounded-full bg-teal transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
-            style={{ width: `${pct}%` }}
+            style={{ width: `${((pasoGlobal + 1) / totalGlobal) * 100}%` }}
             role="progressbar"
-            aria-valuenow={step + 1}
+            aria-valuenow={pasoGlobal + 1}
             aria-valuemin={1}
-            aria-valuemax={PASOS.length}
-            aria-label={`Paso ${step + 1} de ${PASOS.length}`}
+            aria-valuemax={totalGlobal}
+            aria-label={`Paso ${pasoGlobal + 1} de ${totalGlobal}`}
           />
         </div>
         <span className="text-xs font-bold text-ink-soft">
-          {step + 1}/{PASOS.length}
+          {pasoGlobal + 1}/{totalGlobal}
         </span>
       </div>
 
-      {/* Estimado en vivo — se actualiza con cada respuesta */}
-      {estimado && step > 0 && !esUltimo && (
+      {/* Descuento activo */}
+      {descuentoGlobal && fase !== "cuantos" && (
+        <div className="mb-4 flex items-center gap-2 rounded-2xl bg-[#d8f0e3] px-4 py-2.5 text-sm font-bold text-teal-ink">
+          <span aria-hidden="true">🎁</span>
+          {descuentoGlobal.pct}% — {descuentoGlobal.etiqueta}
+        </div>
+      )}
+
+      {/* Estimado en vivo del perrito activo */}
+      {actual.estimado && fase === "perro" && step > 0 && (
         <div
           aria-live="polite"
           className="sticky top-20 z-30 mb-5 rounded-2xl bg-teal-ink px-5 py-3.5 text-white shadow-lg"
         >
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs font-bold uppercase tracking-wide opacity-80">
-              💰 Estimado en vivo
+              💰 Estimado {cantidad > 1 ? `· ${data.nombrePerro || `perrito ${dogIdx + 1}`}` : "en vivo"}
             </span>
             <span className="font-display text-xl font-extrabold">
-              {formatCLP(estimado.total)}
+              {formatCLP(actual.estimado.total)}
             </span>
           </div>
-          {estimado.ajustes.length > 0 && (
+          {actual.estimado.ajustes.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold">
-                Base {formatCLP(estimado.base)}
+                Base {formatCLP(actual.estimado.base)}
               </span>
-              {estimado.ajustes.map((a) => (
+              {actual.estimado.ajustes.map((a) => (
                 <span
                   key={a.etiqueta}
                   className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold text-teal-ink ${
@@ -388,25 +689,57 @@ export function FormReserva({
         </div>
       )}
 
-      {/* Servicio preseleccionado */}
-      {data.servicio && !esUltimo && step === 0 && (
-        <div className="mb-5 flex items-center gap-2 rounded-2xl bg-sky/50 px-4 py-3 text-sm font-semibold text-teal-ink">
-          <span aria-hidden="true">🛁</span>
-          <span>Servicio elegido: <strong>{data.servicio}</strong></span>
-        </div>
-      )}
-
-      {/* Pantalla del paso — key fuerza re-animación de entrada */}
-      <div key={paso.id} className="rise-in rounded-3xl bg-white p-7 shadow-sm">
+      {/* Pantalla del paso */}
+      <div key={`${fase}-${dogIdx}-${step}`} className="rise-in rounded-3xl bg-white p-7 shadow-sm">
+        {tituloPerro && fase === "perro" && (
+          <p className="mb-1 text-xs font-extrabold uppercase tracking-[0.18em] text-teal-dark">
+            {tituloPerro}
+          </p>
+        )}
         <h2 className="font-display text-2xl font-extrabold leading-snug tracking-tight text-ink">
-          {paso.pregunta}
+          {fase === "cuantos"
+            ? "¿Cuántos perritos vienen? 🐶"
+            : fase === "cita"
+              ? "¡Último paso! Tu cita"
+              : paso!.pregunta}
         </h2>
-        {paso.hint && (
-          <p className="mt-1 text-sm text-ink-soft">{paso.hint}</p>
+        {fase === "cuantos" && (
+          <p className="mt-1 text-sm text-ink-soft">
+            Llenamos una ficha por cada uno — así el equipo los recibe listos.
+          </p>
+        )}
+        {fase === "perro" && paso!.hint && (
+          <p className="mt-1 text-sm text-ink-soft">{paso!.hint}</p>
         )}
 
         <div className="mt-6">
-          {paso.id === "nombre" && (
+          {fase === "cuantos" && (
+            <div className="grid grid-cols-3 gap-3">
+              {[1, 2, 3].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => elegirCantidad(n)}
+                  aria-pressed={cantidad === n}
+                  className={`flex flex-col items-center gap-1 rounded-2xl border-2 py-5 font-display text-2xl font-extrabold transition-[border-color,background-color,transform] duration-150 active:scale-95 ${
+                    cantidad === n
+                      ? "border-teal bg-sky/40 text-teal-ink"
+                      : "border-ink/10 bg-white text-ink hover:border-teal/30"
+                  }`}
+                >
+                  {n}
+                  <span className="text-xs font-bold text-ink-soft">
+                    {n === 1 ? "perrito" : "perritos"}
+                  </span>
+                </button>
+              ))}
+              <p className="col-span-3 text-center text-xs text-ink-soft">
+                ¿Más de {MAX_PERROS}? Escríbenos directo por WhatsApp y lo coordinamos.
+              </p>
+            </div>
+          )}
+
+          {fase === "perro" && paso!.id === "nombre" && (
             <Input
               id="nombrePerro"
               value={data.nombrePerro}
@@ -417,10 +750,8 @@ export function FormReserva({
             />
           )}
 
-          {paso.id === "raza" && (
+          {fase === "perro" && paso!.id === "raza" && (
             <div className="space-y-4">
-              {/* Picker visual de razas — sin auto-avance para que puedas
-                  ver a tu perrito antes de continuar */}
               <div className="grid max-h-72 grid-cols-3 gap-2 overflow-y-auto rounded-2xl bg-cream/60 p-3 sm:grid-cols-4">
                 {CATALOGO_RAZAS.map((r) => (
                   <button
@@ -467,18 +798,11 @@ export function FormReserva({
                 />
               )}
 
-              {/* Tu perrito, en grande */}
-              {data.raza && data.raza !== "Otro" && (
+              {data.raza && data.raza !== "Otro" && razaSel && (
                 <div className="rise-in flex items-center gap-4 rounded-2xl bg-sky/40 px-5 py-4">
-                  {(() => {
-                    const razaSel = CATALOGO_RAZAS.find((r) => r.nombre === data.raza);
-                    return razaSel ? (
-                      <BreedAvatar src={razaImagen(razaSel.slug)} nombre={razaSel.nombre} size="lg" />
-                    ) : null;
-                  })()}
+                  <BreedAvatar src={razaImagen(razaSel.slug)} nombre={razaSel.nombre} size="lg" />
                   <p className="text-sm font-semibold text-teal-ink">
-                    ¡Un{" "}
-                    <strong>{data.raza}</strong>
+                    ¡Un <strong>{data.raza}</strong>
                     {data.nombrePerro ? ` como ${data.nombrePerro}` : ""}! Nos
                     encantan. Cuando estés listo, sigue con el botón de abajo.
                   </p>
@@ -487,7 +811,7 @@ export function FormReserva({
             </div>
           )}
 
-          {paso.id === "edad" && (
+          {fase === "perro" && paso!.id === "edad" && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="edadAnios" className="mb-1 block text-sm font-bold text-ink">Años</label>
@@ -500,7 +824,7 @@ export function FormReserva({
             </div>
           )}
 
-          {paso.id === "primera" && (
+          {fase === "perro" && paso!.id === "primera" && (
             <div className="grid gap-2">
               {([
                 ["si", "🎀 Sí, ¡es su primera vez!"],
@@ -520,7 +844,7 @@ export function FormReserva({
             </div>
           )}
 
-          {paso.id === "peso" && (
+          {fase === "perro" && paso!.id === "peso" && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -543,32 +867,23 @@ export function FormReserva({
                   </span>
                 </div>
               )}
-              {precio !== null && tamanoAuto && !pesoInvalido && (
+              {actual.estimado && tamanoAuto && !pesoInvalido && (
                 <div className="rise-in flex items-center gap-4 rounded-2xl bg-[#d8f0e3] px-5 py-4 text-sm font-semibold text-teal-ink">
                   <BreedAvatar src={TAMANO_IMAGEN[tamanoAuto]} nombre={TAMANO_LABELS[tamanoAuto]} size="lg" />
                   <span>
                     ✅ <strong>{TAMANO_LABELS[tamanoAuto]}</strong>
                     <span className="block">
                       Precio estimado:{" "}
-                      <strong>{formatCLP(estimado?.total ?? precio)}</strong>
+                      <strong>{formatCLP(actual.estimado.total)}</strong>
                     </span>
                     <span className="mt-1 block text-xs font-normal opacity-80">{NOTA_PRECIOS}</span>
                   </span>
                 </div>
               )}
-              {baseCachorro && razaJoven && estimado && !pesoInvalido && (
-                <div className="rise-in rounded-2xl bg-[#fde4c8] px-5 py-3 text-xs font-semibold leading-relaxed text-[#7a4d10]">
-                  🐶 Un {razaJoven.nombre} joven sigue creciendo: cotizamos por su
-                  tamaño adulto (<strong>{TAMANO_LABELS[razaJoven.tamano]}</strong>) con
-                  descuento de cachorro — estimado{" "}
-                  <strong>{formatCLP(estimado.total)}</strong>. El valor final se
-                  confirma en puerta según su desarrollo.
-                </div>
-              )}
             </div>
           )}
 
-          {paso.id === "tamano" && (
+          {fase === "perro" && paso!.id === "tamano" && (
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {(Object.keys(TAMANO_LABELS) as TamanoKey[]).map((k) => (
                 <button
@@ -588,7 +903,7 @@ export function FormReserva({
             </div>
           )}
 
-          {paso.id === "contextura" && (
+          {fase === "perro" && paso!.id === "contextura" && (
             <div className="grid gap-2">
               {(["delgado", "normal", "robusto"] as const).map((c) => (
                 <ChoiceCard key={c} checked={data.contextura === c} onClick={() => updYAvanzar("contextura", c)}>
@@ -598,7 +913,7 @@ export function FormReserva({
             </div>
           )}
 
-          {paso.id === "pelo" && (
+          {fase === "perro" && paso!.id === "pelo" && (
             <div className="space-y-3">
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {(Object.keys(PELO_LABELS) as TipoPelo[]).map((k) => (
@@ -617,7 +932,7 @@ export function FormReserva({
             </div>
           )}
 
-          {paso.id === "salud" && (
+          {fase === "perro" && paso!.id === "salud" && (
             <div className="space-y-5">
               {([
                 ["unasEncarnadas", "Uñas encarnadas"],
@@ -641,7 +956,7 @@ export function FormReserva({
             </div>
           )}
 
-          {paso.id === "temperamento" && (
+          {fase === "perro" && paso!.id === "temperamento" && (
             <div className="grid gap-2">
               {([
                 ["se_deja", "😊 Se deja — es un pan de Dios"],
@@ -656,7 +971,7 @@ export function FormReserva({
             </div>
           )}
 
-          {paso.id === "zonas" && (
+          {fase === "perro" && paso!.id === "zonas" && (
             <div className="flex flex-wrap gap-2.5">
               {ZONAS.map(({ key, label, emoji }) => {
                 const activo = data[key] === "no_se_deja";
@@ -674,29 +989,41 @@ export function FormReserva({
             </div>
           )}
 
-          {paso.id === "contacto" && (
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="contactoNombre" className="mb-1 block text-sm font-bold text-ink">Tu nombre</label>
-                <Input id="contactoNombre" value={data.contactoNombre} onChange={(v) => upd("contactoNombre", v)} placeholder="Ej: Camila Rojas" autoFocus onEnter={avanzar} />
-              </div>
-              <div>
-                <label htmlFor="contactoTelefono" className="mb-1 block text-sm font-bold text-ink">Teléfono / WhatsApp</label>
-                <Input id="contactoTelefono" type="tel" value={data.contactoTelefono} onChange={(v) => upd("contactoTelefono", v)} placeholder="+56 9 1234 5678" onEnter={avanzar} />
-              </div>
-              <div>
-                <label htmlFor="contactoEmail" className="mb-1 block text-sm font-bold text-ink">Correo</label>
-                <Input id="contactoEmail" type="email" value={data.contactoEmail} onChange={(v) => upd("contactoEmail", v)} placeholder="tu@correo.cl" onEnter={avanzar} />
-              </div>
-              {contactoIncompleto && (data.contactoNombre || data.contactoEmail || data.contactoTelefono) && (
+          {fase === "perro" && paso!.id === "fotos" && (
+            <div className="space-y-5">
+              <FotoPicker
+                id={`foto-actual-${dogIdx}`}
+                label={`Foto de ${data.nombrePerro || "tu perrito"} hoy`}
+                hint="Cómo está su pelito ahora — nos ayuda a preparar la sesión"
+                file={fotos[dogIdx]?.actual ?? null}
+                onFile={(f) =>
+                  setFotos((prev) =>
+                    prev.map((x, i) => (i === dogIdx ? { ...x, actual: f } : x))
+                  )
+                }
+                requerida
+              />
+              <FotoPicker
+                id={`foto-ref-${dogIdx}`}
+                label="Referencia del corte"
+                hint="Una foto o idea del corte que te gustaría"
+                file={fotos[dogIdx]?.referencia ?? null}
+                onFile={(f) =>
+                  setFotos((prev) =>
+                    prev.map((x, i) => (i === dogIdx ? { ...x, referencia: f } : x))
+                  )
+                }
+              />
+              {fotoActualFalta && (
                 <p className="text-xs font-semibold text-ink-soft">
-                  Completa nombre, teléfono válido y correo para continuar.
+                  La foto de tu perrito es necesaria para confirmar la reserva
+                  (y validar tu descuento de bienvenida).
                 </p>
               )}
             </div>
           )}
 
-          {paso.id === "cita" && (
+          {fase === "cita" && (
             <div className="space-y-5">
               <div>
                 <p className="mb-1 text-sm font-bold text-ink">Fechas disponibles</p>
@@ -706,39 +1033,101 @@ export function FormReserva({
                     Ver agenda semanal →
                   </a>
                 </p>
-                <MiniCalendario value={data.fechaDeseada} onChange={(v) => upd("fechaDeseada", v)} />
+                <MiniCalendario value={fechaDeseada} onChange={setFechaDeseada} />
               </div>
 
               <div>
                 <p className="mb-1 text-sm font-bold text-ink">Servicio</p>
                 <div className="grid gap-2">
                   {SERVICIOS.map((s) => (
-                    <ChoiceCard key={s} checked={data.servicio === s} onClick={() => upd("servicio", s)}>
+                    <ChoiceCard key={s} checked={servicio === s} onClick={() => setServicio(s)}>
                       {s}
                     </ChoiceCard>
                   ))}
                 </div>
               </div>
 
-              <div className={`rounded-3xl p-5 ${esManual ? "bg-[#fde4c8]" : "bg-[#d8f0e3]"}`}>
+              {/* Cupón */}
+              <div>
+                <p className="mb-1 text-sm font-bold text-ink">
+                  ¿Tienes un cupón?{" "}
+                  <span className="font-normal text-ink/40">opcional</span>
+                </p>
+                {cupon ? (
+                  <div className="flex items-center justify-between rounded-2xl bg-[#d8f0e3] px-4 py-3 text-sm font-bold text-teal-ink">
+                    <span>🎟️ {cupon.codigo} — {cupon.pct}% dcto</span>
+                    <button
+                      type="button"
+                      onClick={() => { setCupon(null); setCuponInput(""); }}
+                      className="text-xs font-semibold underline underline-offset-2"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      value={cuponInput}
+                      onChange={setCuponInput}
+                      placeholder="Ej: LANZAMIENTO"
+                      onEnter={validarCupon}
+                    />
+                    <button
+                      type="button"
+                      onClick={validarCupon}
+                      className="rounded-2xl border-2 border-ink/15 px-5 text-sm font-extrabold text-ink transition-colors hover:border-ink/30"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                )}
+                {cuponError && (
+                  <p className="mt-1.5 text-xs font-semibold text-[#a34d00]">{cuponError}</p>
+                )}
+                {cupon && esPrimeraCita && (
+                  <p className="mt-1.5 text-xs text-ink-soft">
+                    Los descuentos no se suman — aplicamos el del cupón.
+                  </p>
+                )}
+              </div>
+
+              {/* Resumen por perrito */}
+              <div className={`rounded-3xl p-5 ${algunoManual ? "bg-[#fde4c8]" : "bg-[#d8f0e3]"}`}>
                 <p className="font-display text-base font-extrabold text-ink">
-                  {esManual ? "⚠️ Atención personalizada" : "✅ Reserva lista"}
+                  {algunoManual ? "⚠️ Atención personalizada" : "✅ Reserva lista"}
                 </p>
-                <p className="mt-1 text-sm leading-relaxed text-ink-soft">
-                  {esManual
-                    ? "El tamaño y el peso no coinciden. Rodolfo te atenderá directamente para evaluar a tu perro."
-                    : `${data.nombrePerro ? data.nombrePerro + " · " : ""}Precio estimado: ${estimado ? formatCLP(estimado.total) : "—"} · Todo listo para enviar por WhatsApp.`}
-                </p>
+                <div className="mt-2 space-y-1.5">
+                  {perros.slice(0, cantidad).map((p, i) => {
+                    const r = resumen[i];
+                    return (
+                      <p key={i} className="flex items-center justify-between text-sm font-semibold text-ink-soft">
+                        <span>🐶 {p.nombrePerro || `Perrito ${i + 1}`}</span>
+                        <span>
+                          {r.esManual
+                            ? "evaluación en puerta"
+                            : r.estimado
+                              ? formatCLP(r.estimado.total)
+                              : "—"}
+                        </span>
+                      </p>
+                    );
+                  })}
+                  {cantidad > 1 && totalEstimado > 0 && (
+                    <p className="flex items-center justify-between border-t border-ink/10 pt-1.5 text-sm font-extrabold text-ink">
+                      <span>Total estimado</span>
+                      <span>{formatCLP(totalEstimado)}</span>
+                    </p>
+                  )}
+                </div>
                 <p className="mt-2 text-xs leading-relaxed text-ink-soft">{NOTA_PRECIOS}</p>
               </div>
 
-              <a
-                href={WHATSAPP_BASE + encodeURIComponent(buildWhatsAppMessage(data, esManual, estimado?.total ?? precio))}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={registrarSolicitud}
-                className={`flex w-full items-center justify-center gap-2 rounded-full py-4 font-display text-base font-extrabold shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow] duration-150 hover:shadow-[0_5px_0_rgba(6,58,64,.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)] ${
-                  esManual
+              <button
+                type="button"
+                onClick={confirmarReserva}
+                disabled={!fechaDeseada || !servicio || enviando}
+                className={`flex w-full items-center justify-center gap-2 rounded-full py-4 font-display text-base font-extrabold shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow,opacity] duration-150 hover:shadow-[0_5px_0_rgba(6,58,64,.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)] disabled:cursor-not-allowed disabled:opacity-40 ${
+                  algunoManual
                     ? "bg-orange text-teal-ink hover:bg-[#f7ab52]"
                     : "bg-teal text-white hover:bg-teal-dark"
                 }`}
@@ -747,8 +1136,12 @@ export function FormReserva({
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
                   <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.122 1.528 5.858L0 24l6.335-1.652A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.007-1.37l-.36-.213-3.727.977.994-3.634-.234-.373A9.818 9.818 0 0112 2.182c5.426 0 9.818 4.392 9.818 9.818S17.426 21.818 12 21.818z"/>
                 </svg>
-                {esManual ? "Solicitar evaluación personalizada" : "Confirmar reserva por WhatsApp"}
-              </a>
+                {enviando
+                  ? "Preparando tu reserva…"
+                  : algunoManual
+                    ? "Solicitar evaluación personalizada"
+                    : "Confirmar reserva por WhatsApp"}
+              </button>
 
               {solicitudEstado === "registrada" && (
                 <p className="rise-in rounded-2xl bg-[#d8f0e3] px-5 py-3 text-center text-sm font-semibold text-teal-ink">
@@ -769,26 +1162,39 @@ export function FormReserva({
 
       {/* Navegación */}
       <div className="mt-5 flex items-center gap-3">
-        {step > 0 && (
+        {(fase !== "cuantos") && (
           <button
             type="button"
-            onClick={() => setStep((s) => s - 1)}
+            onClick={retroceder}
             className="rounded-full border-2 border-ink/15 px-6 py-3 font-display text-sm font-extrabold text-ink transition-colors hover:border-ink/30"
           >
             ←
           </button>
         )}
-        {!esUltimo && (
+        {fase !== "cita" && (
           <button
             type="button"
             onClick={avanzar}
             disabled={bloqueaAvance}
             className="flex-1 rounded-full bg-teal py-3.5 font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,box-shadow,opacity] hover:bg-teal-dark hover:shadow-[0_5px_0_rgba(6,58,64,.25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-teal"
           >
-            {paso.id === "zonas" || paso.id === "salud" ? "Continuar →" : "Siguiente →"}
+            {fase === "perro" && step === totalPasosPerro - 1 && dogIdx < cantidad - 1
+              ? `Siguiente perrito →`
+              : "Siguiente →"}
           </button>
         )}
       </div>
     </div>
   );
+}
+
+// ─── Helpers de payload ────────────────────────────────────────────────────
+
+function pesoDe(p: FormData): number | null {
+  const n = parseFloat(p.pesoKg);
+  return !isNaN(n) && n > 0 && n <= 120 ? n : null;
+}
+
+function normalizarTemperamento(t: string): string | null {
+  return ["se_deja", "no_se_deja", "complicado", "no_lo_se"].includes(t) ? t : null;
 }
