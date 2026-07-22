@@ -9,8 +9,6 @@ import {
   TAMANO_LABELS,
   TamanoKey,
   TipoPelo,
-  DESCUENTO_CACHORRO,
-  DESCUENTO_PRIMERA_CITA,
   EDAD_CACHORRO_MESES,
   buildWhatsAppMessageMulti,
   calcularEstimado,
@@ -24,6 +22,7 @@ import {
 } from "@/lib/reserva";
 import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
+import { useAjustesPrecio } from "@/lib/ajustesPrecio";
 import { fotoValida, subirFotoReserva } from "@/lib/fotos";
 import { WHATSAPP_NUMBER } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
@@ -359,6 +358,7 @@ export function FormReserva({
   const [solicitudEstado, setSolicitudEstado] = useState<"idle" | "registrada" | "error">("idle");
 
   const tarifas = useTarifas();
+  const ajustesPrecio = useAjustesPrecio();
   const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
@@ -457,7 +457,7 @@ export function FormReserva({
   const descuentoGlobal: AjustePrecio | null = cupon
     ? { etiqueta: cupon.etiqueta, pct: -Math.abs(cupon.pct) }
     : esPrimeraCita
-      ? DESCUENTO_PRIMERA_CITA
+      ? ajustesPrecio.descuentoPrimeraCita
       : null;
 
   const estimadoDe = useCallback(
@@ -479,15 +479,15 @@ export function FormReserva({
         razaJoven && razaJoven.tamano !== tamanoAuto ? tarifas.base[razaJoven.tamano] : null;
 
       const extra: AjustePrecio[] = [];
-      if (baseCachorro) extra.push(DESCUENTO_CACHORRO);
+      if (baseCachorro) extra.push(ajustesPrecio.descuentoCachorro);
       if (descuentoGlobal) extra.push(descuentoGlobal);
 
       return {
-        estimado: calcularEstimado(d, baseCachorro ?? tarifas.base[tamanoAuto], extra),
+        estimado: calcularEstimado(d, baseCachorro ?? tarifas.base[tamanoAuto], extra, ajustesPrecio),
         esManual,
       };
     },
-    [tarifas, descuentoGlobal]
+    [tarifas, ajustesPrecio, descuentoGlobal]
   );
 
   const actual = estimadoDe(data);

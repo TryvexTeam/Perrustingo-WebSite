@@ -349,36 +349,39 @@ export interface AjustePrecio {
   pct: number;
 }
 
-export const RECARGOS_PELO: Partial<Record<TipoPelo, AjustePrecio>> = {
-  crespo_motas: { etiqueta: "Pelo con motas", pct: 15 },
-  motas_rastas: { etiqueta: "Motas / rastas", pct: 25 },
-  doble_capa: { etiqueta: "Doble capa", pct: 10 },
-};
+/* Configuración de ajustes de precio — antes constantes fijas acá mismo,
+   ahora vive en la tabla `ajustes_precio` (migración 007) y se lee vía
+   lib/ajustesPrecio.ts. Estos valores DEFAULT son el fallback antes de que
+   cargue la config real, e idénticos al hardcode original — no cambiar
+   sin también actualizar el seed de la migración 007. */
+export interface AjustesPrecioConfig {
+  recargosPelo: Partial<Record<TipoPelo, AjustePrecio>>;
+  recargosTemperamento: Record<string, AjustePrecio>;
+  pctPorZona: number;
+  maxPctZonas: number;
+  descuentoCachorro: AjustePrecio;
+  descuentoPrimeraCita: AjustePrecio;
+}
 
-export const RECARGOS_TEMPERAMENTO: Record<string, AjustePrecio> = {
-  no_se_deja: { etiqueta: "No se deja atender", pct: 15 },
-  complicado: { etiqueta: "Complicado o bravo", pct: 25 },
+export const AJUSTES_PRECIO_DEFAULT: AjustesPrecioConfig = {
+  recargosPelo: {
+    crespo_motas: { etiqueta: "Pelo con motas", pct: 15 },
+    motas_rastas: { etiqueta: "Motas / rastas", pct: 25 },
+    doble_capa: { etiqueta: "Doble capa", pct: 10 },
+  },
+  recargosTemperamento: {
+    no_se_deja: { etiqueta: "No se deja atender", pct: 15 },
+    complicado: { etiqueta: "Complicado o bravo", pct: 25 },
+  },
+  pctPorZona: 3,
+  maxPctZonas: 12,
+  descuentoCachorro: { etiqueta: "Cachorro en crecimiento", pct: -15 },
+  descuentoPrimeraCita: { etiqueta: "Primera cita con cuenta", pct: -10 },
 };
-
-/** % extra por cada zona sensible marcada (tope en MAX_PCT_ZONAS). */
-export const PCT_POR_ZONA = 3;
-export const MAX_PCT_ZONAS = 12;
 
 /* Regla de Rodolfo: cachorro/joven de raza conocida usa la tabla del
    TAMAÑO ADULTO de su raza, "bajándole un poquito". % PROVISORIO. */
 export const EDAD_CACHORRO_MESES = 18;
-export const DESCUENTO_CACHORRO: AjustePrecio = {
-  etiqueta: "Cachorro en crecimiento",
-  pct: -15,
-};
-
-/* Incentivo por registro (pedido de Rodolfo 19-jul): 10% dcto en la
-   primera cita de la cuenta. La foto obligatoria del perrito es el
-   anti-abuso (cuentas nuevas solo para canjear no pasan). */
-export const DESCUENTO_PRIMERA_CITA: AjustePrecio = {
-  etiqueta: "Primera cita con cuenta",
-  pct: -10,
-};
 
 export interface EstimadoVivo {
   base: number;
@@ -391,10 +394,15 @@ function redondear(n: number): number {
   return Math.round(n / 100) * 100;
 }
 
+/** Composición SIEMPRE aditiva (confirmado con Jarvis 22-jul): se suman
+    todos los % y se aplican una sola vez sobre la base — nunca en cadena
+    multiplicativa. Cambiar esto desincroniza el desglose que ve el
+    cliente del total que realmente se le cobra. */
 export function calcularEstimado(
   data: FormData,
   precioBase?: number | null,
-  ajustesExtra?: AjustePrecio[]
+  ajustesExtra?: AjustePrecio[],
+  config: AjustesPrecioConfig = AJUSTES_PRECIO_DEFAULT
 ): EstimadoVivo | null {
   const peso = parseFloat(data.pesoKg);
   const base = precioBase ?? (!isNaN(peso) && peso > 0 && peso <= 120 ? calcularPrecio(peso) : null);
@@ -402,10 +410,10 @@ export function calcularEstimado(
 
   const ajustes: AjustePrecio[] = [...(ajustesExtra ?? [])];
 
-  const recargoPelo = RECARGOS_PELO[data.tipoPelo as TipoPelo];
+  const recargoPelo = config.recargosPelo[data.tipoPelo as TipoPelo];
   if (recargoPelo) ajustes.push(recargoPelo);
 
-  const recargoTemp = RECARGOS_TEMPERAMENTO[data.temperamentoGeneral];
+  const recargoTemp = config.recargosTemperamento[data.temperamentoGeneral];
   if (recargoTemp) ajustes.push(recargoTemp);
 
   const zonas = [
@@ -415,7 +423,7 @@ export function calcularEstimado(
   if (zonas > 0) {
     ajustes.push({
       etiqueta: `${zonas} zona${zonas === 1 ? "" : "s"} sensible${zonas === 1 ? "" : "s"}`,
-      pct: Math.min(zonas * PCT_POR_ZONA, MAX_PCT_ZONAS),
+      pct: Math.min(zonas * config.pctPorZona, config.maxPctZonas),
     });
   }
 
