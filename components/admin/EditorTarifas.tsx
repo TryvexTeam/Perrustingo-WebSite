@@ -1,21 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import {
-  guardarTarifas,
-  leerTarifas,
-  restaurarTarifas,
+  notificarTarifasActualizadas,
+  obtenerTarifas,
   TARIFAS_DEFAULT,
   type Tarifas,
 } from "@/lib/tarifas";
+import { guardarTarifasAction, restaurarTarifasAction } from "@/app/dashboard/tarifas/actions";
 import { formatCLP, TAMANO_LABELS, type TamanoKey } from "@/lib/reserva";
 import { TAMANO_IMAGEN } from "@/lib/razas";
 import { BreedAvatar } from "@/components/ui/BreedAvatar";
 
-/* Editor de tarifas del admin — maqueta FE completa del flujo:
-   editar → guardar → los templates públicos (Precios, FormReserva) se
-   actualizan en vivo. La persistencia es localStorage hasta que exista la
-   tabla `tarifas` en Supabase. */
+/* Editor de tarifas del admin — editar → guardar (server action, rol admin)
+   → las tablas `tarifas`/`tarifas_extras` de Supabase quedan actualizadas y
+   los templates públicos (Precios, FormReserva) las reflejan para
+   cualquier visitante, no solo en este navegador. Ver migración 006. */
 
 const ORDEN: TamanoKey[] = ["toy", "pequeno", "mediano", "grande", "gigante"];
 
@@ -29,10 +30,22 @@ const TONO_FILA: Record<TamanoKey, string> = {
 
 export function EditorTarifas() {
   const [tarifas, setTarifas] = useState<Tarifas>(TARIFAS_DEFAULT);
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    setTarifas(leerTarifas());
+    let cancelado = false;
+    obtenerTarifas(createClient()).then((t) => {
+      if (!cancelado) {
+        setTarifas(t);
+        setCargando(false);
+      }
+    });
+    return () => {
+      cancelado = true;
+    };
   }, []);
 
   const updBase = (tamano: TamanoKey, valor: string) => {
@@ -44,14 +57,30 @@ export function EditorTarifas() {
     setGuardado(false);
   };
 
-  const guardar = () => {
-    guardarTarifas(tarifas);
+  const guardar = async () => {
+    setGuardando(true);
+    setError("");
+    const resultado = await guardarTarifasAction(tarifas);
+    setGuardando(false);
+    if (!resultado.success) {
+      setError(resultado.error ?? "No se pudo guardar.");
+      return;
+    }
+    notificarTarifasActualizadas();
     setGuardado(true);
   };
 
-  const restaurar = () => {
-    restaurarTarifas();
+  const restaurar = async () => {
+    setGuardando(true);
+    setError("");
+    const resultado = await restaurarTarifasAction();
+    setGuardando(false);
+    if (!resultado.success) {
+      setError(resultado.error ?? "No se pudo restaurar.");
+      return;
+    }
     setTarifas(TARIFAS_DEFAULT);
+    notificarTarifasActualizadas();
     setGuardado(true);
   };
 
@@ -59,11 +88,30 @@ export function EditorTarifas() {
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
       {/* Editor */}
       <div className="rounded-3xl bg-white p-7 shadow-sm">
-        <div className="mb-5 flex items-center gap-2 rounded-2xl bg-[#fde4c8] px-4 py-3 text-xs font-semibold text-[#7a4d10]">
-          <span aria-hidden="true">🔧</span>
-          Modo maqueta — los cambios se guardan en este navegador. Con la base
-          de datos conectada, se aplicarán para todos los visitantes.
-        </div>
+        {cargando ? (
+          <div
+            role="status"
+            className="mb-5 flex items-center gap-2 rounded-2xl bg-cream px-4 py-3 text-xs font-semibold text-ink-soft"
+          >
+            <span aria-hidden="true">⏳</span>
+            Cargando precios vigentes…
+          </div>
+        ) : (
+          <div className="mb-5 flex items-center gap-2 rounded-2xl bg-[#d5efe2] px-4 py-3 text-xs font-semibold text-teal-dark">
+            <span aria-hidden="true">🌐</span>
+            Guardado en la base de datos — se aplica para todos los
+            visitantes, en cualquier dispositivo.
+          </div>
+        )}
+        {error && (
+          <div
+            role="alert"
+            className="mb-5 flex items-center gap-2 rounded-2xl bg-[#fbdbe7] px-4 py-3 text-xs font-semibold text-[#7a1030]"
+          >
+            <span aria-hidden="true">⚠️</span>
+            {error}
+          </div>
+        )}
 
         <h2 className="font-display text-lg font-extrabold text-ink">
           Precio base por tamaño
@@ -94,7 +142,8 @@ export function EditorTarifas() {
                   step={500}
                   value={tarifas.base[tamano]}
                   onChange={(e) => updBase(tamano, e.target.value)}
-                  className="w-24 rounded-xl border-2 border-white bg-white/80 px-2.5 py-2 text-right text-sm font-extrabold text-ink focus:border-teal focus:outline-none"
+                  disabled={cargando || guardando}
+                  className="w-24 rounded-xl border-2 border-white bg-white/80 px-2.5 py-2 text-right text-sm font-extrabold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
                 />
               </div>
             </div>
@@ -121,7 +170,8 @@ export function EditorTarifas() {
                   setTarifas((prev) => ({ ...prev, recargoMotas: isNaN(n) ? 0 : n }));
                   setGuardado(false);
                 }}
-                className="w-20 rounded-xl border-2 border-ink/10 bg-white px-3 py-2 text-right text-sm font-extrabold text-ink focus:border-teal focus:outline-none"
+                disabled={cargando || guardando}
+                className="w-20 rounded-xl border-2 border-ink/10 bg-white px-3 py-2 text-right text-sm font-extrabold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
               />
               <span className="text-sm font-bold text-ink-soft">%</span>
             </div>
@@ -143,7 +193,8 @@ export function EditorTarifas() {
                   setTarifas((prev) => ({ ...prev, accesorio: isNaN(n) ? 0 : n }));
                   setGuardado(false);
                 }}
-                className="w-24 rounded-xl border-2 border-ink/10 bg-white px-3 py-2 text-right text-sm font-extrabold text-ink focus:border-teal focus:outline-none"
+                disabled={cargando || guardando}
+                className="w-24 rounded-xl border-2 border-ink/10 bg-white px-3 py-2 text-right text-sm font-extrabold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
               />
             </div>
           </div>
@@ -153,18 +204,20 @@ export function EditorTarifas() {
           <button
             type="button"
             onClick={guardar}
-            className="rounded-full bg-teal px-7 py-3 font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow] duration-150 hover:bg-teal-dark active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)]"
+            disabled={cargando || guardando}
+            className="rounded-full bg-teal px-7 py-3 font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow] duration-150 hover:bg-teal-dark active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:translate-y-0"
           >
-            Guardar cambios
+            {guardando ? "Guardando…" : "Guardar cambios"}
           </button>
           <button
             type="button"
             onClick={restaurar}
-            className="rounded-full border-2 border-ink/15 px-6 py-3 font-display text-sm font-extrabold text-ink transition-colors hover:border-ink/30"
+            disabled={cargando || guardando}
+            className="rounded-full border-2 border-ink/15 px-6 py-3 font-display text-sm font-extrabold text-ink transition-colors hover:border-ink/30 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Restaurar valores originales
           </button>
-          {guardado && (
+          {guardado && !guardando && (
             <span className="text-sm font-bold text-teal-dark">
               ✓ Guardado — la landing ya muestra los nuevos precios
             </span>

@@ -11,7 +11,10 @@ export const SITE = {
   hours: "Lun a Sáb · 9:00 a 17:00",
 } as const;
 
-const WHATSAPP_NUMBER = "4915237152283";
+/* Overrideable por entorno para testear sin escribirle al cliente real
+   (en local se apunta al número del equipo). */
+export const WHATSAPP_NUMBER =
+  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "4915237152283";
 
 export function whatsappUrl(message: string): string {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;

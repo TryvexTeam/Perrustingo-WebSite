@@ -54,7 +54,7 @@ export default async function CitasPage() {
   const { data } = await supabase
     .from("sesiones")
     .select(
-      "id, estado, fecha_cita, fecha_fin, servicio, precio_base, precio_final, contacto_nombre, contacto_email, contacto_telefono, detalle_form, notas_cliente"
+      "id, estado, fecha_cita, fecha_fin, servicio, precio_base, precio_final, contacto_nombre, contacto_email, contacto_telefono, detalle_form, notas_cliente, notas_equipo, perro_id"
     )
     .order("created_at", { ascending: false })
     .limit(200);
