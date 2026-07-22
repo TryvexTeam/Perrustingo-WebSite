@@ -9,8 +9,6 @@ import {
   TAMANO_LABELS,
   TamanoKey,
   TipoPelo,
-  DESCUENTO_CACHORRO,
-  DESCUENTO_PRIMERA_CITA,
   EDAD_CACHORRO_MESES,
   buildWhatsAppMessageMulti,
   calcularEstimado,
@@ -24,6 +22,7 @@ import {
 } from "@/lib/reserva";
 import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
+import { useAjustesPrecio } from "@/lib/ajustesPrecio";
 import { fotoValida, subirFotoReserva } from "@/lib/fotos";
 import { WHATSAPP_NUMBER } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
@@ -114,10 +113,11 @@ function Chip({
 }
 
 function FotoPicker({
-  id, label, hint, file, onFile, requerida,
+  id, label, hint, file, onFile, requerida, soloCamara, disabled,
 }: {
   id: string; label: string; hint: string; file: File | null;
-  onFile: (f: File | null) => void; requerida?: boolean;
+  onFile: (f: File | null) => void; requerida?: boolean; soloCamara?: boolean;
+  disabled?: boolean;
 }) {
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
@@ -133,7 +133,7 @@ function FotoPicker({
   }, [file]);
 
   return (
-    <div>
+    <div className={disabled ? "opacity-50" : undefined}>
       <p className="mb-1 text-sm font-bold text-ink">
         {label}{" "}
         {!requerida && <span className="font-normal text-ink/40">opcional</span>}
@@ -141,9 +141,9 @@ function FotoPicker({
       <p className="mb-2 text-xs text-ink-soft">{hint}</p>
       <label
         htmlFor={id}
-        className={`flex cursor-pointer items-center gap-4 rounded-2xl border-2 border-dashed px-4 py-4 transition-colors ${
-          file ? "border-teal bg-sky/30" : "border-ink/15 bg-white hover:border-teal/40"
-        }`}
+        className={`flex items-center gap-4 rounded-2xl border-2 border-dashed px-4 py-4 transition-colors ${
+          disabled ? "pointer-events-none cursor-not-allowed border-ink/10 bg-cream/60" : "cursor-pointer"
+        } ${file ? "border-teal bg-sky/30" : "border-ink/15 bg-white hover:border-teal/40"}`}
       >
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -161,9 +161,9 @@ function FotoPicker({
           </span>
         )}
         <span className="text-sm font-semibold text-ink">
-          {file ? file.name : "Toca para elegir una foto"}
+          {file ? file.name : soloCamara ? "Toca para tomar la foto" : "Toca para elegir una foto"}
           <span className="block text-xs font-normal text-ink-soft">
-            JPG, PNG o WebP · máx 8 MB
+            {soloCamara ? "Foto en vivo con tu cámara · JPG, PNG o WebP" : "JPG, PNG o WebP · máx 8 MB"}
           </span>
         </span>
       </label>
@@ -171,6 +171,8 @@ function FotoPicker({
         id={id}
         type="file"
         accept="image/*"
+        capture={soloCamara ? "environment" : undefined}
+        disabled={disabled}
         className="sr-only"
         onChange={(e) => {
           const f = e.target.files?.[0] ?? null;
@@ -302,6 +304,8 @@ const ZONAS: { key: keyof FormData; label: string; emoji: string }[] = [
 interface FotosPerro {
   actual: File | null;
   referencia: File | null;
+  /** El cliente no tiene al perrito cerca ahora — el equipo toma antes/después en el local. */
+  sinPerroCerca: boolean;
 }
 
 interface CuponAplicado {
@@ -336,7 +340,9 @@ export function FormReserva({
   const [perros, setPerros] = useState<FormData[]>([
     { ...FORM_INITIAL, ...contactoData },
   ]);
-  const [fotos, setFotos] = useState<FotosPerro[]>([{ actual: null, referencia: null }]);
+  const [fotos, setFotos] = useState<FotosPerro[]>([
+    { actual: null, referencia: null, sinPerroCerca: false },
+  ]);
   const [fechaDeseada, setFechaDeseada] = useState(
     /^\d{4}-\d{2}-\d{2}$/.test(initialFecha) ? initialFecha : ""
   );
@@ -352,6 +358,7 @@ export function FormReserva({
   const [solicitudEstado, setSolicitudEstado] = useState<"idle" | "registrada" | "error">("idle");
 
   const tarifas = useTarifas();
+  const ajustesPrecio = useAjustesPrecio();
   const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
@@ -438,7 +445,7 @@ export function FormReserva({
     });
     setFotos((prev) => {
       const next = [...prev];
-      while (next.length < n) next.push({ actual: null, referencia: null });
+      while (next.length < n) next.push({ actual: null, referencia: null, sinPerroCerca: false });
       return next.slice(0, Math.max(n, 1));
     });
     if (autoTimer.current) clearTimeout(autoTimer.current);
@@ -450,7 +457,7 @@ export function FormReserva({
   const descuentoGlobal: AjustePrecio | null = cupon
     ? { etiqueta: cupon.etiqueta, pct: -Math.abs(cupon.pct) }
     : esPrimeraCita
-      ? DESCUENTO_PRIMERA_CITA
+      ? ajustesPrecio.descuentoPrimeraCita
       : null;
 
   const estimadoDe = useCallback(
@@ -472,15 +479,15 @@ export function FormReserva({
         razaJoven && razaJoven.tamano !== tamanoAuto ? tarifas.base[razaJoven.tamano] : null;
 
       const extra: AjustePrecio[] = [];
-      if (baseCachorro) extra.push(DESCUENTO_CACHORRO);
+      if (baseCachorro) extra.push(ajustesPrecio.descuentoCachorro);
       if (descuentoGlobal) extra.push(descuentoGlobal);
 
       return {
-        estimado: calcularEstimado(d, baseCachorro ?? tarifas.base[tamanoAuto], extra),
+        estimado: calcularEstimado(d, baseCachorro ?? tarifas.base[tamanoAuto], extra, ajustesPrecio),
         esManual,
       };
     },
-    [tarifas, descuentoGlobal]
+    [tarifas, ajustesPrecio, descuentoGlobal]
   );
 
   const actual = estimadoDe(data);
@@ -494,7 +501,11 @@ export function FormReserva({
   const algunoManual = resumen.some((r) => r.esManual);
 
   const paso = fase === "perro" ? PASOS_PERRO[step] : null;
-  const fotoActualFalta = fase === "perro" && paso?.id === "fotos" && !fotos[dogIdx]?.actual;
+  const fotoActualFalta =
+    fase === "perro" &&
+    paso?.id === "fotos" &&
+    !fotos[dogIdx]?.actual &&
+    !fotos[dogIdx]?.sinPerroCerca;
   const bloqueaAvance =
     (paso?.id === "peso" && pesoInvalido) || fotoActualFalta;
 
@@ -1002,7 +1013,33 @@ export function FormReserva({
                   )
                 }
                 requerida
+                soloCamara
+                disabled={fotos[dogIdx]?.sinPerroCerca}
               />
+              <label className="flex items-start gap-2.5 text-xs text-ink-soft">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 flex-none accent-teal-dark"
+                  checked={fotos[dogIdx]?.sinPerroCerca ?? false}
+                  onChange={(e) =>
+                    setFotos((prev) =>
+                      prev.map((x, i) =>
+                        i === dogIdx
+                          ? { ...x, sinPerroCerca: e.target.checked, actual: e.target.checked ? null : x.actual }
+                          : x
+                      )
+                    )
+                  }
+                />
+                No tengo a {data.nombrePerro || "mi perrito"} cerca ahora mismo
+              </label>
+              {fotos[dogIdx]?.sinPerroCerca && (
+                <p className="rounded-2xl bg-sky/30 px-4 py-3 text-xs leading-relaxed text-ink-soft">
+                  Sin problema — el equipo de Perrustingo le tomará una foto a{" "}
+                  {data.nombrePerro || "tu perrito"} apenas llegue, y otra al
+                  terminar el servicio.
+                </p>
+              )}
               <FotoPicker
                 id={`foto-ref-${dogIdx}`}
                 label="Referencia del corte"

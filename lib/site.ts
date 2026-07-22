@@ -19,7 +19,3 @@ export const WHATSAPP_NUMBER =
 export function whatsappUrl(message: string): string {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
-
-export const BOOKING_URL = whatsappUrl(
-  "Hola Perrustingo, quiero agendar una cita para mi perro. Nombre: … Raza/tamaño: … Servicio: …"
-);

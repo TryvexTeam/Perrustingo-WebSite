@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Footer } from "@/components/layout/Footer";
 import { SiteMenu } from "@/components/layout/SiteMenu";
 import { EditorTarifas } from "@/components/admin/EditorTarifas";
+import { EditorAjustesPrecio } from "@/components/admin/EditorAjustesPrecio";
 
 export const metadata: Metadata = {
   title: "Tarifas — Panel Perrustingo",
@@ -28,6 +29,9 @@ export default function TarifasPage() {
 
           <div className="mt-8">
             <EditorTarifas />
+          </div>
+          <div className="mt-8">
+            <EditorAjustesPrecio />
           </div>
         </div>
       </main>
