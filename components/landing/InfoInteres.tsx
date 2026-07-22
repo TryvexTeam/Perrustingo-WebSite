@@ -1,4 +1,5 @@
-import { BOOKING_URL, SITE } from "@/lib/site";
+import Link from "next/link";
+import { SITE } from "@/lib/site";
 import { Reveal } from "@/components/ui/Reveal";
 
 export function InfoInteres() {
@@ -59,14 +60,12 @@ export function InfoInteres() {
                 </dd>
               </div>
             </dl>
-            <a
-              href={BOOKING_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/reserva"
               className="mt-8 inline-block rounded-full bg-teal px-7 py-3.5 font-display text-base font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.3)] transition-[background-color,transform] duration-150 hover:bg-teal-dark active:scale-[.97]"
             >
-              Escríbenos por WhatsApp
-            </a>
+              Reserva tu cita
+            </Link>
           </div>
         </Reveal>
 

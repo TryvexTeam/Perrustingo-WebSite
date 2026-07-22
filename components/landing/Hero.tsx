@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BOOKING_URL } from "@/lib/site";
 import { HeroClouds } from "./HeroClouds";
 const BANDERAS = [
   { src: "/flags/chile.svg", alt: "Chile" },
@@ -102,17 +101,9 @@ export function Hero() {
             parejos, oídos limpios y colitas felices desde hace años.
           </p>
           <div className="rise-in mt-8 flex flex-wrap items-center gap-4 [animation-delay:240ms]">
-            <a
-              href={BOOKING_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full bg-orange px-7 py-3.5 font-display text-base font-extrabold text-teal-ink shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow] duration-150 hover:bg-[#f7ab52] hover:shadow-[0_5px_0_rgba(6,58,64,.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)]"
-            >
-              Agenda por WhatsApp
-            </a>
             <Link
               href="/reserva"
-              className="rounded-full bg-teal-dark px-7 py-3.5 font-display text-base font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.4)] transition-[background-color,transform,box-shadow] duration-150 hover:bg-teal hover:shadow-[0_5px_0_rgba(6,58,64,.4)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.4)]"
+              className="rounded-full bg-orange px-7 py-3.5 font-display text-base font-extrabold text-teal-ink shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow] duration-150 hover:bg-[#f7ab52] hover:shadow-[0_5px_0_rgba(6,58,64,.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)]"
             >
               Reserva inteligente →
             </Link>
