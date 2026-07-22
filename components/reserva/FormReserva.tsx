@@ -337,7 +337,7 @@ export function FormReserva({
 }: {
   initialServicio?: string;
   initialFecha?: string;
-  contacto: { nombre: string; email: string; telefono: string };
+  contacto: { nombre: string; email: string; telefonoMovil: string; telefonoFijo: string };
 }) {
   /* Posición global: paso "cuantos" → perros[i] × PASOS_PERRO → "cita" */
   const [fase, setFase] = useState<"cuantos" | "perro" | "cita">("cuantos");
@@ -346,16 +346,18 @@ export function FormReserva({
   const [cantidad, setCantidad] = useState(1);
 
   /* Contacto — prellenado si hay sesión (prop), editable si no (invitado:
-     el registro ya no es obligatorio, pedido de señor Adley 22-jul). */
+     el registro ya no es obligatorio, pedido de señor Adley 22-jul).
+     Móvil y fijo separados (pedido de Rodolfo 21-jul). */
   const [contactoNombre, setContactoNombre] = useState(contacto.nombre);
   const [contactoEmail, setContactoEmail] = useState(contacto.email);
-  const [contactoTelefono, setContactoTelefono] = useState(contacto.telefono);
+  const [contactoTelefonoMovil, setContactoTelefonoMovil] = useState(contacto.telefonoMovil);
+  const [contactoTelefonoFijo, setContactoTelefonoFijo] = useState(contacto.telefonoFijo);
   const requiereContacto = contacto.nombre === "" && contacto.email === "";
 
   const contactoData = {
     contactoNombre: contacto.nombre,
     contactoEmail: contacto.email,
-    contactoTelefono: contacto.telefono,
+    contactoTelefono: contacto.telefonoMovil,
   };
 
   const [perros, setPerros] = useState<FormData[]>([
@@ -651,7 +653,13 @@ export function FormReserva({
           contacto: {
             nombre: contactoNombre,
             email: contactoEmail,
-            telefono: contactoTelefono,
+            telefono: contactoTelefonoMovil,
+            /* telefonoFijo: campo nuevo (Rodolfo 21-jul) — el schema
+               actual de /api/reservas lo ignora en silencio (zod no
+               falla por keys extra). Jarvis lo conecta cuando reescriba
+               la route; ya llega listo, no hace falta tocar el front
+               de nuevo. */
+            telefonoFijo: contactoTelefonoFijo || null,
           },
           fechaDeseada,
           servicio,
@@ -684,7 +692,7 @@ export function FormReserva({
       }
       setEnviando(false);
     })();
-  }, [fechaDeseada, servicio, enviando, perros, cantidad, fotos, estimadoDe, contactoNombre, contactoEmail, contactoTelefono, cupon, descuentoGlobal]);
+  }, [fechaDeseada, servicio, enviando, perros, cantidad, fotos, estimadoDe, contactoNombre, contactoEmail, contactoTelefonoMovil, contactoTelefonoFijo, cupon, descuentoGlobal]);
 
   /* El perrito acompaña el formulario */
   const razaSel = CATALOGO_RAZAS.find((r) => r.nombre === data.raza);
@@ -910,7 +918,7 @@ export function FormReserva({
               {([
                 ["si", "🎀 Sí, ¡es su primera vez!"],
                 ["no", "🐾 Ya ha ido a peluquería antes"],
-                ["no_lo_se", "🤷 No lo sé"],
+                ["no_lo_se", "🤷 No lo sé (ej: es adoptado, o no estaba con nosotros antes)"],
               ] as [string, string][]).map(([v, l]) => (
                 <ChoiceCard key={v} checked={data.esPrimeraVez === v} onClick={() => updYAvanzar("esPrimeraVez", v)}>
                   {l}
@@ -1276,20 +1284,37 @@ export function FormReserva({
                       placeholder="tu@correo.com"
                     />
                   </div>
-                  <div>
-                    <label htmlFor="contactoTelefono" className="mb-1 block text-xs font-semibold text-ink-soft">
-                      Teléfono
-                    </label>
-                    <Input
-                      id="contactoTelefono"
-                      type="tel"
-                      inputMode="tel"
-                      value={contactoTelefono}
-                      onChange={setContactoTelefono}
-                      placeholder="+56 9 1234 5678"
-                      pattern={PATRON_TELEFONO}
-                      title="Solo números — ej: +56912345678"
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="contactoTelefonoMovil" className="mb-1 block text-xs font-semibold text-ink-soft">
+                        Teléfono móvil
+                      </label>
+                      <Input
+                        id="contactoTelefonoMovil"
+                        type="tel"
+                        inputMode="tel"
+                        value={contactoTelefonoMovil}
+                        onChange={setContactoTelefonoMovil}
+                        placeholder="+56 9 1234 5678"
+                        pattern={PATRON_TELEFONO}
+                        title="Solo números — ej: +56912345678"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="contactoTelefonoFijo" className="mb-1 block text-xs font-semibold text-ink-soft">
+                        Teléfono fijo <span className="font-normal text-ink/40">opcional</span>
+                      </label>
+                      <Input
+                        id="contactoTelefonoFijo"
+                        type="tel"
+                        inputMode="tel"
+                        value={contactoTelefonoFijo}
+                        onChange={setContactoTelefonoFijo}
+                        placeholder="+56 2 2123 4567"
+                        pattern={PATRON_TELEFONO}
+                        title="Solo números — ej: +56221234567"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -1304,7 +1329,7 @@ export function FormReserva({
                   (requiereContacto &&
                     (!esSoloLetras(contactoNombre) ||
                       !/^\S+@\S+\.\S+$/.test(contactoEmail) ||
-                      !new RegExp(PATRON_TELEFONO).test(contactoTelefono)))
+                      !new RegExp(PATRON_TELEFONO).test(contactoTelefonoMovil)))
                 }
                 className={`flex w-full items-center justify-center gap-2 rounded-full py-4 font-display text-base font-extrabold shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow,opacity] duration-150 hover:shadow-[0_5px_0_rgba(6,58,64,.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)] disabled:cursor-not-allowed disabled:opacity-40 ${
                   algunoManual

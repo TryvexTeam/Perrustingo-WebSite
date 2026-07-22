@@ -22,7 +22,8 @@ export const metadata: Metadata = {
 interface ContactoPrefill {
   nombre: string;
   email: string;
-  telefono: string;
+  telefonoMovil: string;
+  telefonoFijo: string;
 }
 
 async function obtenerContacto(): Promise<ContactoPrefill | null> {
@@ -36,7 +37,7 @@ async function obtenerContacto(): Promise<ContactoPrefill | null> {
 
     const { data: perfil } = await supabase
       .from("perfiles")
-      .select("nombre, apellido, telefono")
+      .select("nombre, apellido, telefono_movil, telefono_fijo")
       .eq("id", user.id)
       .single();
 
@@ -46,7 +47,8 @@ async function obtenerContacto(): Promise<ContactoPrefill | null> {
     return {
       nombre: nombre || "",
       email: user.email ?? "",
-      telefono: perfil?.telefono ?? "",
+      telefonoMovil: perfil?.telefono_movil ?? "",
+      telefonoFijo: perfil?.telefono_fijo ?? "",
     };
   } catch {
     return null;
@@ -59,7 +61,7 @@ export default async function ReservaPage({
   searchParams: Promise<{ servicio?: string; fecha?: string }>;
 }) {
   const { servicio = "", fecha = "" } = await searchParams;
-  const contacto = (await obtenerContacto()) ?? { nombre: "", email: "", telefono: "" };
+  const contacto = (await obtenerContacto()) ?? { nombre: "", email: "", telefonoMovil: "", telefonoFijo: "" };
   const conCuenta = contacto.nombre !== "" || contacto.email !== "";
 
   return (
