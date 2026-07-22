@@ -58,7 +58,12 @@ function filasAConfig(filas: FilaAjuste[]): AjustesPrecioConfig {
   };
 
   for (const fila of filas) {
-    const ajuste = { etiqueta: fila.etiqueta, pct: fila.pct };
+    const ajuste = {
+      etiqueta: fila.etiqueta,
+      pct: fila.pct,
+      categoria: fila.categoria,
+      clave: fila.clave,
+    };
     switch (fila.categoria) {
       case "pelo":
         config.recargosPelo[fila.clave as TipoPelo] = ajuste;

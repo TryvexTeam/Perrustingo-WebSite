@@ -347,6 +347,17 @@ export function construirDetalle(data: FormData): Record<string, string> {
 export interface AjustePrecio {
   etiqueta: string;
   pct: number;
+  /** Identidad estable en `ajustes_precio` (categoria+clave) — presente
+      solo cuando el ajuste viene de esa tabla, para que el desglose
+      congelado (Jarvis, F007) pueda auditar sin matchear por etiqueta,
+      que es editable y por eso no sirve como identidad. Ausente en
+      ajustes ad-hoc (cupón, etc.) que no tienen fila propia. */
+  categoria?: string;
+  clave?: string;
+  /** Cuántas unidades componen el ajuste (ej. cantidad de zonas marcadas)
+      — para que un desglose viejo pueda explicar de dónde salió el %
+      aunque el tope cambie después. */
+  cantidad?: number;
 }
 
 /* Configuración de ajustes de precio — antes constantes fijas acá mismo,
@@ -424,6 +435,9 @@ export function calcularEstimado(
     ajustes.push({
       etiqueta: `${zonas} zona${zonas === 1 ? "" : "s"} sensible${zonas === 1 ? "" : "s"}`,
       pct: Math.min(zonas * config.pctPorZona, config.maxPctZonas),
+      categoria: "zona_sensible",
+      clave: "por_zona",
+      cantidad: zonas,
     });
   }
 
