@@ -24,6 +24,7 @@ import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
 import { useAjustesPrecio } from "@/lib/ajustesPrecio";
 import { fotoValida, subirFotoReserva } from "@/lib/fotos";
+import { capitalizarNombre, esSoloLetras, PATRON_SOLO_LETRAS, PATRON_TELEFONO } from "@/lib/validacion";
 import { WHATSAPP_NUMBER } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
 import { BreedAvatar } from "@/components/ui/BreedAvatar";
@@ -42,10 +43,17 @@ const MAX_PERROS = 3;
 
 function Input({
   id, value, onChange, placeholder, type = "text", min, max, autoFocus, onEnter,
+  pattern, title, capitalizar, inputMode,
 }: {
   id?: string; value: string; onChange: (v: string) => void;
   placeholder?: string; type?: string; min?: string; max?: string;
   autoFocus?: boolean; onEnter?: () => void;
+  /** Regex HTML5 (string, sin delimitadores) — capa de UX, no de seguridad
+      real (eso vive server-side). Ver lib/validacion.ts. */
+  pattern?: string; title?: string;
+  /** Título al perder el foco — "juan perez" → "Juan Perez". */
+  capitalizar?: boolean;
+  inputMode?: "text" | "numeric" | "tel" | "email";
 }) {
   return (
     <input
@@ -53,14 +61,20 @@ function Input({
       type={type}
       min={min}
       max={max}
+      pattern={pattern}
+      title={title}
+      inputMode={inputMode}
       placeholder={placeholder}
       value={value}
       autoFocus={autoFocus}
       onChange={(e) => onChange(e.target.value)}
+      onBlur={(e) => {
+        if (capitalizar && e.target.value) onChange(capitalizarNombre(e.target.value));
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter" && onEnter) onEnter();
       }}
-      className="w-full rounded-2xl border-2 border-ink/10 bg-white px-4 py-3.5 text-base font-semibold text-ink placeholder:font-normal placeholder:text-ink/30 focus:border-teal focus:outline-none"
+      className="w-full rounded-2xl border-2 border-ink/10 bg-white px-4 py-3.5 text-base font-semibold text-ink placeholder:font-normal placeholder:text-ink/30 focus:border-teal focus:outline-none invalid:border-[#e0a04a] invalid:focus:border-[#e0a04a]"
     />
   );
 }
@@ -331,6 +345,13 @@ export function FormReserva({
   const [step, setStep] = useState(0);
   const [cantidad, setCantidad] = useState(1);
 
+  /* Contacto — prellenado si hay sesión (prop), editable si no (invitado:
+     el registro ya no es obligatorio, pedido de señor Adley 22-jul). */
+  const [contactoNombre, setContactoNombre] = useState(contacto.nombre);
+  const [contactoEmail, setContactoEmail] = useState(contacto.email);
+  const [contactoTelefono, setContactoTelefono] = useState(contacto.telefono);
+  const requiereContacto = contacto.nombre === "" && contacto.email === "";
+
   const contactoData = {
     contactoNombre: contacto.nombre,
     contactoEmail: contacto.email,
@@ -506,8 +527,51 @@ export function FormReserva({
     paso?.id === "fotos" &&
     !fotos[dogIdx]?.actual &&
     !fotos[dogIdx]?.sinPerroCerca;
-  const bloqueaAvance =
-    (paso?.id === "peso" && pesoInvalido) || fotoActualFalta;
+
+  /* Todo dato es obligatorio para avanzar (pedido de señor Adley 22-jul),
+     salvo dos excepciones deliberadas del diseño original: "tamano"
+     (redundante — ya se auto-detecta por peso, es solo confirmación) y
+     "zonas" (el hint dice explícitamente "o ninguna" — cero marcadas es
+     una respuesta válida, no un campo vacío). */
+  const pasoIncompleto = (): boolean => {
+    if (fase !== "perro" || !paso) return false;
+    switch (paso.id) {
+      case "nombre":
+        return !data.nombrePerro.trim() || !esSoloLetras(data.nombrePerro);
+      case "raza":
+        return (
+          !data.raza ||
+          (data.raza === "Otro" && (!data.razaOtro.trim() || !esSoloLetras(data.razaOtro)))
+        );
+      case "edad":
+        return data.edadAnios === "" && data.edadMeses === "";
+      case "primera":
+        return !data.esPrimeraVez;
+      case "peso":
+        return !pesoValido;
+      case "contextura":
+        return !data.contextura;
+      case "pelo":
+        return (
+          !data.tipoPelo ||
+          (data.tipoPelo === "otro" && (!data.tipoPeloOtro.trim() || !esSoloLetras(data.tipoPeloOtro)))
+        );
+      case "salud":
+        return (
+          !data.unasEncarnadas ||
+          !data.secrecionOcular ||
+          !data.tieneAlergia ||
+          (data.tieneAlergia === "si" && (!data.cualAlergia.trim() || !esSoloLetras(data.cualAlergia)))
+        );
+      case "temperamento":
+        return !data.temperamentoGeneral;
+      case "fotos":
+        return !!fotoActualFalta;
+      default:
+        return false;
+    }
+  };
+  const bloqueaAvance = pasoIncompleto();
 
   // ── Cupón ───────────────────────────────────────────────────────────────
   const validarCupon = useCallback(async () => {
@@ -585,9 +649,9 @@ export function FormReserva({
         keepalive: true,
         body: JSON.stringify({
           contacto: {
-            nombre: contacto.nombre,
-            email: contacto.email,
-            telefono: contacto.telefono,
+            nombre: contactoNombre,
+            email: contactoEmail,
+            telefono: contactoTelefono,
           },
           fechaDeseada,
           servicio,
@@ -610,7 +674,7 @@ export function FormReserva({
           const { estimado, esManual } = estimadoDe(p);
           return { data: p, esManual, estimado };
         }),
-        { fechaDeseada, servicio, contactoNombre: contacto.nombre }
+        { fechaDeseada, servicio, contactoNombre: contactoNombre }
       );
       const waUrl = WHATSAPP_BASE + encodeURIComponent(mensaje);
       if (win) {
@@ -620,7 +684,7 @@ export function FormReserva({
       }
       setEnviando(false);
     })();
-  }, [fechaDeseada, servicio, enviando, perros, cantidad, fotos, estimadoDe, contacto, cupon, descuentoGlobal]);
+  }, [fechaDeseada, servicio, enviando, perros, cantidad, fotos, estimadoDe, contactoNombre, contactoEmail, contactoTelefono, cupon, descuentoGlobal]);
 
   /* El perrito acompaña el formulario */
   const razaSel = CATALOGO_RAZAS.find((r) => r.nombre === data.raza);
@@ -756,6 +820,9 @@ export function FormReserva({
               value={data.nombrePerro}
               onChange={(v) => upd("nombrePerro", v)}
               placeholder="Ej: Firulais"
+              pattern={PATRON_SOLO_LETRAS}
+              title="Solo letras — sin números ni símbolos"
+              capitalizar
               autoFocus
               onEnter={avanzar}
             />
@@ -804,6 +871,9 @@ export function FormReserva({
                   value={data.razaOtro}
                   onChange={(v) => upd("razaOtro", v)}
                   placeholder="¿Cuál raza?"
+                  pattern={PATRON_SOLO_LETRAS}
+                  title="Solo letras — sin números ni símbolos"
+                  capitalizar
                   autoFocus
                   onEnter={avanzar}
                 />
@@ -938,7 +1008,16 @@ export function FormReserva({
                 ))}
               </div>
               {data.tipoPelo === "otro" && (
-                <Input value={data.tipoPeloOtro} onChange={(v) => upd("tipoPeloOtro", v)} placeholder="Describe el tipo de pelo…" autoFocus onEnter={avanzar} />
+                <Input
+                  value={data.tipoPeloOtro}
+                  onChange={(v) => upd("tipoPeloOtro", v)}
+                  placeholder="Describe el tipo de pelo…"
+                  pattern={PATRON_SOLO_LETRAS}
+                  title="Solo letras — sin números ni símbolos"
+                  capitalizar
+                  autoFocus
+                  onEnter={avanzar}
+                />
               )}
             </div>
           )}
@@ -962,7 +1041,15 @@ export function FormReserva({
                 </div>
               ))}
               {data.tieneAlergia === "si" && (
-                <Input value={data.cualAlergia} onChange={(v) => upd("cualAlergia", v)} placeholder="¿Cuál enfermedad o alergia?" onEnter={avanzar} />
+                <Input
+                  value={data.cualAlergia}
+                  onChange={(v) => upd("cualAlergia", v)}
+                  placeholder="¿Cuál enfermedad o alergia?"
+                  pattern={PATRON_SOLO_LETRAS}
+                  title="Solo letras — sin números ni símbolos"
+                  capitalizar
+                  onEnter={avanzar}
+                />
               )}
             </div>
           )}
@@ -1159,10 +1246,66 @@ export function FormReserva({
                 <p className="mt-2 text-xs leading-relaxed text-ink-soft">{NOTA_PRECIOS}</p>
               </div>
 
+              {requiereContacto && (
+                <div className="space-y-3 rounded-3xl bg-cream/60 p-5">
+                  <p className="text-sm font-bold text-ink">Tus datos de contacto</p>
+                  <div>
+                    <label htmlFor="contactoNombre" className="mb-1 block text-xs font-semibold text-ink-soft">
+                      Nombre y apellido
+                    </label>
+                    <Input
+                      id="contactoNombre"
+                      value={contactoNombre}
+                      onChange={setContactoNombre}
+                      placeholder="Ej: María Rojas"
+                      pattern={PATRON_SOLO_LETRAS}
+                      title="Solo letras — sin números ni símbolos"
+                      capitalizar
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="contactoEmail" className="mb-1 block text-xs font-semibold text-ink-soft">
+                      Correo electrónico
+                    </label>
+                    <Input
+                      id="contactoEmail"
+                      type="email"
+                      inputMode="email"
+                      value={contactoEmail}
+                      onChange={setContactoEmail}
+                      placeholder="tu@correo.com"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="contactoTelefono" className="mb-1 block text-xs font-semibold text-ink-soft">
+                      Teléfono
+                    </label>
+                    <Input
+                      id="contactoTelefono"
+                      type="tel"
+                      inputMode="tel"
+                      value={contactoTelefono}
+                      onChange={setContactoTelefono}
+                      placeholder="+56 9 1234 5678"
+                      pattern={PATRON_TELEFONO}
+                      title="Solo números — ej: +56912345678"
+                    />
+                  </div>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={confirmarReserva}
-                disabled={!fechaDeseada || !servicio || enviando}
+                disabled={
+                  !fechaDeseada ||
+                  !servicio ||
+                  enviando ||
+                  (requiereContacto &&
+                    (!esSoloLetras(contactoNombre) ||
+                      !/^\S+@\S+\.\S+$/.test(contactoEmail) ||
+                      !new RegExp(PATRON_TELEFONO).test(contactoTelefono)))
+                }
                 className={`flex w-full items-center justify-center gap-2 rounded-full py-4 font-display text-base font-extrabold shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow,opacity] duration-150 hover:shadow-[0_5px_0_rgba(6,58,64,.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)] disabled:cursor-not-allowed disabled:opacity-40 ${
                   algunoManual
                     ? "bg-orange text-teal-ink hover:bg-[#f7ab52]"

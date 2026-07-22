@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { capitalizarNombre, PATRON_SOLO_LETRAS } from "@/lib/validacion";
 
 /* Registro comunitario (pedido de Rodolfo 19-jul): nombre y apellido,
    comuna, telefono, email + contrasena. Nada mas — no invade. */
@@ -66,8 +67,11 @@ export function RegistroForm() {
             type="text"
             autoComplete="given-name"
             required
+            pattern={PATRON_SOLO_LETRAS}
+            title="Solo letras — sin números ni símbolos"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
+            onBlur={(e) => e.target.value && setNombre(capitalizarNombre(e.target.value))}
             placeholder="Ej: Maria"
             className={inputClass}
           />
@@ -81,8 +85,11 @@ export function RegistroForm() {
             type="text"
             autoComplete="family-name"
             required
+            pattern={PATRON_SOLO_LETRAS}
+            title="Solo letras — sin números ni símbolos"
             value={apellido}
             onChange={(e) => setApellido(e.target.value)}
+            onBlur={(e) => e.target.value && setApellido(capitalizarNombre(e.target.value))}
             placeholder="Ej: Rojas"
             className={inputClass}
           />
@@ -98,8 +105,11 @@ export function RegistroForm() {
           type="text"
           autoComplete="address-level2"
           required
+          pattern={PATRON_SOLO_LETRAS}
+          title="Solo letras — sin números ni símbolos"
           value={comuna}
           onChange={(e) => setComuna(e.target.value)}
+          onBlur={(e) => e.target.value && setComuna(capitalizarNombre(e.target.value))}
           placeholder="Ej: Renca"
           className={inputClass}
         />

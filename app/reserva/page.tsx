@@ -12,9 +12,12 @@ export const metadata: Metadata = {
     "Completa el formulario con los datos de tu perro y recibe tu reserva lista para enviar por WhatsApp. Precio estimado en tiempo real.",
 };
 
-/* Regla de Rodolfo (19-jul): para reservar hay que tener cuenta. El registro
-   pide lo justo (nombre y apellido, comuna, telefono, email) y a cambio hay
-   incentivos: 10% dcto en la primera cita. */
+/* Registro ya NO es obligatorio para reservar (pedido de señor Adley
+   22-jul: el formulario mismo pide nombre/email/telefono al final, no
+   tiene sentido pedirlo dos veces). Si hay sesión, se prellena desde el
+   perfil — si no, el formulario pide el contacto directamente. El 10%
+   de descuento de primera cita sigue siendo el incentivo real para
+   crear cuenta (Jarvis, 22-jul). */
 
 interface ContactoPrefill {
   nombre: string;
@@ -56,57 +59,8 @@ export default async function ReservaPage({
   searchParams: Promise<{ servicio?: string; fecha?: string }>;
 }) {
   const { servicio = "", fecha = "" } = await searchParams;
-  const contacto = await obtenerContacto();
-
-  if (!contacto) {
-    const next = "/reserva" +
-      (servicio || fecha
-        ? `?${new URLSearchParams({ ...(servicio && { servicio }), ...(fecha && { fecha }) })}`
-        : "");
-    return (
-      <>
-        <SiteMenu />
-        <main className="flex min-h-screen flex-col items-center justify-center bg-cream px-5 py-20">
-          <div className="w-full max-w-md text-center">
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-teal-dark">
-              Reserva inteligente
-            </p>
-            <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
-              Crea tu cuenta para reservar
-            </h1>
-            <p className="mx-auto mt-4 max-w-sm text-[15px] leading-relaxed text-ink-soft">
-              Con tu cuenta guardamos la ficha de tu perrito, ves tu historial
-              de visitas y accedes a beneficios exclusivos.
-            </p>
-            <div className="mx-auto mt-6 max-w-sm rounded-3xl bg-[#d8f0e3] px-6 py-5 text-left">
-              <p className="font-display text-base font-extrabold text-teal-ink">
-                🎁 Beneficio de bienvenida
-              </p>
-              <p className="mt-1 text-sm leading-relaxed text-teal-ink">
-                <strong>10% de descuento</strong> en la primera cita de tu
-                perrito por registrarte.
-              </p>
-            </div>
-            <div className="mt-8 flex flex-col gap-3">
-              <Link
-                href={`/registro?next=${encodeURIComponent(next)}`}
-                className="rounded-full bg-orange px-8 py-4 font-display text-base font-extrabold text-teal-ink shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow] duration-150 hover:bg-[#f7ab52] active:translate-y-0.5"
-              >
-                Crear cuenta gratis
-              </Link>
-              <Link
-                href={`/login?next=${encodeURIComponent(next)}`}
-                className="rounded-full border-2 border-ink/15 px-8 py-4 font-display text-base font-extrabold text-ink transition-colors hover:border-ink/30"
-              >
-                Ya tengo cuenta
-              </Link>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </>
-    );
-  }
+  const contacto = (await obtenerContacto()) ?? { nombre: "", email: "", telefono: "" };
+  const conCuenta = contacto.nombre !== "" || contacto.email !== "";
 
   return (
     <>
@@ -123,6 +77,15 @@ export default async function ReservaPage({
             Llena el formulario y te generamos el mensaje listo para WhatsApp —
             con precio estimado incluido y sin necesidad de llamar.
           </p>
+          {!conCuenta && (
+            <p className="mx-auto mt-4 max-w-md rounded-2xl bg-[#d8f0e3] px-5 py-3 text-sm font-semibold text-teal-ink">
+              🎁 <strong>10% de descuento</strong> en la primera cita si{" "}
+              <Link href="/registro" className="underline underline-offset-2">
+                creas una cuenta
+              </Link>{" "}
+              — o sigue como invitado, sin problema.
+            </p>
+          )}
         </div>
 
         <div className="mt-10">
