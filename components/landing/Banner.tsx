@@ -1,4 +1,4 @@
-import { BOOKING_URL } from "@/lib/site";
+import Link from "next/link";
 
 function Cloud({ className }: { className?: string }) {
   return (
@@ -42,14 +42,12 @@ export function Banner() {
           Dejamos a cada perro limpio, cómodo y feliz. Mira los resultados
           reales de nuestros clientes peludos.
         </p>
-        <a
-          href={BOOKING_URL}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href="/reserva"
           className="mt-8 rounded-full bg-orange px-8 py-3.5 font-display text-base font-extrabold text-teal-ink shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow] duration-150 hover:bg-[#f7ab52] hover:shadow-[0_5px_0_rgba(6,58,64,.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)]"
         >
           Reserva tu cita
-        </a>
+        </Link>
       </div>
 
       <svg

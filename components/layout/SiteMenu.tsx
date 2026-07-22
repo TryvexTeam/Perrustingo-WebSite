@@ -1,4 +1,4 @@
-import { BOOKING_URL, SITE } from "@/lib/site";
+import { SITE } from "@/lib/site";
 import { StaggeredMenu, type StaggeredMenuItem, type StaggeredMenuSocialItem } from "./StaggeredMenu";
 
 const ITEMS: StaggeredMenuItem[] = [
@@ -19,7 +19,6 @@ const ITEMS: StaggeredMenuItem[] = [
 const SOCIALS: StaggeredMenuSocialItem[] = [
   { label: "Instagram", link: SITE.instagram },
   { label: "Facebook", link: SITE.facebook },
-  { label: "WhatsApp", link: BOOKING_URL },
 ];
 
 export function SiteMenu() {
