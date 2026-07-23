@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { capitalizarNombre, PATRON_SOLO_LETRAS } from "@/lib/validacion";
 
 /* Registro comunitario (pedido de Rodolfo 19-jul): nombre y apellido,
    comuna, telefono, email + contrasena. Nada mas — no invade. */
@@ -19,7 +20,8 @@ export function RegistroForm() {
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [comuna, setComuna] = useState("");
-  const [telefono, setTelefono] = useState("");
+  const [telefonoMovil, setTelefonoMovil] = useState("");
+  const [telefonoFijo, setTelefonoFijo] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -39,7 +41,7 @@ export function RegistroForm() {
         email,
         password,
         options: {
-          data: { nombre, apellido, comuna, telefono },
+          data: { nombre, apellido, comuna, telefono_movil: telefonoMovil, telefono_fijo: telefonoFijo || null },
         },
       });
       if (err) {
@@ -66,8 +68,11 @@ export function RegistroForm() {
             type="text"
             autoComplete="given-name"
             required
+            pattern={PATRON_SOLO_LETRAS}
+            title="Solo letras — sin números ni símbolos"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
+            onBlur={(e) => e.target.value && setNombre(capitalizarNombre(e.target.value))}
             placeholder="Ej: Maria"
             className={inputClass}
           />
@@ -81,8 +86,11 @@ export function RegistroForm() {
             type="text"
             autoComplete="family-name"
             required
+            pattern={PATRON_SOLO_LETRAS}
+            title="Solo letras — sin números ni símbolos"
             value={apellido}
             onChange={(e) => setApellido(e.target.value)}
+            onBlur={(e) => e.target.value && setApellido(capitalizarNombre(e.target.value))}
             placeholder="Ej: Rojas"
             className={inputClass}
           />
@@ -98,28 +106,50 @@ export function RegistroForm() {
           type="text"
           autoComplete="address-level2"
           required
+          pattern={PATRON_SOLO_LETRAS}
+          title="Solo letras — sin números ni símbolos"
           value={comuna}
           onChange={(e) => setComuna(e.target.value)}
+          onBlur={(e) => e.target.value && setComuna(capitalizarNombre(e.target.value))}
           placeholder="Ej: Renca"
           className={inputClass}
         />
       </div>
 
-      <div>
-        <label htmlFor="telefono" className="mb-1.5 block text-sm font-semibold text-ink">
-          Telefono
-        </label>
-        <input
-          id="telefono"
-          type="tel"
-          autoComplete="tel"
-          required
-          pattern="^\+?[\d\s]{8,15}$"
-          value={telefono}
-          onChange={(e) => setTelefono(e.target.value)}
-          placeholder="+56 9 1234 5678"
-          className={inputClass}
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="telefonoMovil" className="mb-1.5 block text-sm font-semibold text-ink">
+            Teléfono móvil
+          </label>
+          <input
+            id="telefonoMovil"
+            type="tel"
+            autoComplete="tel"
+            required
+            pattern="^\+?[\d\s]{8,15}$"
+            title="Solo números — ej: +56912345678"
+            value={telefonoMovil}
+            onChange={(e) => setTelefonoMovil(e.target.value)}
+            placeholder="+56 9 1234 5678"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="telefonoFijo" className="mb-1.5 block text-sm font-semibold text-ink">
+            Teléfono fijo <span className="font-normal text-ink/40">opcional</span>
+          </label>
+          <input
+            id="telefonoFijo"
+            type="tel"
+            autoComplete="tel"
+            pattern="^\+?[\d\s]{8,15}$"
+            title="Solo números — ej: +56221234567"
+            value={telefonoFijo}
+            onChange={(e) => setTelefonoFijo(e.target.value)}
+            placeholder="+56 2 2123 4567"
+            className={inputClass}
+          />
+        </div>
       </div>
 
       <div>
