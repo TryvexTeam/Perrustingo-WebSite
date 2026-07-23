@@ -629,6 +629,21 @@ export function FormReserva({
           return {
             detalle: construirDetalle(p),
             precioEstimado: estimado?.total ?? null,
+            /* El servidor recalcula pct/base/total desde `ajustes_precio` y
+               `tarifas` — esto solo le dice CUÁLES ajustes aplicaron (por
+               categoria+clave) y a partir de qué base. Ver F007. */
+            estimado: estimado
+              ? {
+                  base: estimado.base,
+                  ajustes: estimado.ajustes.map((a) => ({
+                    etiqueta: a.etiqueta,
+                    pct: a.pct,
+                    categoria: a.categoria,
+                    clave: a.clave,
+                    cantidad: a.cantidad,
+                  })),
+                }
+              : null,
             esManual,
             fotoActualUrl,
             fotoReferenciaUrl,
