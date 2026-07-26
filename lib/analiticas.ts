@@ -13,6 +13,11 @@ export interface FilaSesion {
   servicio: string | null;
   precio_base: number | null;
   precio_final: number | null;
+  /** NULL = reservó sin cuenta (PRP-003). */
+  cliente_id?: string | null;
+  contacto_comuna?: string | null;
+  /** Qué oferta se le aplicó, si alguna. */
+  oferta_id?: string | null;
 }
 
 export interface ResumenServicio {
@@ -23,6 +28,32 @@ export interface ResumenServicio {
 
 export interface PuntoDia {
   fecha: string;
+  cantidad: number;
+  monto: number;
+}
+
+/** El embudo: de dónde vienen las reservas y si el incentivo convierte.
+    Es lo que permite decidir si vale la pena mantener la oferta, y si la
+    apertura a reservas sin cuenta trajo gente nueva o solo movió a los que
+    igual se habrían registrado. */
+export interface Embudo {
+  conCuenta: number;
+  sinCuenta: number;
+  /** % de las reservas que vinieron con cuenta. */
+  pctConCuenta: number;
+  /** Cuántas se llevaron alguna oferta. */
+  conOferta: number;
+  /** Ingresos de cada grupo — una reserva sin cuenta que paga igual vale
+      lo mismo para el negocio. */
+  ingresoConCuenta: number;
+  ingresoSinCuenta: number;
+  /** Ticket promedio de cada grupo, para comparar peras con peras. */
+  ticketConCuenta: number;
+  ticketSinCuenta: number;
+}
+
+export interface ResumenComuna {
+  nombre: string;
   cantidad: number;
   monto: number;
 }
@@ -40,6 +71,8 @@ export interface Analiticas {
   tasaCancelacion: number;
   servicios: ResumenServicio[];
   porDia: PuntoDia[];
+  embudo: Embudo;
+  comunas: ResumenComuna[];
 }
 
 const ESTADOS: EstadoCita[] = [
@@ -71,6 +104,11 @@ export function diaLocal(iso: string): string {
   return new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/Santiago" });
 }
 
+/** División que no revienta con cero. */
+function promedio(total: number, cantidad: number): number {
+  return cantidad > 0 ? Math.round(total / cantidad) : 0;
+}
+
 export function calcularAnaliticas(filas: FilaSesion[]): Analiticas {
   const porEstado = Object.fromEntries(ESTADOS.map((e) => [e, 0])) as Record<EstadoCita, number>;
 
@@ -80,6 +118,13 @@ export function calcularAnaliticas(filas: FilaSesion[]): Analiticas {
 
   const servicios = new Map<string, ResumenServicio>();
   const dias = new Map<string, PuntoDia>();
+  const comunas = new Map<string, ResumenComuna>();
+
+  let conCuenta = 0;
+  let sinCuenta = 0;
+  let conOferta = 0;
+  let ingresoConCuenta = 0;
+  let ingresoSinCuenta = 0;
 
   for (const fila of filas) {
     if (porEstado[fila.estado] !== undefined) porEstado[fila.estado] += 1;
@@ -93,9 +138,32 @@ export function calcularAnaliticas(filas: FilaSesion[]): Analiticas {
       ingresosProyectados += precio;
     }
 
+    /* El embudo cuenta TODAS las reservas, canceladas incluidas: una
+       cancelación también es alguien que llegó por el embudo. Los ingresos
+       de cada grupo, en cambio, solo cuentan lo completado, igual que el
+       total general — si no, los dos números no serían comparables. */
+    if (fila.cliente_id) {
+      conCuenta += 1;
+      if (estadoCuentaComoIngreso(fila.estado)) ingresoConCuenta += precio;
+    } else {
+      sinCuenta += 1;
+      if (estadoCuentaComoIngreso(fila.estado)) ingresoSinCuenta += precio;
+    }
+    if (fila.oferta_id) conOferta += 1;
+
     // El ranking de servicios y la serie diaria ignoran las canceladas: una
     // cita que no ocurrió no dice nada sobre qué se pide ni cuánto entró.
     if (fila.estado === "cancelada") continue;
+
+    const comuna = fila.contacto_comuna?.trim();
+    if (comuna) {
+      const acc = comunas.get(comuna) ?? { nombre: comuna, cantidad: 0, monto: 0 };
+      comunas.set(comuna, {
+        nombre: comuna,
+        cantidad: acc.cantidad + 1,
+        monto: acc.monto + precio,
+      });
+    }
 
     const nombre = fila.servicio?.trim() || "Sin servicio";
     const acumulado = servicios.get(nombre) ?? { nombre, cantidad: 0, monto: 0 };
@@ -122,6 +190,26 @@ export function calcularAnaliticas(filas: FilaSesion[]): Analiticas {
       filas.length > 0 ? Math.round((porEstado.cancelada / filas.length) * 100) : 0,
     servicios: [...servicios.values()].sort((a, b) => b.cantidad - a.cantidad),
     porDia: [...dias.values()].sort((a, b) => a.fecha.localeCompare(b.fecha)),
+    embudo: {
+      conCuenta,
+      sinCuenta,
+      pctConCuenta:
+        filas.length > 0 ? Math.round((conCuenta / filas.length) * 100) : 0,
+      conOferta,
+      ingresoConCuenta,
+      ingresoSinCuenta,
+      // Se divide por las COMPLETADAS de cada grupo, no por el total del
+      // grupo: si no, un grupo con muchas pendientes parecería más barato.
+      ticketConCuenta: promedio(
+        ingresoConCuenta,
+        filas.filter((f) => f.cliente_id && estadoCuentaComoIngreso(f.estado)).length
+      ),
+      ticketSinCuenta: promedio(
+        ingresoSinCuenta,
+        filas.filter((f) => !f.cliente_id && estadoCuentaComoIngreso(f.estado)).length
+      ),
+    },
+    comunas: [...comunas.values()].sort((a, b) => b.cantidad - a.cantidad),
   };
 }
 

@@ -143,6 +143,115 @@ export function DashboardAnaliticas({ datos, rango }: DashboardAnaliticasProps) 
             />
           </div>
 
+          {/* Embudo: de dónde vienen las reservas desde que se puede
+              reservar sin cuenta. Es lo que dice si el incentivo convierte
+              y si abrir la reserva trajo gente nueva (PRP-003 F4). */}
+          <div className="rounded-3xl bg-white p-6 shadow-sm">
+            <h2 className="font-display text-lg font-extrabold text-ink">
+              Cómo llegan las reservas
+            </h2>
+            <p className="mt-1 text-xs text-ink-soft">
+              Reservar no exige cuenta. Esto muestra cuántos se registran igual
+              — y cuánto deja cada grupo.
+            </p>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-[#d5efe2] px-4 py-3">
+                <p className="text-xs font-extrabold uppercase tracking-wider text-teal-dark">
+                  Con cuenta
+                </p>
+                <p className="mt-1 font-display text-2xl font-extrabold text-ink">
+                  {datos.embudo.conCuenta}{" "}
+                  <span className="text-sm font-bold text-ink-soft">
+                    ({datos.embudo.pctConCuenta}%)
+                  </span>
+                </p>
+                <p className="mt-0.5 text-xs text-ink-soft">
+                  {formatCLP(datos.embudo.ingresoConCuenta)} · ticket{" "}
+                  {formatCLP(datos.embudo.ticketConCuenta)}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-cream px-4 py-3">
+                <p className="text-xs font-extrabold uppercase tracking-wider text-ink-soft">
+                  Sin cuenta
+                </p>
+                <p className="mt-1 font-display text-2xl font-extrabold text-ink">
+                  {datos.embudo.sinCuenta}{" "}
+                  <span className="text-sm font-bold text-ink-soft">
+                    ({100 - datos.embudo.pctConCuenta}%)
+                  </span>
+                </p>
+                <p className="mt-0.5 text-xs text-ink-soft">
+                  {formatCLP(datos.embudo.ingresoSinCuenta)} · ticket{" "}
+                  {formatCLP(datos.embudo.ticketSinCuenta)}
+                </p>
+              </div>
+            </div>
+
+            {/* Barra comparativa: se lee de un vistazo mejor que dos números */}
+            <div className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full bg-cream">
+              <div
+                className="bg-teal"
+                style={{ width: `${datos.embudo.pctConCuenta}%` }}
+                aria-hidden="true"
+              />
+            </div>
+
+            <p className="mt-3 text-xs text-ink-soft">
+              {datos.embudo.conOferta > 0 ? (
+                <>
+                  <strong>{datos.embudo.conOferta}</strong>{" "}
+                  {datos.embudo.conOferta === 1
+                    ? "reserva aprovechó una oferta"
+                    : "reservas aprovecharon una oferta"}
+                  .{" "}
+                </>
+              ) : (
+                <>Ninguna reserva aprovechó una oferta en este período. </>
+              )}
+              <a
+                href="/dashboard/ofertas"
+                className="font-bold text-teal-dark underline underline-offset-2"
+              >
+                Ver ofertas →
+              </a>
+            </p>
+          </div>
+
+          {datos.comunas.length > 0 && (
+            <div className="rounded-3xl bg-white p-6 shadow-sm">
+              <h2 className="font-display text-lg font-extrabold text-ink">
+                De qué comunas vienen
+              </h2>
+              <ul className="mt-4 space-y-2">
+                {datos.comunas.map((comuna) => {
+                  const mayor = datos.comunas[0].cantidad;
+                  const ancho = Math.round((comuna.cantidad / mayor) * 100);
+                  return (
+                    <li key={comuna.nombre} className="rounded-2xl bg-cream px-4 py-3">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <span className="font-semibold text-ink">{comuna.nombre}</span>
+                        <span className="text-xs text-ink-soft">
+                          {comuna.cantidad} {comuna.cantidad === 1 ? "cita" : "citas"}
+                        </span>
+                        <span className="ml-auto font-display text-sm font-extrabold text-teal-dark">
+                          {formatCLP(comuna.monto)}
+                        </span>
+                      </div>
+                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white">
+                        <div
+                          className="h-full rounded-full bg-teal/70"
+                          style={{ width: `${ancho}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
           <div className="rounded-3xl bg-white p-6 shadow-sm">
             <h2 className="font-display text-lg font-extrabold text-ink">Citas por estado</h2>
             <ul className="mt-4 flex flex-wrap gap-2">
