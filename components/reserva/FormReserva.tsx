@@ -15,6 +15,7 @@ import {
   construirDetalle,
   detectarTamanoPorPeso,
   formatCLP,
+  montoDeAjuste,
   textoDeAjuste,
   hayConflicto,
   type AjustePrecio,
@@ -33,6 +34,8 @@ import {
   validarContacto,
   type DatosContacto,
 } from "@/lib/contacto";
+import { comoAjuste, mejorOferta, type Oferta } from "@/lib/ofertas";
+import { obtenerOfertasActivas } from "@/lib/ofertasDatos";
 import { hoyEnSantiago, primeraFechaReservable } from "@/lib/disponibilidad";
 import { obtenerDisponibilidad } from "@/lib/disponibilidadDatos";
 import { SelectorHorario } from "@/components/reserva/SelectorHorario";
@@ -370,6 +373,9 @@ export function FormReserva({
       : CONTACTO_VACIO
   );
   const [errorContacto, setErrorContacto] = useState("");
+  /** Ofertas vigentes y cuántas visitas lleva quien reserva (PRP-003 F3). */
+  const [ofertas, setOfertas] = useState<Oferta[]>([]);
+  const [visitasPrevias, setVisitasPrevias] = useState(0);
 
   const contactoData = {
     contactoNombre: datosContacto.nombre,
@@ -429,6 +435,22 @@ export function FormReserva({
     if (autoTimer.current) clearTimeout(autoTimer.current);
   }, []);
 
+  /* Ofertas vigentes: el texto y el descuento salen de la misma tabla, así
+     que lo que se promete es lo que se cobra (PRP-003 F2). */
+  useEffect(() => {
+    let cancelado = false;
+    obtenerOfertasActivas(createClient())
+      .then((o) => {
+        if (!cancelado) setOfertas(o);
+      })
+      .catch(() => {
+        /* Sin ofertas se cotiza sin descuento; nunca se inventa uno. */
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
   /* Descuento de bienvenida: primera cita de la CUENTA.
 
      El guard de `tieneCuenta` no es un detalle: sin sesión esta consulta
@@ -443,7 +465,9 @@ export function FormReserva({
       .from("sesiones")
       .select("id", { count: "exact", head: true })
       .then(({ count, error }) => {
-        if (!error && count === 0) setEsPrimeraCita(true);
+        if (error) return;
+        setVisitasPrevias(count ?? 0);
+        if (count === 0) setEsPrimeraCita(true);
       });
   }, [tieneCuenta]);
 
@@ -524,11 +548,32 @@ export function FormReserva({
   }, []);
 
   // ── Cálculos por perrito ────────────────────────────────────────────────
-  const descuentoGlobal: AjustePrecio | null = cupon
+  /* Descuento global: cupón u oferta, NUNCA los dos (PRP-003 F3).
+     Acumularlos puede dejar el precio bajo el costo, así que gana el mayor.
+     La oferta sale de la tabla `ofertas` — el mismo dato que ve el cliente
+     en la invitación, así que lo prometido es lo que se cobra. */
+  const baseParaComparar = tarifas.base[detectarTamanoPorPeso(parseFloat(data.pesoKg) || 10)];
+  const ofertaVigente = mejorOferta(
+    ofertas,
+    { conCuenta: tieneCuenta, visitasPrevias },
+    baseParaComparar
+  );
+
+  const descuentoDeOferta: AjustePrecio | null = ofertaVigente
+    ? comoAjuste(ofertaVigente)
+    : null;
+  const descuentoDeCupon: AjustePrecio | null = cupon
     ? { etiqueta: cupon.etiqueta, pct: -Math.abs(cupon.pct) }
-    : esPrimeraCita
-      ? ajustesPrecio.descuentoPrimeraCita
-      : null;
+    : null;
+
+  const descuentoGlobal: AjustePrecio | null =
+    descuentoDeCupon && descuentoDeOferta
+      ? // Ambos disponibles: gana el que más descuenta sobre esta base.
+        Math.abs(montoDeAjuste(descuentoDeCupon, baseParaComparar)) >=
+        Math.abs(montoDeAjuste(descuentoDeOferta, baseParaComparar))
+        ? descuentoDeCupon
+        : descuentoDeOferta
+      : (descuentoDeCupon ?? descuentoDeOferta);
 
   const estimadoDe = useCallback(
     (d: FormData): { estimado: EstimadoVivo | null; esManual: boolean } => {
@@ -682,6 +727,7 @@ export function FormReserva({
           fechaDeseada,
           inicio: inicioElegido,
           servicio,
+          ofertaId: ofertaVigente?.id ?? null,
           cupon: descuentoGlobal
             ? {
                 codigo: cupon?.codigo ?? "PRIMERA_CITA",

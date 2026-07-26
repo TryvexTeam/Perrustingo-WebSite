@@ -5,6 +5,8 @@ import { FormReserva } from "@/components/reserva/FormReserva";
 import { SiteMenu } from "@/components/layout/SiteMenu";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseConfigurado } from "@/lib/citas";
+import { estaVigente, textoBeneficio, type Oferta } from "@/lib/ofertas";
+import { obtenerOfertasActivas } from "@/lib/ofertasDatos";
 
 export const metadata: Metadata = {
   title: "Reserva tu cita — Perrustingo",
@@ -53,6 +55,26 @@ async function obtenerContacto(): Promise<ContactoPrefill | null> {
   }
 }
 
+/** La mejor oferta para alguien que aún no tiene cuenta y nunca ha venido:
+    es el anzuelo de la pantalla de invitación. */
+async function obtenerOfertaBienvenida(): Promise<Oferta | null> {
+  if (!supabaseConfigurado()) return null;
+  try {
+    const supabase = await createClient();
+    const activas = await obtenerOfertasActivas(supabase);
+    const candidatas = activas.filter(
+      (o) => estaVigente(o) && o.desdeVisita === 1 && o.soloConCuenta
+    );
+    if (candidatas.length === 0) return null;
+    // Sin una base concreta no se pueden comparar % con montos fijos; para
+    // el anzuelo basta el porcentaje más alto, y los montos fijos se
+    // muestran tal cual.
+    return candidatas.reduce((mejor, o) => (o.pct > mejor.pct ? o : mejor));
+  } catch {
+    return null;
+  }
+}
+
 export default async function ReservaPage({
   searchParams,
 }: {
@@ -60,6 +82,11 @@ export default async function ReservaPage({
 }) {
   const { servicio = "", fecha = "", invitacion } = await searchParams;
   const contacto = await obtenerContacto();
+
+  /* La oferta que se muestra sale de la tabla, no del HTML (PRP-003 F2).
+     Antes el texto vivía acá y el descuento en `ajustes_precio`: cambiar
+     uno sin el otro prometía algo distinto de lo que se cobraba. */
+  const ofertaDeBienvenida = await obtenerOfertaBienvenida();
 
   /* Sin sesión se muestra UNA vez la invitación a registrarse; con
      `?invitacion=no` se salta y va directo al formulario. No se recuerda la
@@ -86,15 +113,22 @@ export default async function ReservaPage({
               visitas y no vuelves a escribir tus datos. Pero si prefieres,
               puedes reservar sin crear nada.
             </p>
-            <div className="mx-auto mt-6 max-w-sm rounded-3xl bg-[#d8f0e3] px-6 py-5 text-left">
-              <p className="font-display text-base font-extrabold text-teal-ink">
-                🎁 Beneficio de bienvenida
-              </p>
-              <p className="mt-1 text-sm leading-relaxed text-teal-ink">
-                <strong>10% de descuento</strong> en la primera cita de tu
-                perrito por registrarte.
-              </p>
-            </div>
+            {/* Sale de la tabla `ofertas`: el admin lo edita desde el panel
+                y es el MISMO dato que se descuenta al cotizar. Si no hay
+                ninguna oferta vigente, no se promete nada. */}
+            {ofertaDeBienvenida && (
+              <div className="mx-auto mt-6 max-w-sm rounded-3xl bg-[#d8f0e3] px-6 py-5 text-left">
+                <p className="font-display text-base font-extrabold text-teal-ink">
+                  🎁 {ofertaDeBienvenida.titulo}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-teal-ink">
+                  {ofertaDeBienvenida.detalle}
+                </p>
+                <p className="mt-2 text-xs font-bold text-teal-dark">
+                  {textoBeneficio(ofertaDeBienvenida)} de descuento
+                </p>
+              </div>
+            )}
             <div className="mt-8 flex flex-col gap-3">
               <Link
                 href={`/registro?next=${encodeURIComponent(next)}`}

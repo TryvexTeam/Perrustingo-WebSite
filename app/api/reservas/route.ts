@@ -84,6 +84,11 @@ const reservaSchema = z.object({
     .nullable()
     .optional()
     .default(null),
+  /** Oferta que el cliente dice que le corresponde. El servidor NO confía:
+      hoy el precio es referencial y se confirma en la puerta, así que solo
+      se guarda para saber qué se le prometió. Si algún día el estimado pasa
+      a ser vinculante, hay que revalidarla acá. */
+  ofertaId: z.string().uuid().nullable().optional().default(null),
   perros: z.array(perroSchema).min(1).max(3),
   /** Honeypot anti-spam: los humanos lo dejan vacío. */
   apellidoPaterno: z.string().max(0).optional(),
@@ -127,7 +132,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { contacto, fechaDeseada, servicio, cupon, perros, inicio } = parsed.data;
+  const { contacto, fechaDeseada, servicio, cupon, perros, inicio, ofertaId } = parsed.data;
 
   const supabase = await createClient();
   const {
@@ -229,6 +234,7 @@ export async function POST(request: NextRequest) {
       contacto_email: contacto.email,
       contacto_telefono: contacto.telefono,
       contacto_comuna: contacto.comuna || null,
+      oferta_id: ofertaId,
       detalle_form: perro.detalle,
       cupon_codigo: cupon?.codigo ?? null,
       descuento_pct: cupon?.pct ?? 0,
