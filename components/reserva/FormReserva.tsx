@@ -27,6 +27,12 @@ import { useAjustesPorTamano } from "@/lib/ajustesPrecio";
 import { fotoValida, subirFotoReserva } from "@/lib/fotos";
 import { WHATSAPP_NUMBER } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
+import {
+  COMUNAS,
+  CONTACTO_VACIO,
+  validarContacto,
+  type DatosContacto,
+} from "@/lib/contacto";
 import { hoyEnSantiago, primeraFechaReservable } from "@/lib/disponibilidad";
 import { obtenerDisponibilidad } from "@/lib/disponibilidadDatos";
 import { SelectorHorario } from "@/components/reserva/SelectorHorario";
@@ -37,7 +43,8 @@ const WHATSAPP_BASE = `https://wa.me/${WHATSAPP_NUMBER}?text=`;
 /* Wizard progresivo v2 — reserva multi-perrito (pedido de Rodolfo 19-jul):
    se pregunta cuántos perritos vienen y el bloque de preguntas se repite
    por cada uno; las fotos (actual + referencia de corte) van por perrito;
-   la cuenta ya viene puesta (el gate vive en app/reserva/page.tsx). */
+   Se puede reservar CON o SIN cuenta (PRP-003 F1): sin cuenta, el último
+   paso pide los datos de contacto que con cuenta salen del perfil. */
 
 const AUTO_ADVANCE_MS = 350;
 const MAX_PERROS = 3;
@@ -338,7 +345,9 @@ export function FormReserva({
 }: {
   initialServicio?: string;
   initialFecha?: string;
-  contacto: { nombre: string; email: string; telefono: string };
+  /** Datos del perfil, o null si reserva sin cuenta: en ese caso se piden
+      en el último paso (PRP-003 F1). */
+  contacto: { nombre: string; email: string; telefono: string; comuna: string } | null;
 }) {
   /* Posición global: paso "cuantos" → perros[i] × PASOS_PERRO → "cita" */
   const [fase, setFase] = useState<"cuantos" | "perro" | "cita">("cuantos");
@@ -346,10 +355,26 @@ export function FormReserva({
   const [step, setStep] = useState(0);
   const [cantidad, setCantidad] = useState(1);
 
+  const tieneCuenta = contacto !== null;
+
+  /* Con cuenta el contacto viene del perfil y no se pregunta; sin cuenta se
+     completa en el paso final y vive en este estado. */
+  const [datosContacto, setDatosContacto] = useState<DatosContacto>(() =>
+    contacto
+      ? {
+          nombre: contacto.nombre,
+          telefono: contacto.telefono,
+          email: contacto.email,
+          comuna: contacto.comuna,
+        }
+      : CONTACTO_VACIO
+  );
+  const [errorContacto, setErrorContacto] = useState("");
+
   const contactoData = {
-    contactoNombre: contacto.nombre,
-    contactoEmail: contacto.email,
-    contactoTelefono: contacto.telefono,
+    contactoNombre: datosContacto.nombre,
+    contactoEmail: datosContacto.email,
+    contactoTelefono: datosContacto.telefono,
   };
 
   const [perros, setPerros] = useState<FormData[]>([
@@ -404,9 +429,15 @@ export function FormReserva({
     if (autoTimer.current) clearTimeout(autoTimer.current);
   }, []);
 
-  /* Descuento de bienvenida: primera cita de la cuenta (RLS solo deja ver
-     las sesiones propias, el conteo es del usuario). */
+  /* Descuento de bienvenida: primera cita de la CUENTA.
+
+     El guard de `tieneCuenta` no es un detalle: sin sesión esta consulta
+     devuelve 0 por RLS —no porque sea su primera visita—, así que sin él
+     todo visitante anónimo se llevaría el descuento de bienvenida. Es el
+     beneficio de registrarse; quien no se registra reserva igual, pero sin
+     él (decisión del señor Ignacio, 26-jul). */
   useEffect(() => {
+    if (!tieneCuenta) return;
     const supabase = createClient();
     supabase
       .from("sesiones")
@@ -414,7 +445,7 @@ export function FormReserva({
       .then(({ count, error }) => {
         if (!error && count === 0) setEsPrimeraCita(true);
       });
-  }, []);
+  }, [tieneCuenta]);
 
   const data = perros[dogIdx];
 
@@ -585,6 +616,17 @@ export function FormReserva({
     // Sin bloque elegido no se envía: mandar solo el día volvería al
     // problema que la Fase 5 vino a resolver (nadie sabe a qué hora es).
     if (!fechaDeseada || !inicioElegido || !servicio || enviando) return;
+
+    // Sin cuenta, el contacto lo escribe la persona: hay que validarlo antes
+    // de crear la cita (el servidor vuelve a validarlo igual).
+    if (!tieneCuenta) {
+      const problema = validarContacto(datosContacto);
+      if (problema) {
+        setErrorContacto(problema);
+        return;
+      }
+      setErrorContacto("");
+    }
     setEnviando(true);
 
     /* La pestaña se abre de inmediato (gesto del usuario) y se redirige al
@@ -632,9 +674,10 @@ export function FormReserva({
         keepalive: true,
         body: JSON.stringify({
           contacto: {
-            nombre: contacto.nombre,
-            email: contacto.email,
-            telefono: contacto.telefono,
+            nombre: datosContacto.nombre,
+            email: datosContacto.email,
+            telefono: datosContacto.telefono,
+            comuna: datosContacto.comuna,
           },
           fechaDeseada,
           inicio: inicioElegido,
@@ -658,7 +701,7 @@ export function FormReserva({
           const { estimado, esManual } = estimadoDe(p);
           return { data: p, esManual, estimado };
         }),
-        { fechaDeseada, servicio, contactoNombre: contacto.nombre }
+        { fechaDeseada, servicio, contactoNombre: datosContacto.nombre }
       );
       const waUrl = WHATSAPP_BASE + encodeURIComponent(mensaje);
       if (win) {
@@ -1135,6 +1178,104 @@ export function FormReserva({
                   onChange={setInicioElegido}
                 />
               </div>
+
+              {/* Sin cuenta: los datos que con cuenta salen del perfil.
+                  El equipo los necesita para confirmar por WhatsApp, y la
+                  comuna alimenta las analíticas del negocio. */}
+              {!tieneCuenta && (
+                <div>
+                  <p className="mb-1 text-sm font-bold text-ink">Tus datos</p>
+                  <p className="mb-2 text-xs text-ink-soft">
+                    Para confirmarte la hora por WhatsApp.{" "}
+                    <a
+                      href="/registro"
+                      className="font-bold text-teal-dark underline-offset-2 hover:underline"
+                    >
+                      Crear una cuenta →
+                    </a>
+                  </p>
+
+                  <div className="grid gap-2">
+                    <div>
+                      <label htmlFor="contacto-nombre" className="sr-only">
+                        Tu nombre
+                      </label>
+                      <Input
+                        id="contacto-nombre"
+                        value={datosContacto.nombre}
+                        onChange={(v) => {
+                          setDatosContacto((d) => ({ ...d, nombre: v }));
+                          setErrorContacto("");
+                        }}
+                        placeholder="Tu nombre"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="contacto-telefono" className="sr-only">
+                        Tu teléfono
+                      </label>
+                      <Input
+                        id="contacto-telefono"
+                        type="tel"
+                        value={datosContacto.telefono}
+                        onChange={(v) => {
+                          setDatosContacto((d) => ({ ...d, telefono: v }));
+                          setErrorContacto("");
+                        }}
+                        placeholder="+56 9 1234 5678"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="contacto-email" className="sr-only">
+                        Tu correo
+                      </label>
+                      <Input
+                        id="contacto-email"
+                        type="email"
+                        value={datosContacto.email}
+                        onChange={(v) => {
+                          setDatosContacto((d) => ({ ...d, email: v }));
+                          setErrorContacto("");
+                        }}
+                        placeholder="tu@correo.com"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="contacto-comuna" className="sr-only">
+                        Tu comuna
+                      </label>
+                      <select
+                        id="contacto-comuna"
+                        value={datosContacto.comuna}
+                        onChange={(e) => {
+                          setDatosContacto((d) => ({ ...d, comuna: e.target.value }));
+                          setErrorContacto("");
+                        }}
+                        className="w-full rounded-2xl border-2 border-ink/10 bg-white px-4 py-3.5 text-base font-semibold text-ink focus:border-teal focus:outline-none"
+                      >
+                        <option value="">¿De qué comuna eres?</option>
+                        {COMUNAS.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {errorContacto && (
+                    <p
+                      role="alert"
+                      className="mt-2 rounded-xl bg-[#fbdbe7] px-4 py-2 text-xs font-semibold text-[#7a1030]"
+                    >
+                      {errorContacto}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div>
                 <p className="mb-1 text-sm font-bold text-ink">Servicio</p>

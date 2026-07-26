@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseConfigurado } from "@/lib/citas";
 import { offsetNegocio } from "@/lib/agenda";
+import { validarContacto } from "@/lib/contacto";
 import { evaluarReserva } from "@/lib/disponibilidad";
 import { obtenerDisponibilidad, obtenerOcupacion } from "@/lib/disponibilidadDatos";
 
@@ -59,7 +60,14 @@ const reservaSchema = z.object({
     telefono: z
       .string()
       .trim()
-      .regex(/^\+?[\d\s]{8,15}$/, "Teléfono inválido"),
+      // Se aceptan paréntesis y guiones: la gente escribe (56) 9-1234-5678.
+      // Lo que importa es que queden 8-11 dígitos tras normalizar, y de eso
+      // se encarga `validarContacto` más abajo.
+      .regex(/^[+\d\s()-]{8,20}$/, "Teléfono inválido"),
+    /* Comuna: con cuenta sale del perfil, sin cuenta la escribe la persona.
+       Opcional en el schema por compatibilidad con clientes viejos que aún
+       no la mandan; la validación real está abajo. */
+    comuna: z.string().trim().max(60).optional().default(""),
   }),
   fechaDeseada: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   /* Instante exacto del bloque elegido (Fase 5). Opcional para no romper a
@@ -125,6 +133,21 @@ export async function POST(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  /* Reserva sin cuenta (PRP-003 F1): quien no tiene sesión escribe su
+     contacto en el formulario. Se revalida acá porque el navegador es un
+     dato de origen no confiable — este endpoint es público. */
+  if (!user) {
+    const problema = validarContacto({
+      nombre: contacto.nombre,
+      telefono: contacto.telefono,
+      email: contacto.email,
+      comuna: contacto.comuna,
+    });
+    if (problema) {
+      return NextResponse.json({ success: false, error: problema }, { status: 400 });
+    }
+  }
 
   /* Puerta de disponibilidad (PRP-001 Fase 5). El formulario ya no ofrece
      horarios imposibles, pero esto es un POST público: quien mande el
@@ -205,6 +228,7 @@ export async function POST(request: NextRequest) {
       contacto_nombre: contacto.nombre,
       contacto_email: contacto.email,
       contacto_telefono: contacto.telefono,
+      contacto_comuna: contacto.comuna || null,
       detalle_form: perro.detalle,
       cupon_codigo: cupon?.codigo ?? null,
       descuento_pct: cupon?.pct ?? 0,
