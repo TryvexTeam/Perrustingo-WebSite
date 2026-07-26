@@ -9,16 +9,17 @@ import {
   type Tarifas,
 } from "@/lib/tarifas";
 import { guardarTarifasAction, restaurarTarifasAction } from "@/app/dashboard/tarifas/actions";
-import { formatCLP, TAMANO_LABELS, type TamanoKey } from "@/lib/reserva";
+import { formatCLP, TAMANOS, TAMANO_LABELS, type TamanoKey } from "@/lib/reserva";
 import { TAMANO_IMAGEN } from "@/lib/razas";
 import { BreedAvatar } from "@/components/ui/BreedAvatar";
+import { ModalTarifaPorTamano } from "./ModalTarifaPorTamano";
 
 /* Editor de tarifas del admin — editar → guardar (server action, rol admin)
    → las tablas `tarifas`/`tarifas_extras` de Supabase quedan actualizadas y
    los templates públicos (Precios, FormReserva) las reflejan para
    cualquier visitante, no solo en este navegador. Ver migración 006. */
 
-const ORDEN: TamanoKey[] = ["toy", "pequeno", "mediano", "grande", "gigante"];
+const ORDEN = TAMANOS;
 
 const TONO_FILA: Record<TamanoKey, string> = {
   toy: "bg-[#fbdbe7]",
@@ -34,6 +35,8 @@ export function EditorTarifas() {
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
   const [error, setError] = useState("");
+  /** Tamaño cuyo modal de agregados está abierto (null = ninguno). */
+  const [tamanoAbierto, setTamanoAbierto] = useState<TamanoKey | null>(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -146,9 +149,22 @@ export function EditorTarifas() {
                   className="w-24 rounded-xl border-2 border-white bg-white/80 px-2.5 py-2 text-right text-sm font-extrabold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
                 />
               </div>
+              <button
+                type="button"
+                onClick={() => setTamanoAbierto(tamano)}
+                disabled={cargando || guardando}
+                className="rounded-full bg-white/80 px-4 py-2 text-xs font-extrabold text-teal-dark transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Agregados…
+              </button>
             </div>
           ))}
         </div>
+        <p className="mt-2 text-[11px] leading-relaxed text-ink-soft">
+          &ldquo;Agregados&rdquo; abre los recargos y descuentos de ese tamaño:
+          por defecto heredan el valor general de más abajo, y ahí puede
+          cobrarlos distinto solo para ese porte.
+        </p>
 
         <h2 className="mt-8 font-display text-lg font-extrabold text-ink">
           Extras
@@ -256,6 +272,14 @@ export function EditorTarifas() {
           </p>
         </div>
       </aside>
+
+      {tamanoAbierto && (
+        <ModalTarifaPorTamano
+          tamano={tamanoAbierto}
+          precioBase={tarifas.base[tamanoAbierto]}
+          onCerrar={() => setTamanoAbierto(null)}
+        />
+      )}
     </div>
   );
 }

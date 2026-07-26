@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { TARIFAS_DEFAULT, type Tarifas } from "@/lib/tarifas";
 import type { FilaAjustePrecioAdmin } from "@/lib/ajustesPrecio";
-import type { TamanoKey } from "@/lib/reserva";
+import { admiteMontoFijo, TAMANOS, type TamanoKey, type TipoAjuste } from "@/lib/reserva";
 
 interface ResultadoAccion {
   success: boolean;
@@ -73,6 +73,110 @@ export async function restaurarTarifasAction(): Promise<ResultadoAccion> {
   return guardarTarifasAction(TARIFAS_DEFAULT);
 }
 
+/** Guarda las excepciones de un tamaño (migración 009). `pct: null` en una
+    fila significa "este tamaño vuelve a usar el valor general" → se BORRA
+    la excepción, no se guarda un 0: un override en 0 es un recargo
+    apagado, heredar es otra cosa. Reemplaza el set completo del tamaño
+    para que quitar una excepción sea posible en el mismo guardado. */
+export async function guardarAjustesTamanoAction(
+  tamano: string,
+  filas: { categoria: string; clave: string; pct: number | null; tipo?: TipoAjuste; monto?: number | null }[]
+): Promise<ResultadoAccion> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Sesión expirada." };
+
+  const { data: perfil } = await supabase
+    .from("perfiles")
+    .select("rol")
+    .eq("id", user.id)
+    .single();
+  if (perfil?.rol !== "admin") return { success: false, error: "Sin permisos." };
+
+  if (!(TAMANOS as readonly string[]).includes(tamano)) {
+    return { success: false, error: "Tamaño inválido." };
+  }
+
+  const conValor = filas.filter((f) => f.pct !== null);
+  const rangoOk = conValor.every((f) => {
+    if (f.tipo === "monto") {
+      // Un monto fijo se valida en pesos, no en porcentaje: los rangos de
+      // uno no dicen nada del otro.
+      return (
+        typeof f.monto === "number" &&
+        Number.isInteger(f.monto) &&
+        f.monto >= -500000 &&
+        f.monto <= 500000
+      );
+    }
+    return typeof f.pct === "number" && !Number.isNaN(f.pct) && f.pct >= -100 && f.pct <= 200;
+  });
+  if (!rangoOk) return { success: false, error: "Valores fuera de rango." };
+
+  const soloMontoPermitido = conValor.every(
+    (f) => f.tipo !== "monto" || admiteMontoFijo(f.categoria)
+  );
+  if (!soloMontoPermitido) {
+    return { success: false, error: "Las zonas sensibles solo admiten porcentaje." };
+  }
+
+  const aBorrar = filas.filter((f) => f.pct === null);
+
+  const operaciones = [];
+  if (conValor.length > 0) {
+    operaciones.push(
+      supabase.from("ajustes_precio_tamano").upsert(
+        conValor.map((f) => ({
+          categoria: f.categoria,
+          clave: f.clave,
+          tamano,
+          // Solo sobrevive el valor del tipo declarado: el otro se limpia
+          // (0 / null) para que la tabla no guarde un número que nadie
+          // aplica y que el próximo lector interprete como vigente.
+          pct: f.tipo === "monto" ? 0 : (f.pct as number),
+          tipo: f.tipo ?? "pct",
+          monto: f.tipo === "monto" ? (f.monto as number) : null,
+          updated_at: new Date().toISOString(),
+        })),
+        { onConflict: "categoria,clave,tamano" }
+      )
+    );
+  }
+  for (const f of aBorrar) {
+    operaciones.push(
+      supabase
+        .from("ajustes_precio_tamano")
+        .delete()
+        .eq("categoria", f.categoria)
+        .eq("clave", f.clave)
+        .eq("tamano", tamano)
+    );
+  }
+
+  const resultados = await Promise.all(operaciones);
+  const fallo = resultados.find((r) => r.error);
+  if (fallo) {
+    // Un rechazo sin explicación es indiagnosticable: 42501 acá significa
+    // que la policy de admin no dejó pasar, no "no se pudo".
+    const codigo = fallo.error?.code;
+    return {
+      success: false,
+      error:
+        codigo === "42501"
+          ? "La base de datos rechazó el cambio (permisos)."
+          : "No se pudo guardar.",
+    };
+  }
+
+  revalidatePath("/dashboard/tarifas");
+  revalidatePath("/reserva");
+  revalidatePath("/");
+  return { success: true };
+}
+
 /** Guarda los ajustes de precio (recargos por pelo/temperamento/zonas,
     descuentos). Solo `pct`/`etiqueta`/`activo` — el GRANT de columna en
     la migración 007 ya impide tocar `categoria`/`clave` aunque este
@@ -96,24 +200,31 @@ export async function guardarAjustesPrecioAction(
     return { success: false, error: "Sin permisos." };
   }
 
-  const valido = filas.every(
-    (f) =>
-      typeof f.pct === "number" &&
-      !Number.isNaN(f.pct) &&
-      f.pct >= -100 &&
-      f.pct <= 200 &&
-      f.etiqueta.trim().length > 0 &&
-      f.etiqueta.length <= 60
-  );
+  const valido = filas.every((f) => {
+    const etiquetaOk = f.etiqueta.trim().length > 0 && f.etiqueta.length <= 60;
+    if (!etiquetaOk) return false;
+    if (f.tipo === "monto") {
+      if (!admiteMontoFijo(f.categoria)) return false;
+      return (
+        typeof f.monto === "number" &&
+        Number.isInteger(f.monto) &&
+        f.monto >= -500000 &&
+        f.monto <= 500000
+      );
+    }
+    return typeof f.pct === "number" && !Number.isNaN(f.pct) && f.pct >= -100 && f.pct <= 200;
+  });
   if (!valido) return { success: false, error: "Valores fuera de rango." };
 
   const actualizaciones = filas.map((f) =>
     supabase
       .from("ajustes_precio")
       .update({
-        pct: f.pct,
+        pct: f.tipo === "monto" ? 0 : f.pct,
         etiqueta: f.etiqueta.trim(),
         activo: f.activo,
+        tipo: f.tipo ?? "pct",
+        monto: f.tipo === "monto" ? f.monto : null,
         updated_at: new Date().toISOString(),
       })
       .eq("categoria", f.categoria)
