@@ -12,6 +12,16 @@ export type TipoPelo =
 
 export type Temperamento = "se_deja" | "no_se_deja" | "no_lo_se";
 
+/** Los cinco tamaños en orden de menor a mayor — orden canónico para
+    listas y editores (antes cada componente tenía su propia copia). */
+export const TAMANOS: readonly TamanoKey[] = [
+  "toy",
+  "pequeno",
+  "mediano",
+  "grande",
+  "gigante",
+] as const;
+
 export const TAMANO_LABELS: Record<TamanoKey, string> = {
   toy: "Mini / Toy (hasta 5 kg)",
   pequeno: "Pequeño (6–10 kg)",
@@ -274,7 +284,9 @@ export function buildWhatsAppMessage(
       lines.push(`*Precio estimado:* desde ${formatCLP(precio)}`);
       const est = calcularEstimado(data);
       if (est && est.ajustes.length > 0) {
-        lines.push(`  (incluye: ${est.ajustes.map((a) => `+${a.pct}% ${a.etiqueta.toLowerCase()}`).join(", ")})`);
+        lines.push(
+          `  (incluye: ${est.ajustes.map((a) => `${textoDeAjuste(a)} ${a.etiqueta.toLowerCase()}`).join(", ")})`
+        );
       }
     }
     if (data.servicio) lines.push(`*Servicio:* ${data.servicio}`);
@@ -344,9 +356,43 @@ export function construirDetalle(data: FormData): Record<string, string> {
    Recargos PROVISORIOS (a confirmar con Rodolfo): el estimado sube
    mientras el cliente declara condiciones que implican más trabajo. */
 
+/** Un agregado del precio. Puede cobrarse de dos formas y solo una manda:
+    - porcentaje (`pct`): escala con el tamaño del perro. Un 25% son $4.500
+      en un toy y $20.000 en un gigante.
+    - monto fijo (`monto`, en CLP): mismo costo para todos. Sirve cuando el
+      costo real no es proporcional (un producto, un accesorio).
+    Si `monto` viene definido, `pct` se ignora en el cálculo. */
 export interface AjustePrecio {
   etiqueta: string;
   pct: number;
+  monto?: number;
+}
+
+/** Cómo se cobra un agregado. Vive acá y no en lib/ajustesPrecio.ts porque
+    ese módulo es `"use client"` y esto lo necesitan también los server
+    actions — un helper de dominio no puede quedar del lado del cliente. */
+export type TipoAjuste = "pct" | "monto";
+
+/** Las zonas sensibles se quedan solo en porcentaje a propósito: sus dos
+    filas son "cada zona suma X" y "el tope es Y", y si una fuera monto y
+    la otra %, el tope no tendría contra qué compararse. Ver migración 010. */
+export function admiteMontoFijo(categoria: string): boolean {
+  return categoria !== "zona_sensible";
+}
+
+/** Cuánto suma un ajuste sobre una base dada, en pesos. Única fuente de
+    verdad para el desglose y el total — si se calculan por separado, el
+    cliente ve un desglose que no suma su total. */
+export function montoDeAjuste(ajuste: AjustePrecio, base: number): number {
+  return ajuste.monto !== undefined ? ajuste.monto : Math.round((base * ajuste.pct) / 100);
+}
+
+/** Etiqueta corta del valor de un ajuste, para el desglose: "+25%" o "+$8.000". */
+export function textoDeAjuste(ajuste: AjustePrecio): string {
+  if (ajuste.monto !== undefined) {
+    return `${ajuste.monto >= 0 ? "+" : "−"}${formatCLP(Math.abs(ajuste.monto))}`;
+  }
+  return `${ajuste.pct > 0 ? "+" : ""}${ajuste.pct}%`;
 }
 
 /* Configuración de ajustes de precio — antes constantes fijas acá mismo,
@@ -427,8 +473,12 @@ export function calcularEstimado(
     });
   }
 
-  const pctTotal = ajustes.reduce((acc, a) => acc + a.pct, 0);
-  return { base, ajustes, total: redondear(base * (1 + pctTotal / 100)) };
+  // Los porcentajes se suman entre sí y se aplican UNA vez sobre la base
+  // (nunca en cadena multiplicativa). Los montos fijos se suman al final,
+  // sin escalar: son costos reales, no proporciones.
+  const pctTotal = ajustes.filter((a) => a.monto === undefined).reduce((acc, a) => acc + a.pct, 0);
+  const montoFijo = ajustes.reduce((acc, a) => acc + (a.monto ?? 0), 0);
+  return { base, ajustes, total: redondear(base * (1 + pctTotal / 100) + montoFijo) };
 }
 
 /* ── Reserva multi-perrito ────────────────────────────────────

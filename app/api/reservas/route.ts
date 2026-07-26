@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseConfigurado } from "@/lib/citas";
+import { offsetNegocio } from "@/lib/agenda";
+import { evaluarReserva } from "@/lib/disponibilidad";
+import { obtenerDisponibilidad, obtenerOcupacion } from "@/lib/disponibilidadDatos";
 
 /* POST /api/reservas v2 — reserva multi-perrito (1-3). Crea UNA sesión
    'pendiente' por perrito; si el usuario está logueado además guarda/actualiza
@@ -59,6 +62,11 @@ const reservaSchema = z.object({
       .regex(/^\+?[\d\s]{8,15}$/, "Teléfono inválido"),
   }),
   fechaDeseada: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  /* Instante exacto del bloque elegido (Fase 5). Opcional para no romper a
+     un cliente viejo que solo mande el día: en ese caso se cae al
+     comportamiento anterior (00:00) y no se valida capacidad, porque sin
+     hora no hay bloque que llenar. */
+  inicio: z.string().datetime({ offset: true }).nullable().optional().default(null),
   servicio: z.string().trim().min(3).max(80),
   cupon: z
     .object({
@@ -111,12 +119,45 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { contacto, fechaDeseada, servicio, cupon, perros } = parsed.data;
+  const { contacto, fechaDeseada, servicio, cupon, perros, inicio } = parsed.data;
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  /* Puerta de disponibilidad (PRP-001 Fase 5). El formulario ya no ofrece
+     horarios imposibles, pero esto es un POST público: quien mande el
+     cuerpo a mano se salta la UI entera. La decisión se toma con el MISMO
+     motor que usa el formulario, así que no pueden discrepar. */
+  if (inicio) {
+    const { config, tramos, capacidad } = await obtenerDisponibilidad(supabase);
+    const dia = new Date(inicio);
+    const finDia = new Date(dia.getTime() + 24 * 60 * 60 * 1000);
+    const ocupacion = await obtenerOcupacion(
+      supabase,
+      new Date(dia.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+      finDia.toISOString()
+    );
+
+    const veredicto = evaluarReserva({
+      fecha: fechaDeseada,
+      inicio,
+      tramos,
+      config,
+      capacidad,
+      ocupacion,
+      // Una reserva de tres perritos ocupa tres lugares de ese bloque.
+      cupos: perros.length,
+    });
+
+    if (!veredicto.ok) {
+      return NextResponse.json(
+        { success: false, error: veredicto.mensaje ?? "Ese horario no está disponible." },
+        { status: 409 }
+      );
+    }
+  }
 
   const ids: string[] = [];
   let parcial = false;
@@ -145,11 +186,20 @@ export async function POST(request: NextRequest) {
       if (!perroId) parcial = true;
     }
 
+    /* El id se genera acá en vez de leerlo del INSERT.
+       Motivo (cazado 26-jul): `.insert().select("id")` hace un RETURNING, y
+       un visitante anónimo no tiene ninguna policy de SELECT sobre la fila
+       que acaba de crear — el INSERT pasaba y la lectura moría con 42501,
+       así que toda reserva sin cuenta terminaba en 500. Con el id conocido
+       de antemano no hace falta leer nada de vuelta. */
+    const sesionIdGenerado = crypto.randomUUID();
+
     const filaCompleta: FilaSesion = {
+      id: sesionIdGenerado,
       estado: "pendiente",
       cliente_id: user?.id ?? null,
       perro_id: perroId,
-      fecha_cita: `${fechaDeseada}T00:00:00-04:00`,
+      fecha_cita: inicio ?? `${fechaDeseada}T00:00:00${offsetNegocio(fechaDeseada)}`,
       servicio,
       precio_base: perro.precioEstimado,
       contacto_nombre: contacto.nombre,
@@ -161,31 +211,26 @@ export async function POST(request: NextRequest) {
     };
 
     let sesionId: string | null = null;
-    const intento1 = await supabase
-      .from("sesiones")
-      .insert(filaCompleta)
-      .select("id")
-      .single();
+    const intento1 = await supabase.from("sesiones").insert(filaCompleta);
 
     if (intento1.error) {
       /* 42703 = columna inexistente (migraciones pendientes) → set mínimo */
-      const { data: fila2 } = await supabase
+      const { error: error2 } = await supabase
         .from("sesiones")
         .insert({
+          id: sesionIdGenerado,
           estado: "pendiente",
           cliente_id: user?.id ?? null,
           perro_id: perroId,
-          fecha_cita: `${fechaDeseada}T00:00:00-04:00`,
+          fecha_cita: inicio ?? `${fechaDeseada}T00:00:00${offsetNegocio(fechaDeseada)}`,
           servicio,
           precio_base: perro.precioEstimado,
           notas_cliente: `${contacto.nombre} · ${contacto.telefono} · ${contacto.email}`,
-        })
-        .select("id")
-        .single();
-      sesionId = fila2?.id ?? null;
+        });
+      sesionId = error2 ? null : sesionIdGenerado;
       parcial = true;
     } else {
-      sesionId = intento1.data.id;
+      sesionId = sesionIdGenerado;
     }
 
     if (!sesionId) {

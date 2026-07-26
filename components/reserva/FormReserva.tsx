@@ -15,6 +15,7 @@ import {
   construirDetalle,
   detectarTamanoPorPeso,
   formatCLP,
+  textoDeAjuste,
   hayConflicto,
   type AjustePrecio,
   type EstimadoVivo,
@@ -22,10 +23,13 @@ import {
 } from "@/lib/reserva";
 import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
-import { useAjustesPrecio } from "@/lib/ajustesPrecio";
+import { useAjustesPorTamano } from "@/lib/ajustesPrecio";
 import { fotoValida, subirFotoReserva } from "@/lib/fotos";
 import { WHATSAPP_NUMBER } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
+import { hoyEnSantiago, primeraFechaReservable } from "@/lib/disponibilidad";
+import { obtenerDisponibilidad } from "@/lib/disponibilidadDatos";
+import { SelectorHorario } from "@/components/reserva/SelectorHorario";
 import { BreedAvatar } from "@/components/ui/BreedAvatar";
 
 const WHATSAPP_BASE = `https://wa.me/${WHATSAPP_NUMBER}?text=`;
@@ -195,7 +199,16 @@ function FotoPicker({
 }
 
 /* Mini-calendario — domingos y días pasados deshabilitados. */
-function MiniCalendario({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function MiniCalendario({
+  value,
+  onChange,
+  minima,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  /** Primera fecha reservable (YYYY-MM-DD) según el lead time del local. */
+  minima: string;
+}) {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
   const [mesOffset, setMesOffset] = useState(0);
@@ -242,7 +255,9 @@ function MiniCalendario({ value, onChange }: { value: string; onChange: (v: stri
           if (!dia) return <span key={i} />;
           const esDomingo = dia.getDay() === 0;
           const esPasado = dia < hoy;
-          const deshabilitado = esDomingo || esPasado;
+          // Lead time: los días anteriores al mínimo no se pueden pedir.
+          const muyPronto = iso(dia) < minima;
+          const deshabilitado = esDomingo || esPasado || muyPronto;
           const seleccionado = value === iso(dia);
           return (
             <button
@@ -351,14 +366,38 @@ export function FormReserva({
   );
 
   const [esPrimeraCita, setEsPrimeraCita] = useState(false);
+  /** Bloque horario elegido (Fase 5). Sin él no se puede enviar. */
+  const [inicioElegido, setInicioElegido] = useState<string | null>(null);
+  const [fechaMinima, setFechaMinima] = useState<string>(() => hoyEnSantiago());
   const [cuponInput, setCuponInput] = useState("");
   const [cupon, setCupon] = useState<CuponAplicado | null>(null);
   const [cuponError, setCuponError] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [solicitudEstado, setSolicitudEstado] = useState<"idle" | "registrada" | "error">("idle");
 
+  // Lead time real del local: hasta que llegue, el calendario usa hoy (no
+  // se adelanta a bloquear días que quizá sí se pueden pedir).
+  useEffect(() => {
+    let cancelado = false;
+    obtenerDisponibilidad(createClient())
+      .then(({ config }) => {
+        if (!cancelado) setFechaMinima(primeraFechaReservable(config));
+      })
+      .catch(() => {
+        /* Sin config, queda el valor de hoy: el servidor igual valida. */
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
   const tarifas = useTarifas();
-  const ajustesPrecio = useAjustesPrecio();
+  const ajustes = useAjustesPorTamano();
+  // Los descuentos globales (cupón, primera cita) NO son por tamaño: se
+  // muestran una sola vez para toda la reserva, que puede tener perritos
+  // de portes distintos. Lo que sí varía por tamaño son los agregados del
+  // perro (pelo, temperamento, zonas, cachorro) — ver `cfg` más abajo.
+  const ajustesPrecio = ajustes.general;
   const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
@@ -478,16 +517,22 @@ export function FormReserva({
       const baseCachorro =
         razaJoven && razaJoven.tamano !== tamanoAuto ? tarifas.base[razaJoven.tamano] : null;
 
+      // Tamaño con el que se cobra: el de la raza adulta si es cachorro de
+      // raza conocida, si no el detectado por peso. Los agregados salen de
+      // ESE tamaño (migración 009) — heredan el general si no hay excepción.
+      const tamanoCobrado = razaJoven && razaJoven.tamano !== tamanoAuto ? razaJoven.tamano : tamanoAuto;
+      const cfg = ajustes.porTamano[tamanoCobrado] ?? ajustes.general;
+
       const extra: AjustePrecio[] = [];
-      if (baseCachorro) extra.push(ajustesPrecio.descuentoCachorro);
+      if (baseCachorro) extra.push(cfg.descuentoCachorro);
       if (descuentoGlobal) extra.push(descuentoGlobal);
 
       return {
-        estimado: calcularEstimado(d, baseCachorro ?? tarifas.base[tamanoAuto], extra, ajustesPrecio),
+        estimado: calcularEstimado(d, baseCachorro ?? tarifas.base[tamanoAuto], extra, cfg),
         esManual,
       };
     },
-    [tarifas, ajustesPrecio, descuentoGlobal]
+    [tarifas, ajustes, descuentoGlobal]
   );
 
   const actual = estimadoDe(data);
@@ -537,7 +582,9 @@ export function FormReserva({
 
   // ── Confirmar: sube fotos, registra en DB y abre WhatsApp ───────────────
   const confirmarReserva = useCallback(() => {
-    if (!fechaDeseada || !servicio || enviando) return;
+    // Sin bloque elegido no se envía: mandar solo el día volvería al
+    // problema que la Fase 5 vino a resolver (nadie sabe a qué hora es).
+    if (!fechaDeseada || !inicioElegido || !servicio || enviando) return;
     setEnviando(true);
 
     /* La pestaña se abre de inmediato (gesto del usuario) y se redirige al
@@ -590,6 +637,7 @@ export function FormReserva({
             telefono: contacto.telefono,
           },
           fechaDeseada,
+          inicio: inicioElegido,
           servicio,
           cupon: descuentoGlobal
             ? {
@@ -686,10 +734,10 @@ export function FormReserva({
                 <span
                   key={a.etiqueta}
                   className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold text-teal-ink ${
-                    a.pct < 0 ? "bg-[#b8e4cd]" : "bg-orange/90"
+                    (a.monto ?? a.pct) < 0 ? "bg-[#b8e4cd]" : "bg-orange/90"
                   }`}
                 >
-                  {a.pct > 0 ? `+${a.pct}` : a.pct}% {a.etiqueta}
+                  {textoDeAjuste(a)} {a.etiqueta}
                 </span>
               ))}
             </div>
@@ -1065,12 +1113,27 @@ export function FormReserva({
               <div>
                 <p className="mb-1 text-sm font-bold text-ink">Fechas disponibles</p>
                 <p className="mb-2 text-xs text-ink-soft">
-                  Referencial — confirmamos la hora exacta por WhatsApp.{" "}
+                  {/* Antes acá decía "confirmamos la hora exacta por
+                      WhatsApp": desde la Fase 5 la hora la elige el
+                      cliente y queda tomada, así que ese texto mentía. */}
+                  Elija el día y la hora — el cupo queda reservado al enviar.{" "}
                   <a href="/agenda" className="font-bold text-teal-dark underline-offset-2 hover:underline">
                     Ver agenda semanal →
                   </a>
                 </p>
-                <MiniCalendario value={fechaDeseada} onChange={setFechaDeseada} />
+                <MiniCalendario
+                  value={fechaDeseada}
+                  onChange={(v) => {
+                    setFechaDeseada(v);
+                    setInicioElegido(null);
+                  }}
+                  minima={fechaMinima}
+                />
+                <SelectorHorario
+                  fecha={fechaDeseada}
+                  valor={inicioElegido}
+                  onChange={setInicioElegido}
+                />
               </div>
 
               <div>
@@ -1162,7 +1225,7 @@ export function FormReserva({
               <button
                 type="button"
                 onClick={confirmarReserva}
-                disabled={!fechaDeseada || !servicio || enviando}
+                disabled={!fechaDeseada || !inicioElegido || !servicio || enviando}
                 className={`flex w-full items-center justify-center gap-2 rounded-full py-4 font-display text-base font-extrabold shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow,opacity] duration-150 hover:shadow-[0_5px_0_rgba(6,58,64,.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)] disabled:cursor-not-allowed disabled:opacity-40 ${
                   algunoManual
                     ? "bg-orange text-teal-ink hover:bg-[#f7ab52]"
