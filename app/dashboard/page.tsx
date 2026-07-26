@@ -246,8 +246,11 @@ export default async function DashboardPage() {
             {[
               { label: "Ver todas las citas", href: "/dashboard/citas", emoji: "📅" },
               { label: "Agenda semanal", href: "/agenda", emoji: "🗓️" },
+              { label: "Analíticas", href: "/dashboard/analiticas", emoji: "📊" },
               { label: "Tarifas", href: "/dashboard/tarifas", emoji: "💰", onlyAdmin: true },
               { label: "Anuncios", href: "/dashboard/anuncios", emoji: "📣", onlyAdmin: true },
+              { label: "Usuarios", href: "/dashboard/usuarios", emoji: "👥", onlyAdmin: true },
+              { label: "Disponibilidad", href: "/dashboard/disponibilidad", emoji: "🕘", onlyAdmin: true },
             ]
               .filter((a) => !a.onlyAdmin || perfil.rol === "admin")
               .map((accion) => (
