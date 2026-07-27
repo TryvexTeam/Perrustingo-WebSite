@@ -278,8 +278,7 @@ export default async function DashboardPage() {
               💾 <strong>El plan actual de la base de datos no hace respaldos
               automáticos.</strong> Si se pierden los datos, no hay de dónde
               recuperarlos. Descargue el respaldo cada cierto tiempo y guárdelo
-              fuera del computador del local — o considere el plan pago, que
-              respalda a diario.
+              fuera del computador del local.
             </p>
           )}
         </div>
