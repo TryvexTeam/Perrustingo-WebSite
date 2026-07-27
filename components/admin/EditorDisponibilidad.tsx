@@ -206,6 +206,48 @@ export function EditorDisponibilidad({
           </div>
         </div>
 
+        <div className="mt-4 rounded-2xl bg-cream px-4 py-3">
+          <label htmlFor="tope-telefono" className="text-sm font-bold text-ink">
+            Tope de citas por teléfono
+          </label>
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              id="tope-telefono"
+              type="number"
+              min={0}
+              max={50}
+              value={config.maxCitasActivasTelefono}
+              onChange={(e) => {
+                setConfig((c) => ({
+                  ...c,
+                  maxCitasActivasTelefono: parseInt(e.target.value, 10) || 0,
+                }));
+                tocar();
+              }}
+              disabled={guardando}
+              className="w-20 rounded-xl border-2 border-white bg-white px-3 py-2 text-right text-sm font-extrabold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
+            />
+            <span className="text-sm font-bold text-ink-soft">citas sin completar</span>
+          </div>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-ink-soft">
+            {config.maxCitasActivasTelefono === 0 ? (
+              <>
+                <strong className="text-[#7a4d10]">Sin tope.</strong> Una sola
+                persona puede tomar toda la agenda: con esto apagado, quien
+                quiera hacer daño llena el mes.
+              </>
+            ) : (
+              <>
+                Un mismo número no puede tener más de{" "}
+                <strong>{config.maxCitasActivasTelefono}</strong> citas
+                pendientes o confirmadas a la vez. Las completadas y las
+                canceladas no cuentan, así que un cliente fiel nunca queda
+                bloqueado. El equipo no tiene tope.
+              </>
+            )}
+          </p>
+        </div>
+
         <label className="mt-4 flex items-start gap-2 rounded-2xl bg-cream px-4 py-3">
           <input
             type="checkbox"

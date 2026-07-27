@@ -26,6 +26,7 @@ interface FilaConfig {
   duracion_bloque_min: number;
   capacidad_fallback: number;
   pendiente_ocupa: boolean;
+  max_citas_activas_telefono: number;
 }
 
 interface FilaTramo {
@@ -39,7 +40,7 @@ export async function obtenerDisponibilidad(supabase: Cliente): Promise<Disponib
   const [{ data: config }, { data: tramos }, { data: capacidad }] = await Promise.all([
     supabase
       .from("disponibilidad_config")
-      .select("lead_time_dias, duracion_bloque_min, capacidad_fallback, pendiente_ocupa")
+      .select("lead_time_dias, duracion_bloque_min, capacidad_fallback, pendiente_ocupa, max_citas_activas_telefono")
       .eq("singleton", true)
       .maybeSingle(),
     supabase
@@ -58,6 +59,7 @@ export async function obtenerDisponibilidad(supabase: Cliente): Promise<Disponib
           duracionBloqueMin: c.duracion_bloque_min,
           capacidadFallback: c.capacidad_fallback,
           pendienteOcupa: c.pendiente_ocupa,
+          maxCitasActivasTelefono: c.max_citas_activas_telefono ?? CONFIG_DEFAULT.maxCitasActivasTelefono,
         }
       : CONFIG_DEFAULT,
     tramos: ((tramos as FilaTramo[] | null) ?? []).map((t) => ({

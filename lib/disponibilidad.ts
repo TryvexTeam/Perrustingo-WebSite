@@ -28,6 +28,11 @@ export interface DisponibilidadConfig {
   duracionBloqueMin: number;
   capacidadFallback: number;
   pendienteOcupa: boolean;
+  /** Citas sin completar que puede tener un mismo teléfono. 0 = sin tope.
+      Lo aplica un trigger en la base (migración 017), no la aplicación:
+      un control que vive solo en el código se puede rodear yendo directo
+      a la API. */
+  maxCitasActivasTelefono: number;
 }
 
 export const CONFIG_DEFAULT: DisponibilidadConfig = {
@@ -35,6 +40,7 @@ export const CONFIG_DEFAULT: DisponibilidadConfig = {
   duracionBloqueMin: 60,
   capacidadFallback: 1,
   pendienteOcupa: true,
+  maxCitasActivasTelefono: 4,
 };
 
 export interface Tramo {

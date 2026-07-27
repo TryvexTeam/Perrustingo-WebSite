@@ -24,9 +24,16 @@ export interface Limite {
 }
 
 /* Los límites son generosos con una persona y estrechos con un robot.
-   Una familia reservando para dos perritos hace 1–2 envíos; nadie
-   legítimo hace 8 en diez minutos desde la misma conexión. */
-export const LIMITE_RESERVA_IP: Limite = { max: 8, ventanaSeg: 10 * 60 };
+
+   El de IP es deliberadamente holgado: en Chile las operadoras móviles
+   comparten una misma IP pública entre muchísimos clientes (CGNAT), y el
+   wifi de un centro comercial o una oficina también. Un límite estrecho por
+   IP frena a personas reales que no tienen nada que ver entre sí — y cada
+   falso positivo es una reserva perdida.
+
+   El que de verdad protege es el de teléfono, porque ata la reserva a una
+   persona: 5 solicitudes en una hora ya es más de lo que hace cualquiera. */
+export const LIMITE_RESERVA_IP: Limite = { max: 30, ventanaSeg: 10 * 60 };
 export const LIMITE_RESERVA_TELEFONO: Limite = { max: 5, ventanaSeg: 60 * 60 };
 
 export interface ResultadoLimite {

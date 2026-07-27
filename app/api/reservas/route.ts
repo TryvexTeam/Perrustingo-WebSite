@@ -266,6 +266,18 @@ export async function POST(request: NextRequest) {
     let sesionId: string | null = null;
     const intento1 = await supabase.from("sesiones").insert(filaCompleta);
 
+    /* Un rechazo de REGLA DE NEGOCIO no se reintenta: el tope de citas por
+       teléfono (migración 017) lo levanta un trigger, y volver a intentar
+       con el set mínimo solo produce el mismo rechazo — pero perdiendo el
+       mensaje por el camino, que es lo que la persona necesita leer.
+       El fallback de abajo existe para columnas faltantes, no para esto. */
+    if (intento1.error?.code === "23514") {
+      return NextResponse.json(
+        { success: false, error: intento1.error.message },
+        { status: 429 }
+      );
+    }
+
     if (intento1.error) {
       /* 42703 = columna inexistente (migraciones pendientes) → set mínimo */
       const { error: error2 } = await supabase

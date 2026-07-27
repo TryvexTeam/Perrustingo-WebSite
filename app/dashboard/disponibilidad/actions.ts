@@ -20,6 +20,7 @@ export interface ConfigEditable {
   duracionBloqueMin: number;
   capacidadFallback: number;
   pendienteOcupa: boolean;
+  maxCitasActivasTelefono: number;
 }
 
 /* Escrituras de la disponibilidad (PRP-001 Fase 5). Guard admin + RLS,
@@ -77,6 +78,13 @@ export async function guardarDisponibilidadAction(
   ) {
     return { success: false, error: "La capacidad de respaldo debe estar entre 1 y 20." };
   }
+  if (
+    !Number.isInteger(config.maxCitasActivasTelefono) ||
+    config.maxCitasActivasTelefono < 0 ||
+    config.maxCitasActivasTelefono > 50
+  ) {
+    return { success: false, error: "El tope por teléfono debe estar entre 0 y 50." };
+  }
 
   for (const tramo of tramos) {
     if (!Number.isInteger(tramo.diaSemana) || tramo.diaSemana < 0 || tramo.diaSemana > 6) {
@@ -99,6 +107,7 @@ export async function guardarDisponibilidadAction(
       duracion_bloque_min: config.duracionBloqueMin,
       capacidad_fallback: config.capacidadFallback,
       pendiente_ocupa: config.pendienteOcupa,
+      max_citas_activas_telefono: config.maxCitasActivasTelefono,
       updated_at: new Date().toISOString(),
     })
     .eq("singleton", true)
