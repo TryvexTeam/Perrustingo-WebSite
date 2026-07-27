@@ -1,3 +1,20 @@
+/* La dirección pública del sitio. Un solo lugar, y no una constante por
+   archivo, porque justamente eso fue lo que falló:
+
+   Hasta el 27-jul el `metadataBase`, el sitemap, el robots.txt, la etiqueta
+   og:url y los datos estructurados decían "perrustingo.cl" — un dominio que
+   no responde— mientras el sitio vive en .com. O sea: lo que se compartía por
+   WhatsApp apuntaba a la nada, el sitemap ofrecía a Google direcciones de
+   otro sitio, y la ficha de negocio que Google lee para las búsquedas
+   locales daba una URL muerta. Es difícil imaginar algo que estorbe más al
+   objetivo de aparecer primero al buscar "peluquería canina Renca".
+
+   Configurable por entorno para los previews, con el dominio real de
+   respaldo: si la variable falta, se cae al valor correcto, no a uno roto. */
+export const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://perrustingo.com"
+).replace(/\/+$/, "");
+
 export const SITE = {
   name: "Perrustingo",
   tagline: "Peluquería Canina",

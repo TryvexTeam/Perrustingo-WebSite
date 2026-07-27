@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseConfigurado } from "@/lib/citas";
-import { offsetNegocio } from "@/lib/agenda";
+import { offsetNegocio, TZ_NEGOCIO } from "@/lib/agenda";
 import { normalizarTelefono, validarContacto } from "@/lib/contacto";
 import {
   consumir,
@@ -12,6 +12,15 @@ import {
   LIMITE_RESERVA_TELEFONO,
 } from "@/lib/rateLimit";
 import { evaluarReserva } from "@/lib/disponibilidad";
+import { formatRangoCLP } from "@/lib/reserva";
+import { WHATSAPP_NUMBER, hayWhatsAppConfigurado } from "@/lib/site";
+import { enviarCorreo, correoConfigurado, CORREO_EQUIPO } from "@/lib/correo";
+import {
+  correoCliente,
+  correoEquipo,
+  type DatosCorreo,
+  type PerroCorreo,
+} from "@/lib/correoPlantillas";
 import { obtenerDisponibilidad, obtenerOcupacion } from "@/lib/disponibilidadDatos";
 
 /* POST /api/reservas v2 — reserva multi-perrito (1-3). Crea UNA sesión
@@ -340,8 +349,141 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  /* ── Los dos correos (27-jul) ──────────────────────────────────────
+     Al cliente, su confirmación; al salón, el aviso con todo lo que hace
+     falta para prepararse.
+
+     Se esperan (`await`) en vez de dispararse y olvidarse: en una función
+     serverless, lo que queda pendiente cuando se devuelve la respuesta se
+     corta a la mitad. Un correo a medio enviar es un correo que no llega.
+
+     Nada de esto puede voltear la reserva: si el envío falla, la cita ya
+     está creada y el WhatsApp sale igual. El fallo se anota en `parcial`
+     para que quede rastro, no para bloquear al cliente. */
+  if (ids.length > 0) {
+    const fallo = await enviarCorreosDeReserva({
+      origen: origenDe(request),
+      ids,
+      contacto,
+      perros,
+      servicio,
+      inicio,
+      fechaDeseada,
+    });
+    if (fallo) parcial = true;
+  }
+
   return NextResponse.json(
     { success: true, data: { ids, parcial } },
     { status: 201 }
   );
+}
+
+/** El origen público del sitio, para armar enlaces que se abren desde un
+    correo o desde WhatsApp.
+
+    Sale de la cabecera de la petición y no de una constante porque el mismo
+    código corre en local, en los previews de Vercel y en producción; una URL
+    fija haría que los enlaces del correo apunten al lugar equivocado en dos
+    de los tres. `x-forwarded-*` es lo que pone el proxy de Vercel. */
+function origenDe(request: NextRequest): string {
+  const env = process.env.NEXT_PUBLIC_SITE_URL;
+  if (env) return env.replace(/\/+$/, "");
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const proto = request.headers.get("x-forwarded-proto") ?? "https";
+  return host ? `${proto}://${host}` : "https://perrustingo.com";
+}
+
+/** Devuelve true si algún correo falló. */
+async function enviarCorreosDeReserva(d: {
+  origen: string;
+  ids: string[];
+  contacto: { nombre: string; email: string; telefono: string; comuna?: string | null };
+  perros: z.infer<typeof perroSchema>[];
+  servicio: string;
+  inicio: string | null;
+  fechaDeseada: string;
+}): Promise<boolean> {
+  if (!correoConfigurado()) return false;
+
+  const perrosCorreo: PerroCorreo[] = d.ids.map((id, i) => {
+    const p = d.perros[i];
+    return {
+      nombre: p?.ficha?.nombre?.trim() || `Perrito ${i + 1}`,
+      raza: p?.ficha?.raza?.trim() || "Sin raza indicada",
+      // Rango, nunca cifra exacta: es la misma promesa que hace el sitio.
+      precio: typeof p?.precioEstimado === "number" ? formatRangoCLP(p.precioEstimado) : null,
+      fotoActual: p?.fotoActualRuta ? `${d.origen}/api/foto/${id}/antes` : null,
+      fotoReferencia: p?.fotoReferenciaRuta ? `${d.origen}/api/foto/${id}/referencia` : null,
+    };
+  });
+
+  const total = d.perros.reduce((acc, p) => acc + (p.precioEstimado ?? 0), 0);
+  const datos: DatosCorreo = {
+    cliente: d.contacto,
+    perros: perrosCorreo,
+    servicio: d.servicio,
+    cuando: cuandoLegible(d.inicio, d.fechaDeseada),
+    totalEstimado: total > 0 ? formatRangoCLP(total) : null,
+    urlWhatsApp: urlSeguimiento(d.contacto.nombre, perrosCorreo.map((p) => p.nombre)),
+    urlFicha: `${d.origen}/dashboard/citas?cita=${d.ids[0]}`,
+  };
+
+  const paraCliente = correoCliente(datos);
+  const paraEquipo = correoEquipo(datos);
+
+  const [rc, re] = await Promise.all([
+    enviarCorreo({ para: d.contacto.email, asunto: paraCliente.asunto, html: paraCliente.html }),
+    enviarCorreo({
+      para: CORREO_EQUIPO,
+      asunto: paraEquipo.asunto,
+      html: paraEquipo.html,
+      // Responder el aviso interno escribe al cliente, no al propio salón.
+      responderA: d.contacto.email,
+    }),
+  ]);
+
+  if (!rc.ok) console.error("[reservas] correo al cliente falló:", rc.error);
+  if (!re.ok) console.error("[reservas] correo al equipo falló:", re.error);
+  return !rc.ok || !re.ok;
+}
+
+/** "jueves 30 de julio, 15:00" — o solo el día si no se eligió hora. */
+function cuandoLegible(inicio: string | null, fechaDeseada: string): string {
+  const base = inicio ?? `${fechaDeseada}T00:00:00${offsetNegocio(fechaDeseada)}`;
+  const d = new Date(base);
+  if (isNaN(d.getTime())) return fechaDeseada;
+  /* La coma que es-CL mete entre el día de la semana y el número ("jueves,
+     6 de agosto") sobra cuando después viene otra coma y la hora: quedaba
+     "jueves, 6 de agosto, 03:00 p. m.", con tres pausas seguidas. */
+  const dia = d
+    .toLocaleDateString("es-CL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      timeZone: TZ_NEGOCIO,
+    })
+    .replace(/^(\p{L}+),\s*/u, "$1 ");
+  if (!inicio) return dia;
+  /* 24 horas, como el resto del sitio. Con el formato por defecto salía
+     "03:00 p. m." en el asunto del correo mientras el selector de la web
+     decía "15:00" — el mismo dato escrito de dos maneras confunde al
+     cliente que compara. */
+  const hora = d.toLocaleTimeString("es-CL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: TZ_NEGOCIO,
+  });
+  return `${dia}, ${hora}`;
+}
+
+/** El WhatsApp del botón del correo: abre el chat del salón con el cliente
+    ya presentado, para que no tenga que explicar quién es. */
+function urlSeguimiento(nombre: string, perros: string[]): string | null {
+  if (!hayWhatsAppConfigurado()) return null;
+  const texto =
+    `Hola Perrustingo, soy ${nombre}. Acabo de reservar por el sitio ` +
+    `para ${perros.join(" y ")} y quiero confirmar la hora.`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(texto)}`;
 }

@@ -26,7 +26,7 @@ export function PromoBanner({ slot, promos, id }: PromoBannerProps) {
   const horizontales = delSlot.filter((p) => !p.vertical);
   const enPareja = verticales.length > 1;
 
-  const arte = (promo: Promo) => (
+  const imagen = (promo: Promo) => (
     <Image
       src={promo.img}
       alt={promo.alt}
@@ -38,6 +38,30 @@ export function PromoBanner({ slot, promos, id }: PromoBannerProps) {
       className="w-full rounded-[28px] shadow-[0_2px_16px_rgba(47,62,70,0.1)] transition-transform duration-300 ease-[var(--ease-out-expo)] hover:-translate-y-1"
     />
   );
+
+  /* Con enlace el anuncio se vuelve un botón; sin enlace queda como estaba,
+     una imagen suelta (pedido del señor Ignacio, 27-jul).
+
+     El cursor y el foco visible importan más de lo que parece: una imagen
+     que resulta ser un enlace, pero no se comporta como uno, es una que
+     nadie toca. Y `rel="noopener noreferrer"` no es adorno — sin él, la
+     página de destino recibe control sobre la pestaña de Perrustingo.
+
+     El `alt` de la imagen ya describe el anuncio, así que el enlace no
+     repite el texto: un lector de pantalla anunciaría lo mismo dos veces. */
+  const arte = (promo: Promo) =>
+    promo.url ? (
+      <a
+        href={promo.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group block cursor-pointer rounded-[28px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal"
+      >
+        {imagen(promo)}
+      </a>
+    ) : (
+      imagen(promo)
+    );
 
   return (
     <section id={id} className="scroll-mt-20 bg-cream px-5 py-10">

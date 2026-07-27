@@ -200,6 +200,31 @@ export function EditorPromos({ promosIniciales }: EditorPromosProps) {
                 className="rounded-xl border-2 border-transparent bg-white px-3 py-2 text-xs text-ink focus:border-teal focus:outline-none disabled:opacity-50"
               />
 
+              {/* Enlace del anuncio (27-jul). Opcional a propósito: los
+                  anuncios que ya existen no llevan ninguno y deben seguir
+                  funcionando como imagen suelta. */}
+              <label
+                htmlFor={`url-${promo.id}`}
+                className="text-[11px] font-extrabold uppercase tracking-wider text-ink-soft"
+              >
+                Enlace al tocarlo <span className="normal-case tracking-normal opacity-70">(opcional)</span>
+              </label>
+              <input
+                id={`url-${promo.id}`}
+                type="url"
+                inputMode="url"
+                value={promo.url ?? ""}
+                onChange={(e) => actualizar(promo.id, { url: e.target.value })}
+                disabled={bloqueado}
+                maxLength={500}
+                placeholder="instagram.com/perrustingo"
+                className="rounded-xl border-2 border-transparent bg-white px-3 py-2 text-xs text-ink focus:border-teal focus:outline-none disabled:opacity-50"
+              />
+              <p className="-mt-1 text-[11px] leading-relaxed text-ink-soft">
+                Si lo dejas vacío, el anuncio se muestra como imagen y no se
+                puede tocar. Se abre en una pestaña nueva.
+              </p>
+
               <div className="flex flex-wrap items-center gap-2">
                 <label className="cursor-pointer rounded-full border-2 border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-dark transition-colors hover:bg-sky/40">
                   {subiendo === promo.id ? "Subiendo…" : "📤 Subir imagen"}
