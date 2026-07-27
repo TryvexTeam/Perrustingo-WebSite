@@ -18,6 +18,17 @@ const INK_SOFT = "#5b6b72";
 const ORANGE = "#f49d37";
 const ORANGE_SOFT = "#fdeed8";
 
+/* El logo, servido desde producción SIEMPRE — también cuando el correo sale
+   de local o de un preview. Un `<img>` de correo se descarga desde el
+   teléfono de quien lo abre, y ese teléfono no puede resolver `localhost`:
+   apuntarlo al origen de turno dejaría el hueco de una imagen rota en cada
+   prueba.
+
+   Es `icon-192.png` y no `logo.jpeg` por peso: el jpeg pesa 2,1 MB, el png
+   47 KB, y son el mismo dibujo. Dos megas que se bajan cada vez que alguien
+   abre el correo, en el celular y con datos, para verlo a 56 píxeles. */
+const URL_LOGO = "https://perrustingo.com/icon-192.png";
+
 /** Un perrito, con lo que el correo necesita mostrar de él. */
 export interface PerroCorreo {
   nombre: string;
@@ -81,7 +92,12 @@ function avisoPrecio(): string {
 function envoltura(contenido: string, preheader: string, pie: string): string {
   /* El preheader es el texto gris que Gmail muestra al lado del asunto. Si
      no se pone, muestra el primer texto del correo — que suele ser el
-     nombre del salón repetido. */
+     nombre del salón repetido.
+
+     En la cabecera, el logo y el nombre escrito conviven a propósito: casi
+     todos los clientes de correo bloquean las imágenes hasta que el lector
+     las acepta, así que un encabezado hecho solo de logo llegaría vacío la
+     primera vez. El texto es lo que siempre se ve; la imagen, el adorno. */
   return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:${CREAM};">
@@ -89,9 +105,17 @@ function envoltura(contenido: string, preheader: string, pie: string): string {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${CREAM};padding:28px 12px;">
     <tr><td align="center">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background:#ffffff;border-radius:22px;overflow:hidden;">
-        <tr><td style="background:${TEAL_INK};padding:26px 32px;">
-          <div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:bold;color:#ffffff;letter-spacing:-0.5px;">Perrustingo</div>
-          <div style="font-family:Verdana,Geneva,sans-serif;font-size:11px;color:#8fd4d6;letter-spacing:2px;text-transform:uppercase;margin-top:4px;">Peluquería Canina</div>
+        <tr><td style="background:${TEAL_INK};padding:22px 32px;">
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+            <td style="padding-right:14px;vertical-align:middle;">
+              <img src="${URL_LOGO}" width="60" height="60" alt="Perrustingo"
+                   style="display:block;width:60px;height:60px;border:0;border-radius:14px;background:#ffffff;">
+            </td>
+            <td style="vertical-align:middle;">
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:bold;color:#ffffff;letter-spacing:-0.5px;">Perrustingo</div>
+              <div style="font-family:Verdana,Geneva,sans-serif;font-size:11px;color:#8fd4d6;letter-spacing:2px;text-transform:uppercase;margin-top:4px;">Peluquería Canina</div>
+            </td>
+          </tr></table>
         </td></tr>
         <tr><td style="padding:32px;">${contenido}</td></tr>
         <tr><td style="background:${CREAM};padding:22px 32px;font-family:Verdana,Geneva,sans-serif;font-size:11px;line-height:1.8;color:${INK_SOFT};">
