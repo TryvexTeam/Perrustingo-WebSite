@@ -253,6 +253,7 @@ export default async function DashboardPage() {
               { label: "Usuarios", href: "/dashboard/usuarios", emoji: "👥", onlyAdmin: true },
               { label: "Disponibilidad", href: "/dashboard/disponibilidad", emoji: "🕘", onlyAdmin: true },
               { label: "Ofertas", href: "/dashboard/ofertas", emoji: "🎁", onlyAdmin: true },
+              { label: "Revisar reservas", href: "/dashboard/seguridad", emoji: "🛡️", onlyAdmin: true },
               { label: "Descargar respaldo", href: "/api/respaldo", emoji: "💾", onlyAdmin: true },
             ]
               .filter((a) => !a.onlyAdmin || perfil.rol === "admin")
