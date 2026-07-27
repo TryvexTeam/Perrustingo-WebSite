@@ -403,6 +403,43 @@ export function conEnlaceFicha(mensaje: string, enlace: EnlaceFicha | null): str
   return `${mensaje}\n\n${titulo}:\n${url}${extra}`;
 }
 
+/** Una foto que ya quedó guardada, con el nombre del perrito al que pertenece. */
+export interface FotoEnMensaje {
+  sesionId: string;
+  nombre: string;
+  /** Tipos que existen para esa cita: 'antes' (el perrito) y/o 'referencia'. */
+  tipos: ("antes" | "referencia")[];
+}
+
+/** Mete las fotos DENTRO del mensaje de WhatsApp, como enlaces.
+
+    Pedido del señor Ignacio, 27-jul: "que llegue el mensaje con la foto, sí
+    o sí". Un enlace `wa.me` no transporta archivos, así que lo que viaja es
+    la dirección de cada foto — y WhatsApp le muestra la vista previa al
+    equipo dentro de la conversación, sin pedirle que entre a ningún panel.
+
+    Las direcciones son las de `/api/foto/...`: cortas a propósito. El
+    mensaje entero viaja en la query del enlace y una URL firmada de Storage
+    se lleva sola cientos de caracteres; con dos perritos, el mensaje se
+    pasaba de largo y WhatsApp lo cortaba. */
+export function conEnlacesFoto(
+  mensaje: string,
+  origen: string,
+  fotos: FotoEnMensaje[]
+): string {
+  const base = origen.replace(/\/+$/, "");
+  const lineas = fotos.flatMap((f) =>
+    f.tipos.map((tipo) => {
+      const que = tipo === "antes" ? "Foto de" : "Corte que quiere para";
+      return `${que} ${f.nombre}:\n${base}/api/foto/${f.sesionId}/${tipo}`;
+    })
+  );
+
+  if (lineas.length === 0) return mensaje;
+
+  return `${mensaje}\n\n${lineas.join("\n\n")}`;
+}
+
 export function buildWhatsAppMessage(
   data: FormData,
   esManual: boolean,
