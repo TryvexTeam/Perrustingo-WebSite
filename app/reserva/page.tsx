@@ -172,7 +172,7 @@ export default async function ReservaPage({
             Cuéntanos sobre tu perro o perra
           </h1>
           <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-ink-soft">
-            Llena el formulario y te generamos el mensaje listo para WhatsApp —
+            Llena el formulario y te dejamos el mensaje listo para WhatsApp —
             con precio estimado incluido y sin necesidad de llamar.
           </p>
         </div>
