@@ -249,6 +249,109 @@ export function formatRangoCLP(n: number): string {
   return `${formatCLP(desde)} a ${formatCLP(hasta)}`;
 }
 
+/* ── Capitalización de lo que escribe el cliente ──────────────────────
+
+   La gente escribe "luna" o "JUAN PEREZ" en el teléfono, y eso después
+   aparece en la agenda del local y en el mensaje del equipo. No es
+   cosmética: una ficha que dice "luna" se ve descuidada, y el salón lo
+   está entregando a un cliente. */
+
+/* Partículas que van en minúscula dentro de un nombre: "María de los
+   Ángeles" y no "María De Los Ángeles". */
+const PARTICULAS = new Set(["de", "del", "la", "las", "los", "y", "da", "do"]);
+
+/** Capitaliza un nombre propio respetando partículas y guiones. */
+export function capitalizarNombre(valor: string): string {
+  const limpio = valor.trim().replace(/\s+/g, " ");
+  if (!limpio) return "";
+
+  return limpio
+    .toLocaleLowerCase("es-CL")
+    .split(" ")
+    .map((palabra, i) => {
+      if (i > 0 && PARTICULAS.has(palabra)) return palabra;
+      // Los nombres compuestos con guion también llevan las dos mayúsculas.
+      return palabra
+        .split("-")
+        .map((parte) =>
+          parte ? parte.charAt(0).toLocaleUpperCase("es-CL") + parte.slice(1) : parte
+        )
+        .join("-");
+    })
+    .join(" ");
+}
+
+/** Primera letra en mayúscula, para textos libres de una frase. */
+export function capitalizarFrase(valor: string): string {
+  const limpio = valor.trim().replace(/\s+/g, " ");
+  if (!limpio) return "";
+  return limpio.charAt(0).toLocaleUpperCase("es-CL") + limpio.slice(1);
+}
+
+/* ── Qué falta para poder avanzar ─────────────────────────────────────
+
+   Antes solo se bloqueaba el peso inválido y la foto. Todo lo demás se
+   podía saltar vacío, y la ficha llegaba al local sin raza, sin pelo y
+   sin temperamento — justo lo que el equipo necesita para preparar la
+   sesión y para no llevarse un mordisco.
+
+   Devuelve el texto de lo que falta, o null si el paso está completo. El
+   texto importa: un botón apagado sin explicación se siente como que la
+   página está rota. */
+export function faltaEnPaso(pasoId: string, data: FormData): string | null {
+  switch (pasoId) {
+    case "nombre":
+      return data.nombrePerro.trim().length >= 2
+        ? null
+        : "Escribe el nombre para continuar.";
+    case "raza":
+      if (!data.raza) return "Elige una raza (o «Mestizo / Quiltro»).";
+      if (data.raza === "Otro" && !data.razaOtro.trim()) return "Cuéntanos qué raza es.";
+      return null;
+    case "edad":
+      return data.edadAnios || data.edadMeses
+        ? null
+        : "Indica la edad, aunque sea aproximada.";
+    case "primera":
+      return data.esPrimeraVez ? null : "Elige una opción.";
+    case "peso": {
+      const peso = parseFloat(data.pesoKg);
+      if (!data.pesoKg.trim()) return "El peso es lo que nos permite calcular el precio.";
+      if (isNaN(peso) || peso <= 0.4 || peso > 120) return "Revisa el peso: debe estar entre 0,5 y 120 kg.";
+      return null;
+    }
+    case "contextura":
+      return data.contextura ? null : "Elige una opción.";
+    case "pelo":
+      if (!data.tipoPelo) return "Elige el tipo de pelo.";
+      if (data.tipoPelo === "otro" && !data.tipoPeloOtro.trim()) return "Cuéntanos cómo es su pelo.";
+      return null;
+    case "salud": {
+      const sinResponder = [
+        !data.unasEncarnadas && "uñas encarnadas",
+        !data.secrecionOcular && "secreción ocular",
+        !data.tieneAlergia && "enfermedad o alergia",
+      ].filter(Boolean) as string[];
+      if (sinResponder.length > 0) {
+        // "No lo sé" es una respuesta válida: por eso se puede exigir que
+        // respondan las tres sin obligar a nadie a inventar.
+        return `Falta responder: ${sinResponder.join(", ")}. Si no sabes, marca «No lo sé».`;
+      }
+      if (data.tieneAlergia === "si" && !data.cualAlergia.trim()) {
+        return "Cuéntanos cuál es la alergia o enfermedad.";
+      }
+      return null;
+    }
+    case "temperamento":
+      return data.temperamentoGeneral ? null : "Elige cómo se porta.";
+    /* `tamano` y `zonas` quedan fuera a propósito: sus propios textos
+       dicen "Opcional" y "o ninguna". Exigirlos sería contradecir a la
+       pantalla, y el tamaño ya se deduce del peso. */
+    default:
+      return null;
+  }
+}
+
 export function buildWhatsAppMessage(
   data: FormData,
   esManual: boolean,

@@ -22,6 +22,9 @@ import {
   type AjustePrecio,
   type EstimadoVivo,
   type FormData,
+  faltaEnPaso,
+  capitalizarNombre,
+  capitalizarFrase,
 } from "@/lib/reserva";
 import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
@@ -56,11 +59,11 @@ const MAX_PERROS = 3;
 // ─── UI helpers ────────────────────────────────────────────────────────────
 
 function Input({
-  id, value, onChange, placeholder, type = "text", min, max, autoFocus, onEnter,
+  id, value, onChange, placeholder, type = "text", min, max, autoFocus, onEnter, onBlur,
 }: {
   id?: string; value: string; onChange: (v: string) => void;
   placeholder?: string; type?: string; min?: string; max?: string;
-  autoFocus?: boolean; onEnter?: () => void;
+  autoFocus?: boolean; onEnter?: () => void; onBlur?: () => void;
 }) {
   return (
     <input
@@ -75,6 +78,7 @@ function Input({
       onKeyDown={(e) => {
         if (e.key === "Enter" && onEnter) onEnter();
       }}
+      onBlur={onBlur}
       className="w-full rounded-2xl border-2 border-ink/10 bg-white px-4 py-3.5 text-base font-semibold text-ink placeholder:font-normal placeholder:text-ink/30 focus:border-teal focus:outline-none"
     />
   );
@@ -489,6 +493,10 @@ export function FormReserva({
         : 1 + cantidad * totalPasosPerro;
   const totalGlobal = 1 + cantidad * totalPasosPerro + 1;
 
+  /* Se enciende cuando el cliente pulsa "Siguiente" con algo sin llenar.
+     Mientras esté apagado no se le reclama nada. */
+  const [intentoAvanzar, setIntentoAvanzar] = useState(false);
+
   const avanzar = useCallback(() => {
     if (fase === "cuantos") {
       setFase("perro");
@@ -506,7 +514,27 @@ export function FormReserva({
     }
   }, [fase, step, dogIdx, cantidad, totalPasosPerro]);
 
+  /* Deja prolijo lo que el cliente escribió a mano. Se hace al cambiar de
+     paso y no en cada tecla: corregir mientras alguien escribe le mueve el
+     cursor y se siente como pelear con el teclado. */
+  const ordenarTextos = useCallback(() => {
+    setPerros((prev) =>
+      prev.map((p, i) =>
+        i === dogIdx
+          ? {
+              ...p,
+              nombrePerro: capitalizarNombre(p.nombrePerro),
+              razaOtro: capitalizarNombre(p.razaOtro),
+              tipoPeloOtro: capitalizarFrase(p.tipoPeloOtro),
+              cualAlergia: capitalizarFrase(p.cualAlergia),
+            }
+          : p
+      )
+    );
+  }, [dogIdx]);
+
   const retroceder = useCallback(() => {
+    setIntentoAvanzar(false);
     if (fase === "cita") {
       setFase("perro");
       setDogIdx(cantidad - 1);
@@ -628,8 +656,22 @@ export function FormReserva({
     paso?.id === "fotos" &&
     !fotos[dogIdx]?.actual &&
     !fotos[dogIdx]?.sinPerroCerca;
-  const bloqueaAvance =
-    (paso?.id === "peso" && pesoInvalido) || fotoActualFalta;
+  /* Qué falta en este paso, dicho con palabras. El botón apagado sin
+     explicación se siente como una página rota: hay que decir por qué. */
+  const faltaAqui = paso ? faltaEnPaso(paso.id, data) : null;
+  const bloqueaAvance = Boolean(faltaAqui) || fotoActualFalta;
+
+  /* Un solo lugar decide si se puede pasar de paso. Va acá y no más arriba
+     porque necesita `bloqueaAvance`, que depende del paso actual. */
+  const intentarAvanzar = () => {
+    if (bloqueaAvance) {
+      setIntentoAvanzar(true);
+      return;
+    }
+    setIntentoAvanzar(false);
+    ordenarTextos();
+    avanzar();
+  };
 
   // ── Cupón ───────────────────────────────────────────────────────────────
   const validarCupon = useCallback(async () => {
@@ -1290,6 +1332,14 @@ export function FormReserva({
                           setDatosContacto((d) => ({ ...d, nombre: v }));
                           setErrorContacto("");
                         }}
+                        /* Se ordena al salir del campo, no mientras escribe:
+                           corregirlo tecla a tecla le mueve el cursor. */
+                        onBlur={() =>
+                          setDatosContacto((d) => ({
+                            ...d,
+                            nombre: capitalizarNombre(d.nombre),
+                          }))
+                        }
                         placeholder="Tu nombre"
                       />
                     </div>
@@ -1509,9 +1559,14 @@ export function FormReserva({
         {fase !== "cita" && (
           <button
             type="button"
-            onClick={avanzar}
-            disabled={bloqueaAvance}
-            className="flex-1 rounded-full bg-teal py-3.5 font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,box-shadow,opacity] hover:bg-teal-dark hover:shadow-[0_5px_0_rgba(6,58,64,.25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-teal"
+            onClick={intentarAvanzar}
+            /* A propósito NO va `disabled`: un botón apagado no se puede
+               pulsar, así que el cliente nunca se entera de qué le falta.
+               Se ve atenuado, pero responde y explica. */
+            aria-disabled={bloqueaAvance}
+            className={`flex-1 rounded-full bg-teal py-3.5 font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,box-shadow,opacity] hover:bg-teal-dark hover:shadow-[0_5px_0_rgba(6,58,64,.25)] ${
+              bloqueaAvance ? "opacity-50" : ""
+            }`}
           >
             {fase === "perro" && step === totalPasosPerro - 1 && dogIdx < cantidad - 1
               ? `Siguiente perrito →`
@@ -1519,6 +1574,17 @@ export function FormReserva({
           </button>
         )}
       </div>
+
+      {/* Sale solo cuando el cliente ya intentó avanzar: avisar antes de que
+          lo intente es regañar a alguien que todavía no hizo nada. */}
+      {intentoAvanzar && faltaAqui && (
+        <p
+          role="alert"
+          className="mt-3 rounded-2xl bg-[#fde4c8] px-4 py-3 text-center text-xs font-semibold leading-relaxed text-[#7a4d10]"
+        >
+          {faltaAqui}
+        </p>
+      )}
     </div>
   );
 }
