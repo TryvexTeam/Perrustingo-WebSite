@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { offsetNegocio } from "@/lib/agenda";
+import { eliminarEventoCita, upsertEventoCita } from "@/lib/google/calendar";
 import type { EstadoCita } from "@/lib/citas";
 
 const TRANSICIONES_EQUIPO: Record<string, EstadoCita[]> = {
@@ -16,7 +18,7 @@ interface ResultadoAccion {
 }
 
 interface OpcionesHorario {
-  /** yyyy-mm-ddThh:mm:ss local — al confirmar, fija la hora real de la cita. */
+  /** yyyy-mm-ddThh:mm:ss en hora de Chile — al confirmar, fija la hora real de la cita. */
   fechaCita?: string;
   duracionHoras?: number;
 }
@@ -45,7 +47,7 @@ export async function cambiarEstadoCita(
 
   const { data: cita } = await supabase
     .from("sesiones")
-    .select("estado")
+    .select("estado, fecha_cita, fecha_fin, servicio, contacto_nombre, contacto_telefono, contacto_email, detalle_form")
     .eq("id", citaId)
     .single();
   if (!cita) return { success: false, error: "Cita no encontrada." };
@@ -60,7 +62,11 @@ export async function cambiarEstadoCita(
     updated_at: new Date().toISOString(),
   };
   if (horario?.fechaCita) {
-    const inicio = new Date(horario.fechaCita);
+    // El panel envía hora de Chile sin offset; se ancla a la zona del negocio
+    // para que el instante guardado sea correcto aunque el servidor corra en
+    // UTC — y con el offset real de esa fecha (Chile cambia de hora dos veces
+    // al año, así que "-04:00" fijo correría las citas del verano).
+    const inicio = new Date(`${horario.fechaCita}${offsetNegocio(horario.fechaCita.slice(0, 10))}`);
     if (isNaN(inicio.getTime())) return { success: false, error: "Horario inválido." };
     cambios.fecha_cita = inicio.toISOString();
     const duracion = horario.duracionHoras ?? 1.5;
@@ -73,6 +79,46 @@ export async function cambiarEstadoCita(
     .eq("id", citaId);
 
   if (error) return { success: false, error: "No se pudo actualizar." };
+
+  /* Espejo en Google Calendar. El respaldo NUNCA bloquea al panel: la cita ya
+     quedó guardada en la base, así que un fallo de Google se registra y se
+     sigue. Si faltan las envs, las funciones son no-op silencioso.
+
+     Desde la Fase 5 la cita ya nace con hora (el cliente elige un bloque), así
+     que al confirmar sin pasar `horario` se usa la que ya tenía — antes, sin
+     `cambios.fecha_cita`, no se espejaba nada. */
+  try {
+    if (nuevoEstado === "cancelada") {
+      await eliminarEventoCita(citaId);
+    } else if (nuevoEstado === "confirmada") {
+      const inicioISO = (cambios.fecha_cita as string | undefined) ?? cita.fecha_cita ?? null;
+      const finISO =
+        (cambios.fecha_fin as string | undefined) ??
+        cita.fecha_fin ??
+        (inicioISO ? new Date(new Date(inicioISO).getTime() + 1.5 * 3_600_000).toISOString() : null);
+
+      if (inicioISO && finISO) {
+        const detalle = cita.detalle_form as Record<string, string> | null;
+        const perro = detalle?.nombrePerro ?? detalle?.Nombre ?? cita.contacto_nombre ?? "Cita";
+        await upsertEventoCita({
+          citaId,
+          titulo: `🐾 ${perro} — ${cita.servicio ?? "Perrustingo"}`,
+          descripcion: [
+            cita.contacto_nombre && `Contacto: ${cita.contacto_nombre}`,
+            cita.contacto_telefono && `Teléfono: ${cita.contacto_telefono}`,
+            cita.contacto_email && `Email: ${cita.contacto_email}`,
+            "Origen: plataforma Perrustingo",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          inicioISO,
+          finISO,
+        });
+      }
+    }
+  } catch (e) {
+    console.warn("[google-calendar] respaldo falló:", e);
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/citas");

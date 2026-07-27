@@ -1,10 +1,13 @@
-"use client";
+/* Anuncios de la landing — el admin decide qué promo aparece en cada
+   posición intermedia (o la oculta), con qué imagen y en qué orden.
 
-import { useEffect, useState } from "react";
+   Antes esto vivía en `localStorage`: cada navegador veía una distribución
+   distinta, así que un cambio hecho en el teléfono no llegaba ni al
+   computador del local ni a los clientes. Ahora vive en la tabla `promos`
+   (migración 011) y se lee desde el servidor, así que sale ya en el HTML.
 
-/* Anuncios distribuidos — el admin decide qué promo aparece en cada posición
-   intermedia de la landing (o la oculta). Persistencia en localStorage hasta
-   que exista Supabase; la UI no cambiará al conectar la base de datos. */
+   Sin directiva de cliente a propósito: estos tipos los usan tanto los
+   server components y actions como el editor del panel. */
 
 export type PromoSlot =
   | "tras-servicios"
@@ -12,6 +15,14 @@ export type PromoSlot =
   | "tras-tamanos"
   | "pre-footer"
   | "oculto";
+
+export const SLOTS: readonly PromoSlot[] = [
+  "tras-servicios",
+  "tras-resenas",
+  "tras-tamanos",
+  "pre-footer",
+  "oculto",
+] as const;
 
 export const SLOT_LABELS: Record<PromoSlot, string> = {
   "tras-servicios": "Después de Servicios",
@@ -26,11 +37,16 @@ export interface Promo {
   nombre: string;
   img: string;
   alt: string;
-  /** Relación de aspecto del arte — controla el ancho máximo del banner */
+  /** Relación de aspecto del arte — controla el ancho máximo del banner. */
   vertical: boolean;
   slot: PromoSlot;
+  /** Posición dentro de su slot cuando hay más de un anuncio. */
+  orden: number;
 }
 
+/** Los 4 anuncios originales, hoy semilla de la tabla (migración 011).
+    Se mantienen acá como último recurso: si la base no responde, la landing
+    muestra los anuncios de siempre en vez de un hueco. */
 export const PROMOS_DEFAULT: Promo[] = [
   {
     id: "retiro-entrega",
@@ -39,6 +55,7 @@ export const PROMOS_DEFAULT: Promo[] = [
     alt: "Próximamente: servicio de retiro y entrega — vamos por tu peludito, lo consentimos y te lo devolvemos. Seguro, puntual, confiable, fácil y rápido por WhatsApp.",
     vertical: true,
     slot: "oculto",
+    orden: 0,
   },
   {
     id: "internacional",
@@ -47,6 +64,7 @@ export const PROMOS_DEFAULT: Promo[] = [
     alt: "Próximamente Perrustingo internacional: Brasil (em breve) y Alemania (bald verfügbar) — nuevos destinos, el mismo amor.",
     vertical: false,
     slot: "tras-resenas",
+    orden: 0,
   },
   {
     id: "domicilio",
@@ -55,6 +73,7 @@ export const PROMOS_DEFAULT: Promo[] = [
     alt: "Próximamente: Perrustingo a domicilio — el spa canino hasta tu casa.",
     vertical: true,
     slot: "tras-servicios",
+    orden: 0,
   },
   {
     id: "recomendaciones",
@@ -63,119 +82,40 @@ export const PROMOS_DEFAULT: Promo[] = [
     alt: "Próximamente: recomendaciones — consejos, productos y rutinas de cuidado canino.",
     vertical: true,
     slot: "tras-servicios",
+    orden: 1,
   },
 ];
 
-const STORAGE_KEY = "perrustingo:promos";
-const EVENTO = "perrustingo:promos-actualizadas";
-
-interface PromoGuardada {
-  slot: PromoSlot;
-  /** Imagen personalizada subida por el admin (URL de Storage o dataURL). */
-  img?: string;
+export function esSlot(valor: string): valor is PromoSlot {
+  return (SLOTS as readonly string[]).includes(valor);
 }
 
-export function leerPromos(): Promo[] {
-  if (typeof window === "undefined") return PROMOS_DEFAULT;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return PROMOS_DEFAULT;
-    const guardadas = JSON.parse(raw) as Record<string, PromoSlot | PromoGuardada>;
-    return PROMOS_DEFAULT.map((p) => {
-      const g = guardadas[p.id];
-      if (!g) return p;
-      // Formato antiguo: solo el slot como string
-      if (typeof g === "string") return { ...p, slot: g };
-      return { ...p, slot: g.slot ?? p.slot, img: g.img || p.img };
-    });
-  } catch {
-    return PROMOS_DEFAULT;
+/** Convierte un nombre en un id estable para un anuncio nuevo. */
+export function idDesdeNombre(nombre: string): string {
+  const base = nombre
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  // El sufijo evita chocar con un anuncio borrado y recreado con el mismo
+  // nombre, cuyas imágenes viejas seguirían en Storage.
+  return `${base || "anuncio"}-${Date.now().toString(36)}`;
+}
+
+const LARGO_NOMBRE = 80;
+const LARGO_ALT = 300;
+
+/** Misma validación que el server action, para no mandar viajes perdidos. */
+export function validarPromo(promo: Pick<Promo, "nombre" | "alt" | "img" | "slot">): string | null {
+  if (promo.nombre.trim().length === 0) return "El anuncio necesita un nombre.";
+  if (promo.nombre.length > LARGO_NOMBRE) return "El nombre es demasiado largo.";
+  if (promo.alt.trim().length === 0) {
+    return "Escriba el texto alternativo: es lo que lee quien no puede ver la imagen.";
   }
-}
-
-export function guardarPromos(promos: Promo[]): void {
-  const guardadas: Record<string, PromoGuardada> = Object.fromEntries(
-    promos.map((p) => {
-      const base = PROMOS_DEFAULT.find((d) => d.id === p.id);
-      const g: PromoGuardada = { slot: p.slot };
-      if (base && p.img !== base.img) g.img = p.img;
-      return [p.id, g];
-    })
-  );
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(guardadas));
-  window.dispatchEvent(new CustomEvent(EVENTO));
-}
-
-export function restaurarPromos(): void {
-  window.localStorage.removeItem(STORAGE_KEY);
-  window.dispatchEvent(new CustomEvent(EVENTO));
-}
-
-/** Hook reactivo — la landing refleja al instante los cambios del admin. */
-export function usePromos(): Promo[] {
-  const [promos, setPromos] = useState<Promo[]>(PROMOS_DEFAULT);
-
-  useEffect(() => {
-    const sync = () => setPromos(leerPromos());
-    sync();
-    window.addEventListener(EVENTO, sync);
-    window.addEventListener("storage", sync);
-    return () => {
-      window.removeEventListener(EVENTO, sync);
-      window.removeEventListener("storage", sync);
-    };
-  }, []);
-
-  return promos;
-}
-
-/* ── Subida de imagen del anuncio ─────────────────────────────
-   Con Supabase configurado sube al bucket `promos` (URL pública);
-   sin configurar comprime a dataURL y queda en localStorage. */
-
-const MAX_LADO_PX = 900;
-const CALIDAD_JPEG = 0.85;
-
-function comprimirADataURL(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new window.Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const escala = Math.min(1, MAX_LADO_PX / Math.max(img.width, img.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * escala);
-      canvas.height = Math.round(img.height * escala);
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return reject(new Error("Canvas no disponible"));
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL("image/jpeg", CALIDAD_JPEG));
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("No se pudo leer la imagen"));
-    };
-    img.src = url;
-  });
-}
-
-export async function subirImagenPromo(promoId: string, file: File): Promise<string> {
-  if (!file.type.startsWith("image/")) throw new Error("El archivo debe ser una imagen.");
-  if (file.size > 8 * 1024 * 1024) throw new Error("Máximo 8 MB.");
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const configurado = Boolean(url && !url.includes("TU_PROYECTO"));
-  if (!configurado) return comprimirADataURL(file);
-
-  const { createClient } = await import("@/lib/supabase/client");
-  const supabase = createClient();
-  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-  const ruta = `${promoId}-${Date.now()}.${ext}`;
-  const { error } = await supabase.storage.from("promos").upload(ruta, file, {
-    cacheControl: "3600",
-    upsert: false,
-  });
-  if (error) throw new Error("No se pudo subir la imagen.");
-  const { data } = supabase.storage.from("promos").getPublicUrl(ruta);
-  return data.publicUrl;
+  if (promo.alt.length > LARGO_ALT) return "El texto alternativo es demasiado largo.";
+  if (promo.img.trim().length === 0) return "El anuncio necesita una imagen.";
+  if (!esSlot(promo.slot)) return "Posición inválida.";
+  return null;
 }

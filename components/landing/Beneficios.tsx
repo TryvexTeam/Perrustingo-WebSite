@@ -31,7 +31,7 @@ const BENEFICIOS: {
       />
     ),
     titulo: "Aviso por WhatsApp",
-    detalle: "Te escribimos cuando tu perro está listo.",
+    detalle: "Te escribimos apenas está listo.",
   },
   {
     tone: "peach",

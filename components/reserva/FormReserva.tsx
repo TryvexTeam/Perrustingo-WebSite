@@ -15,25 +15,51 @@ import {
   construirDetalle,
   detectarTamanoPorPeso,
   formatCLP,
+  formatRangoCLP,
+  conEnlaceFicha,
+  montoDeAjuste,
+  textoDeAjuste,
   hayConflicto,
   type AjustePrecio,
   type EstimadoVivo,
   type FormData,
+  faltaEnPaso,
+  capitalizarNombre,
+  capitalizarFrase,
 } from "@/lib/reserva";
 import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
-import { useAjustesPrecio } from "@/lib/ajustesPrecio";
+import { useAjustesPorTamano } from "@/lib/ajustesPrecio";
 import { fotoValida, subirFotoReserva } from "@/lib/fotos";
 import { WHATSAPP_NUMBER } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
+import { compartirFotos, puedeCompartirFotos } from "@/lib/compartir";
+import {
+  COMUNAS,
+  CONTACTO_VACIO,
+  validarContacto,
+  type DatosContacto,
+} from "@/lib/contacto";
+import { comoAjuste, mejorOferta, type Oferta } from "@/lib/ofertas";
+import { obtenerOfertasActivas } from "@/lib/ofertasDatos";
+import { hoyEnSantiago, primeraFechaReservable } from "@/lib/disponibilidad";
+import { obtenerDisponibilidad } from "@/lib/disponibilidadDatos";
+import { SelectorHorario } from "@/components/reserva/SelectorHorario";
 import { BreedAvatar } from "@/components/ui/BreedAvatar";
 
 const WHATSAPP_BASE = `https://wa.me/${WHATSAPP_NUMBER}?text=`;
 
+/* Cuánto se espera a que el servidor confirme la reserva antes de abrir
+   WhatsApp igual. Seis segundos: suficiente para una respuesta normal
+   (incluso con la subida de fotos ya hecha antes), y poco para quien está
+   mirando una pestaña en blanco con el pulgar sobre el botón. */
+const ESPERA_RESERVA_MS = 6000;
+
 /* Wizard progresivo v2 — reserva multi-perrito (pedido de Rodolfo 19-jul):
    se pregunta cuántos perritos vienen y el bloque de preguntas se repite
    por cada uno; las fotos (actual + referencia de corte) van por perrito;
-   la cuenta ya viene puesta (el gate vive en app/reserva/page.tsx). */
+   Se puede reservar CON o SIN cuenta (PRP-003 F1): sin cuenta, el último
+   paso pide los datos de contacto que con cuenta salen del perfil. */
 
 const AUTO_ADVANCE_MS = 350;
 const MAX_PERROS = 3;
@@ -41,11 +67,11 @@ const MAX_PERROS = 3;
 // ─── UI helpers ────────────────────────────────────────────────────────────
 
 function Input({
-  id, value, onChange, placeholder, type = "text", min, max, autoFocus, onEnter,
+  id, value, onChange, placeholder, type = "text", min, max, autoFocus, onEnter, onBlur,
 }: {
   id?: string; value: string; onChange: (v: string) => void;
   placeholder?: string; type?: string; min?: string; max?: string;
-  autoFocus?: boolean; onEnter?: () => void;
+  autoFocus?: boolean; onEnter?: () => void; onBlur?: () => void;
 }) {
   return (
     <input
@@ -60,6 +86,7 @@ function Input({
       onKeyDown={(e) => {
         if (e.key === "Enter" && onEnter) onEnter();
       }}
+      onBlur={onBlur}
       className="w-full rounded-2xl border-2 border-ink/10 bg-white px-4 py-3.5 text-base font-semibold text-ink placeholder:font-normal placeholder:text-ink/30 focus:border-teal focus:outline-none"
     />
   );
@@ -195,7 +222,16 @@ function FotoPicker({
 }
 
 /* Mini-calendario — domingos y días pasados deshabilitados. */
-function MiniCalendario({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function MiniCalendario({
+  value,
+  onChange,
+  minima,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  /** Primera fecha reservable (YYYY-MM-DD) según el lead time del local. */
+  minima: string;
+}) {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
   const [mesOffset, setMesOffset] = useState(0);
@@ -242,7 +278,9 @@ function MiniCalendario({ value, onChange }: { value: string; onChange: (v: stri
           if (!dia) return <span key={i} />;
           const esDomingo = dia.getDay() === 0;
           const esPasado = dia < hoy;
-          const deshabilitado = esDomingo || esPasado;
+          // Lead time: los días anteriores al mínimo no se pueden pedir.
+          const muyPronto = iso(dia) < minima;
+          const deshabilitado = esDomingo || esPasado || muyPronto;
           const seleccionado = value === iso(dia);
           return (
             <button
@@ -276,7 +314,7 @@ type PasoId =
 
 /** Pasos que se repiten por perrito, en orden. */
 const PASOS_PERRO: { id: PasoId; pregunta: string; hint?: string }[] = [
-  { id: "nombre", pregunta: "¿Cómo se llama tu perro?" },
+  { id: "nombre", pregunta: "¿Cómo se llama tu perro o perra?" },
   { id: "raza", pregunta: "¿Qué raza es?" },
   { id: "edad", pregunta: "¿Qué edad tiene?", hint: "Aproximada está bien" },
   { id: "primera", pregunta: "¿Es su primera peluquería? ✨", hint: "En Perrustingo las primeras visitas son especiales: presentamos todo con calma para que crezca sin miedo" },
@@ -323,7 +361,9 @@ export function FormReserva({
 }: {
   initialServicio?: string;
   initialFecha?: string;
-  contacto: { nombre: string; email: string; telefono: string };
+  /** Datos del perfil, o null si reserva sin cuenta: en ese caso se piden
+      en el último paso (PRP-003 F1). */
+  contacto: { nombre: string; email: string; telefono: string; comuna: string } | null;
 }) {
   /* Posición global: paso "cuantos" → perros[i] × PASOS_PERRO → "cita" */
   const [fase, setFase] = useState<"cuantos" | "perro" | "cita">("cuantos");
@@ -331,10 +371,29 @@ export function FormReserva({
   const [step, setStep] = useState(0);
   const [cantidad, setCantidad] = useState(1);
 
+  const tieneCuenta = contacto !== null;
+
+  /* Con cuenta el contacto viene del perfil y no se pregunta; sin cuenta se
+     completa en el paso final y vive en este estado. */
+  const [datosContacto, setDatosContacto] = useState<DatosContacto>(() =>
+    contacto
+      ? {
+          nombre: contacto.nombre,
+          telefono: contacto.telefono,
+          email: contacto.email,
+          comuna: contacto.comuna,
+        }
+      : CONTACTO_VACIO
+  );
+  const [errorContacto, setErrorContacto] = useState("");
+  /** Ofertas vigentes y cuántas visitas lleva quien reserva (PRP-003 F3). */
+  const [ofertas, setOfertas] = useState<Oferta[]>([]);
+  const [visitasPrevias, setVisitasPrevias] = useState(0);
+
   const contactoData = {
-    contactoNombre: contacto.nombre,
-    contactoEmail: contacto.email,
-    contactoTelefono: contacto.telefono,
+    contactoNombre: datosContacto.nombre,
+    contactoEmail: datosContacto.email,
+    contactoTelefono: datosContacto.telefono,
   };
 
   const [perros, setPerros] = useState<FormData[]>([
@@ -351,31 +410,79 @@ export function FormReserva({
   );
 
   const [esPrimeraCita, setEsPrimeraCita] = useState(false);
+  /** Bloque horario elegido (Fase 5). Sin él no se puede enviar. */
+  const [inicioElegido, setInicioElegido] = useState<string | null>(null);
+  const [fechaMinima, setFechaMinima] = useState<string>(() => hoyEnSantiago());
   const [cuponInput, setCuponInput] = useState("");
   const [cupon, setCupon] = useState<CuponAplicado | null>(null);
   const [cuponError, setCuponError] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [solicitudEstado, setSolicitudEstado] = useState<"idle" | "registrada" | "error">("idle");
 
+  // Lead time real del local: hasta que llegue, el calendario usa hoy (no
+  // se adelanta a bloquear días que quizá sí se pueden pedir).
+  useEffect(() => {
+    let cancelado = false;
+    obtenerDisponibilidad(createClient())
+      .then(({ config }) => {
+        if (!cancelado) setFechaMinima(primeraFechaReservable(config));
+      })
+      .catch(() => {
+        /* Sin config, queda el valor de hoy: el servidor igual valida. */
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
   const tarifas = useTarifas();
-  const ajustesPrecio = useAjustesPrecio();
+  const ajustes = useAjustesPorTamano();
+  // Los descuentos globales (cupón, primera cita) NO son por tamaño: se
+  // muestran una sola vez para toda la reserva, que puede tener perritos
+  // de portes distintos. Lo que sí varía por tamaño son los agregados del
+  // perro (pelo, temperamento, zonas, cachorro) — ver `cfg` más abajo.
+  const ajustesPrecio = ajustes.general;
   const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
     if (autoTimer.current) clearTimeout(autoTimer.current);
   }, []);
 
-  /* Descuento de bienvenida: primera cita de la cuenta (RLS solo deja ver
-     las sesiones propias, el conteo es del usuario). */
+  /* Ofertas vigentes: el texto y el descuento salen de la misma tabla, así
+     que lo que se promete es lo que se cobra (PRP-003 F2). */
   useEffect(() => {
+    let cancelado = false;
+    obtenerOfertasActivas(createClient())
+      .then((o) => {
+        if (!cancelado) setOfertas(o);
+      })
+      .catch(() => {
+        /* Sin ofertas se cotiza sin descuento; nunca se inventa uno. */
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  /* Descuento de bienvenida: primera cita de la CUENTA.
+
+     El guard de `tieneCuenta` no es un detalle: sin sesión esta consulta
+     devuelve 0 por RLS —no porque sea su primera visita—, así que sin él
+     todo visitante anónimo se llevaría el descuento de bienvenida. Es el
+     beneficio de registrarse; quien no se registra reserva igual, pero sin
+     él (decisión del señor Ignacio, 26-jul). */
+  useEffect(() => {
+    if (!tieneCuenta) return;
     const supabase = createClient();
     supabase
       .from("sesiones")
       .select("id", { count: "exact", head: true })
       .then(({ count, error }) => {
-        if (!error && count === 0) setEsPrimeraCita(true);
+        if (error) return;
+        setVisitasPrevias(count ?? 0);
+        if (count === 0) setEsPrimeraCita(true);
       });
-  }, []);
+  }, [tieneCuenta]);
 
   const data = perros[dogIdx];
 
@@ -394,6 +501,20 @@ export function FormReserva({
         : 1 + cantidad * totalPasosPerro;
   const totalGlobal = 1 + cantidad * totalPasosPerro + 1;
 
+  /* Se enciende cuando el cliente pulsa "Siguiente" con algo sin llenar.
+     Mientras esté apagado no se le reclama nada. */
+  const [intentoAvanzar, setIntentoAvanzar] = useState(false);
+
+  /* Si por lo que sea no se logró abrir WhatsApp, el cliente NO puede
+     quedarse sin manera de mandar su mensaje: se guarda el enlace y se le
+     ofrece un botón. Le pasó al señor Ignacio probando en el celular —vio
+     "tu mensaje salió igual" y no había salido nada—. */
+  const [urlWhatsApp, setUrlWhatsApp] = useState("");
+
+  /* Compartir la foto por la hoja del sistema (PRP-002 F6, vía B). */
+  const [avisoCompartir, setAvisoCompartir] = useState("");
+  const [puedeCompartir, setPuedeCompartir] = useState(false);
+
   const avanzar = useCallback(() => {
     if (fase === "cuantos") {
       setFase("perro");
@@ -411,7 +532,27 @@ export function FormReserva({
     }
   }, [fase, step, dogIdx, cantidad, totalPasosPerro]);
 
+  /* Deja prolijo lo que el cliente escribió a mano. Se hace al cambiar de
+     paso y no en cada tecla: corregir mientras alguien escribe le mueve el
+     cursor y se siente como pelear con el teclado. */
+  const ordenarTextos = useCallback(() => {
+    setPerros((prev) =>
+      prev.map((p, i) =>
+        i === dogIdx
+          ? {
+              ...p,
+              nombrePerro: capitalizarNombre(p.nombrePerro),
+              razaOtro: capitalizarNombre(p.razaOtro),
+              tipoPeloOtro: capitalizarFrase(p.tipoPeloOtro),
+              cualAlergia: capitalizarFrase(p.cualAlergia),
+            }
+          : p
+      )
+    );
+  }, [dogIdx]);
+
   const retroceder = useCallback(() => {
+    setIntentoAvanzar(false);
     if (fase === "cita") {
       setFase("perro");
       setDogIdx(cantidad - 1);
@@ -454,11 +595,32 @@ export function FormReserva({
   }, []);
 
   // ── Cálculos por perrito ────────────────────────────────────────────────
-  const descuentoGlobal: AjustePrecio | null = cupon
+  /* Descuento global: cupón u oferta, NUNCA los dos (PRP-003 F3).
+     Acumularlos puede dejar el precio bajo el costo, así que gana el mayor.
+     La oferta sale de la tabla `ofertas` — el mismo dato que ve el cliente
+     en la invitación, así que lo prometido es lo que se cobra. */
+  const baseParaComparar = tarifas.base[detectarTamanoPorPeso(parseFloat(data.pesoKg) || 10)];
+  const ofertaVigente = mejorOferta(
+    ofertas,
+    { conCuenta: tieneCuenta, visitasPrevias },
+    baseParaComparar
+  );
+
+  const descuentoDeOferta: AjustePrecio | null = ofertaVigente
+    ? comoAjuste(ofertaVigente)
+    : null;
+  const descuentoDeCupon: AjustePrecio | null = cupon
     ? { etiqueta: cupon.etiqueta, pct: -Math.abs(cupon.pct) }
-    : esPrimeraCita
-      ? ajustesPrecio.descuentoPrimeraCita
-      : null;
+    : null;
+
+  const descuentoGlobal: AjustePrecio | null =
+    descuentoDeCupon && descuentoDeOferta
+      ? // Ambos disponibles: gana el que más descuenta sobre esta base.
+        Math.abs(montoDeAjuste(descuentoDeCupon, baseParaComparar)) >=
+        Math.abs(montoDeAjuste(descuentoDeOferta, baseParaComparar))
+        ? descuentoDeCupon
+        : descuentoDeOferta
+      : (descuentoDeCupon ?? descuentoDeOferta);
 
   const estimadoDe = useCallback(
     (d: FormData): { estimado: EstimadoVivo | null; esManual: boolean } => {
@@ -478,16 +640,22 @@ export function FormReserva({
       const baseCachorro =
         razaJoven && razaJoven.tamano !== tamanoAuto ? tarifas.base[razaJoven.tamano] : null;
 
+      // Tamaño con el que se cobra: el de la raza adulta si es cachorro de
+      // raza conocida, si no el detectado por peso. Los agregados salen de
+      // ESE tamaño (migración 009) — heredan el general si no hay excepción.
+      const tamanoCobrado = razaJoven && razaJoven.tamano !== tamanoAuto ? razaJoven.tamano : tamanoAuto;
+      const cfg = ajustes.porTamano[tamanoCobrado] ?? ajustes.general;
+
       const extra: AjustePrecio[] = [];
-      if (baseCachorro) extra.push(ajustesPrecio.descuentoCachorro);
+      if (baseCachorro) extra.push(cfg.descuentoCachorro);
       if (descuentoGlobal) extra.push(descuentoGlobal);
 
       return {
-        estimado: calcularEstimado(d, baseCachorro ?? tarifas.base[tamanoAuto], extra, ajustesPrecio),
+        estimado: calcularEstimado(d, baseCachorro ?? tarifas.base[tamanoAuto], extra, cfg),
         esManual,
       };
     },
-    [tarifas, ajustesPrecio, descuentoGlobal]
+    [tarifas, ajustes, descuentoGlobal]
   );
 
   const actual = estimadoDe(data);
@@ -506,8 +674,48 @@ export function FormReserva({
     paso?.id === "fotos" &&
     !fotos[dogIdx]?.actual &&
     !fotos[dogIdx]?.sinPerroCerca;
-  const bloqueaAvance =
-    (paso?.id === "peso" && pesoInvalido) || fotoActualFalta;
+  /* Qué falta en este paso, dicho con palabras. El botón apagado sin
+     explicación se siente como una página rota: hay que decir por qué. */
+  const faltaAqui = paso ? faltaEnPaso(paso.id, data) : null;
+  const bloqueaAvance = Boolean(faltaAqui) || fotoActualFalta;
+
+  /* ── Compartir la foto (PRP-002 F6, vía B) ─────────────────────────
+     La pregunta se hace en un efecto y no durante el render porque
+     `navigator.canShare` es una API del navegador: en el servidor no
+     existe, y consultarla al renderizar rompería la hidratación. */
+  const fotosParaCompartir = fotos
+    .slice(0, cantidad)
+    .flatMap((f) => [f?.actual, f?.referencia])
+    .filter((f): f is File => Boolean(f));
+
+  useEffect(() => {
+    setPuedeCompartir(puedeCompartirFotos(fotosParaCompartir));
+    // La lista se recalcula en cada render; lo que importa es cuántas hay.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fotosParaCompartir.length]);
+
+  const compartirLaFoto = async () => {
+    setAvisoCompartir("");
+    /* Se llama DENTRO del click, no dentro de un `then`: los navegadores
+       exigen que la hoja de compartir salga de un gesto del usuario. */
+    const r = await compartirFotos(
+      fotosParaCompartir,
+      `Foto de ${perros[0]?.nombrePerro || "mi perrito"} para la cita en Perrustingo 🐾`
+    );
+    if (!r.ok && r.error) setAvisoCompartir(r.error);
+  };
+
+  /* Un solo lugar decide si se puede pasar de paso. Va acá y no más arriba
+     porque necesita `bloqueaAvance`, que depende del paso actual. */
+  const intentarAvanzar = () => {
+    if (bloqueaAvance) {
+      setIntentoAvanzar(true);
+      return;
+    }
+    setIntentoAvanzar(false);
+    ordenarTextos();
+    avanzar();
+  };
 
   // ── Cupón ───────────────────────────────────────────────────────────────
   const validarCupon = useCallback(async () => {
@@ -537,12 +745,70 @@ export function FormReserva({
 
   // ── Confirmar: sube fotos, registra en DB y abre WhatsApp ───────────────
   const confirmarReserva = useCallback(() => {
-    if (!fechaDeseada || !servicio || enviando) return;
+    // Sin bloque elegido no se envía: mandar solo el día volvería al
+    // problema que la Fase 5 vino a resolver (nadie sabe a qué hora es).
+    if (!fechaDeseada || !inicioElegido || !servicio || enviando) return;
+
+    // Sin cuenta, el contacto lo escribe la persona: hay que validarlo antes
+    // de crear la cita (el servidor vuelve a validarlo igual).
+    if (!tieneCuenta) {
+      const problema = validarContacto(datosContacto);
+      if (problema) {
+        setErrorContacto(problema);
+        return;
+      }
+      setErrorContacto("");
+    }
     setEnviando(true);
 
-    /* La pestaña se abre de inmediato (gesto del usuario) y se redirige al
-       terminar las subidas — así el popup-blocker no se la come. */
-    const win = window.open("about:blank", "_blank");
+    /* ── La foto tiene que llegar al chat ──────────────────────────────
+
+       Pedido del señor Ignacio (27-jul): que el mensaje llegue CON la foto.
+
+       El enlace `wa.me?text=` no puede: transporta texto y nada más. La
+       única forma desde una web es `navigator.share` con archivos — la hoja
+       de compartir del teléfono, donde el cliente elige WhatsApp. Por ahí la
+       imagen entra al chat como imagen.
+
+       Y tiene que ser LO PRIMERO que ocurra tras el clic. `navigator.share`
+       exige "activación del usuario": si se llama después de esperar la
+       subida de fotos y la respuesta del servidor, el navegador ya considera
+       vencido el gesto y lo rechaza sin decir por qué. Por eso el mensaje se
+       arma acá con lo que ya está en pantalla, sin esperar nada.
+
+       Lo que se pierde en este camino es el enlace a la ficha (todavía no
+       existe el id de la cita). A cambio el equipo recibe la foto, que es lo
+       que sirve para preparar el corte. La cita queda registrada igual y
+       aparece en el panel. */
+    const archivosParaEnviar = fotos
+      .slice(0, cantidad)
+      .flatMap((f) => [f?.actual, f?.referencia])
+      .filter((f): f is File => Boolean(f));
+
+    const mensajeInmediato = buildWhatsAppMessageMulti(
+      perros.slice(0, cantidad).map((p) => {
+        const { estimado, esManual } = estimadoDe(p);
+        return { data: p, esManual, estimado };
+      }),
+      { fechaDeseada, servicio, contactoNombre: datosContacto.nombre }
+    );
+
+    const compartiendoConFoto =
+      archivosParaEnviar.length > 0 && puedeCompartirFotos(archivosParaEnviar);
+
+    /* Solo se abre la pestaña de WhatsApp si NO vamos por la hoja de
+       compartir: abrir las dos dejaría al cliente con dos caminos y el
+       mensaje duplicado. */
+    const win = compartiendoConFoto ? null : window.open("about:blank", "_blank");
+
+    if (compartiendoConFoto) {
+      void compartirFotos(archivosParaEnviar, mensajeInmediato).then((r) => {
+        /* Si la hoja se cierra sin elegir (AbortError) no se muestra error:
+           es el cliente diciendo "mejor no". Pero sí queda el botón para
+           reintentar, porque su reserva ya está tomada. */
+        if (!r.ok && r.error) setAvisoCompartir(r.error);
+      });
+    }
 
     void (async () => {
       const supabase = createClient();
@@ -554,18 +820,25 @@ export function FormReserva({
         perros.slice(0, cantidad).map(async (p, i) => {
           const { estimado, esManual } = estimadoDe(p);
           const f = fotos[i];
-          const [fotoActualUrl, fotoReferenciaUrl] = user
-            ? await Promise.all([
-                f?.actual ? subirFotoReserva(supabase, user.id, f.actual, i, "actual") : null,
-                f?.referencia ? subirFotoReserva(supabase, user.id, f.referencia, i, "referencia") : null,
-              ])
-            : [null, null];
+          /* Rutas del bucket, no URLs: desde PRP-002 F4 las fotos son
+             privadas y el enlace se firma al mirarlas. */
+          /* Se sube haya o no sesión. Antes esto era `user ? ... : [null,null]`
+             y el resultado fue que la foto del cliente NO se guardaba nunca
+             en el camino sin cuenta —que es el camino normal—. Lo descubrió
+             el señor Ignacio probando desde el celular: adjuntó la foto, la
+             reserva se creó, y en la base había cero fotos. */
+          const [fotoActualRuta, fotoReferenciaRuta] = await Promise.all([
+            f?.actual ? subirFotoReserva(supabase, user?.id ?? null, f.actual, i, "actual") : null,
+            f?.referencia
+              ? subirFotoReserva(supabase, user?.id ?? null, f.referencia, i, "referencia")
+              : null,
+          ]);
           return {
             detalle: construirDetalle(p),
             precioEstimado: estimado?.total ?? null,
             esManual,
-            fotoActualUrl,
-            fotoReferenciaUrl,
+            fotoActualRuta,
+            fotoReferenciaRuta,
             ficha: {
               nombre: p.nombrePerro,
               raza: p.raza === "Otro" ? p.razaOtro || "Otro" : p.raza,
@@ -579,18 +852,30 @@ export function FormReserva({
         })
       );
 
-      fetch("/api/reservas", {
+      /* Antes este POST no se esperaba: el mensaje de WhatsApp se armaba en
+         paralelo. Ahora hay que esperar la respuesta para poder incluir el
+         enlace a la ficha (PRP-002 F6), y eso trae un riesgo que hay que
+         tratar con cuidado: si el servidor tarda o falla, el cliente se
+         queda mirando una pestaña en blanco.
+
+         Por eso la espera tiene tope. Pasado ese tope el mensaje SALE IGUAL,
+         solo que sin enlace. El WhatsApp es el canal real del negocio:
+         perder la conversación es mucho peor que perder un enlace. */
+      const peticion = fetch("/api/reservas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         keepalive: true,
         body: JSON.stringify({
           contacto: {
-            nombre: contacto.nombre,
-            email: contacto.email,
-            telefono: contacto.telefono,
+            nombre: datosContacto.nombre,
+            email: datosContacto.email,
+            telefono: datosContacto.telefono,
+            comuna: datosContacto.comuna,
           },
           fechaDeseada,
+          inicio: inicioElegido,
           servicio,
+          ofertaId: ofertaVigente?.id ?? null,
           cupon: descuentoGlobal
             ? {
                 codigo: cupon?.codigo ?? "PRIMERA_CITA",
@@ -599,28 +884,92 @@ export function FormReserva({
             : null,
           perros: perrosPayload,
         }),
-      })
-        .then((r) => {
-          setSolicitudEstado(r.ok ? "registrada" : r.status === 503 ? "registrada" : "error");
-        })
-        .catch(() => setSolicitudEstado("error"));
+      });
 
-      const mensaje = buildWhatsAppMessageMulti(
-        perros.slice(0, cantidad).map((p) => {
-          const { estimado, esManual } = estimadoDe(p);
-          return { data: p, esManual, estimado };
-        }),
-        { fechaDeseada, servicio, contactoNombre: contacto.nombre }
+      let idsCreadas: string[] = [];
+      try {
+        const r = await Promise.race([
+          peticion,
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), ESPERA_RESERVA_MS)),
+        ]);
+
+        if (r) {
+          setSolicitudEstado(r.ok || r.status === 503 ? "registrada" : "error");
+          if (r.ok) {
+            const cuerpo = await r.json().catch(() => null);
+            idsCreadas = cuerpo?.data?.ids ?? [];
+          }
+        } else {
+          /* Se acabó la espera. La reserva puede estar creándose igual
+             (keepalive), así que no se declara error: se sigue sin enlace. */
+          void peticion.then((tardia) =>
+            setSolicitudEstado(tardia.ok || tardia.status === 503 ? "registrada" : "error")
+          );
+        }
+      } catch {
+        setSolicitudEstado("error");
+      }
+
+      /* "Hay fotos" = se subió alguna DE VERDAD, no que el cliente eligió un
+         archivo. Sin cuenta la subida no ocurre (la policy de storage exige
+         un uid), así que mirar el File del formulario haría que el mensaje
+         prometiera fotos que el equipo no va a encontrar en la ficha. */
+      const hayFotos = perrosPayload.some(
+        (p) => p.fotoActualRuta || p.fotoReferenciaRuta
+      );
+
+      const mensaje = conEnlaceFicha(
+        buildWhatsAppMessageMulti(
+          perros.slice(0, cantidad).map((p) => {
+            const { estimado, esManual } = estimadoDe(p);
+            return { data: p, esManual, estimado };
+          }),
+          { fechaDeseada, servicio, contactoNombre: datosContacto.nombre }
+        ),
+        idsCreadas.length > 0
+          ? { origen: window.location.origin, ids: idsCreadas, conFotos: hayFotos }
+          : null
       );
       const waUrl = WHATSAPP_BASE + encodeURIComponent(mensaje);
+      // Se guarda SIEMPRE, antes de intentar abrir nada.
+      setUrlWhatsApp(waUrl);
       if (win) {
         win.location.href = waUrl;
-      } else {
+      } else if (!compartiendoConFoto) {
+        /* Sin pestaña y sin hoja de compartir: se navega en la misma. Si el
+           cliente ya está compartiendo la foto NO se le arrastra a otra
+           pantalla en medio de la operación. */
         window.location.href = waUrl;
       }
       setEnviando(false);
     })();
-  }, [fechaDeseada, servicio, enviando, perros, cantidad, fotos, estimadoDe, contacto, cupon, descuentoGlobal]);
+    /* Las dependencias tienen que estar TODAS.
+
+       Faltaban `inicioElegido`, `datosContacto`, `tieneCuenta` y
+       `ofertaVigente`, y eso no era cosmético: el callback se quedaba con
+       el valor viejo de `inicioElegido` (null), entraba al guard de la
+       primera línea y salía sin hacer nada. El botón se veía habilitado
+       —porque el render sí tenía el valor nuevo—, no aparecía ningún error
+       en consola, y la reserva simplemente no ocurría.
+
+       Lo encontré probando F6: la primera reserva funcionó y las siguientes
+       "no hacían nada". En manos de un cliente eso es apretar Confirmar,
+       ver que no pasa nada, y cerrar la página. */
+  }, [
+    fechaDeseada,
+    inicioElegido,
+    servicio,
+    enviando,
+    perros,
+    cantidad,
+    fotos,
+    estimadoDe,
+    tieneCuenta,
+    datosContacto,
+    ofertaVigente,
+    cupon,
+    descuentoGlobal,
+  ]);
 
   /* El perrito acompaña el formulario */
   const razaSel = CATALOGO_RAZAS.find((r) => r.nombre === data.raza);
@@ -674,7 +1023,7 @@ export function FormReserva({
               💰 Estimado {cantidad > 1 ? `· ${data.nombrePerro || `perrito ${dogIdx + 1}`}` : "en vivo"}
             </span>
             <span className="font-display text-xl font-extrabold">
-              {formatCLP(actual.estimado.total)}
+              {formatRangoCLP(actual.estimado.total)}
             </span>
           </div>
           {actual.estimado.ajustes.length > 0 && (
@@ -686,10 +1035,10 @@ export function FormReserva({
                 <span
                   key={a.etiqueta}
                   className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold text-teal-ink ${
-                    a.pct < 0 ? "bg-[#b8e4cd]" : "bg-orange/90"
+                    (a.monto ?? a.pct) < 0 ? "bg-[#b8e4cd]" : "bg-orange/90"
                   }`}
                 >
-                  {a.pct > 0 ? `+${a.pct}` : a.pct}% {a.etiqueta}
+                  {textoDeAjuste(a)} {a.etiqueta}
                 </span>
               ))}
             </div>
@@ -720,7 +1069,15 @@ export function FormReserva({
           </p>
         )}
         {fase === "perro" && paso!.hint && (
-          <p className="mt-1 text-sm text-ink-soft">{paso!.hint}</p>
+          /* El paso de fotos prometía "tu descuento queda validado" a todo el
+             mundo — incluido quien acaba de elegir reservar SIN cuenta, que
+             es justamente quien no tiene ese descuento. Prometer un beneficio
+             que no va a llegar se paga en la puerta del local. */
+          <p className="mt-1 text-sm text-ink-soft">
+            {paso!.id === "fotos" && !tieneCuenta
+              ? "Así el equipo llega preparado y sabe qué esperar"
+              : paso!.hint}
+          </p>
         )}
 
         <div className="mt-6">
@@ -745,7 +1102,7 @@ export function FormReserva({
                 </button>
               ))}
               <p className="col-span-3 text-center text-xs text-ink-soft">
-                ¿Más de {MAX_PERROS}? Escríbenos directo por WhatsApp y lo coordinamos.
+                ¿Más de {MAX_PERROS}? Reserva por acá y lo coordinamos al contactarte.
               </p>
             </div>
           )}
@@ -885,7 +1242,7 @@ export function FormReserva({
                     ✅ <strong>{TAMANO_LABELS[tamanoAuto]}</strong>
                     <span className="block">
                       Precio estimado:{" "}
-                      <strong>{formatCLP(actual.estimado.total)}</strong>
+                      <strong>{formatRangoCLP(actual.estimado.total)}</strong>
                     </span>
                     <span className="mt-1 block text-xs font-normal opacity-80">{NOTA_PRECIOS}</span>
                   </span>
@@ -950,12 +1307,20 @@ export function FormReserva({
                 ["secrecionOcular", "Secreción ocular"],
                 ["tieneAlergia", "¿Enfermedad o alergia?"],
               ] as [keyof FormData, string][]).map(([key, label]) => (
-                <div key={key} className="flex items-center justify-between gap-3">
+                /* "No lo sé" es una respuesta real (pedido del señor Ignacio,
+                   27-jul): poca gente le ha revisado las uñas o los ojos a su
+                   perro. Sin esa opción, quien no sabe marca "No" para poder
+                   seguir — y ese "No" falso hace que el equipo no revise. */
+                <div key={key} className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-bold text-ink">{label}</p>
                   <div className="flex gap-2">
-                    {(["si", "no"] as const).map((v) => (
+                    {([
+                      ["si", "Sí"],
+                      ["no", "No"],
+                      ["no_lo_se", "No lo sé"],
+                    ] as const).map(([v, etiqueta]) => (
                       <Chip key={v} active={data[key] === v} onClick={() => upd(key, v)}>
-                        {v === "si" ? "Sí" : "No"}
+                        {etiqueta}
                       </Chip>
                     ))}
                   </div>
@@ -1002,6 +1367,26 @@ export function FormReserva({
 
           {fase === "perro" && paso!.id === "fotos" && (
             <div className="space-y-5">
+              {/* PRP-002 F2 — el aviso va SIEMPRE, no solo cuando el cliente
+                  marca que no tiene al perrito cerca.
+
+                  Es una cortesía y también una protección: en el local se
+                  toman fotos del antes y el después como respaldo, y avisarlo
+                  antes de reservar evita la conversación incómoda de después.
+                  Se dice además qué NO se hace con ellas — quien deja una foto
+                  de su perrita quiere saber que no va a terminar en redes. */}
+              <div className="rounded-2xl bg-sky/30 px-4 py-3.5 text-xs leading-relaxed text-ink-soft">
+                <p className="font-bold text-ink">📸 Cómo usamos las fotos</p>
+                <p className="mt-1.5">
+                  En el local tomamos una foto al llegar y otra al terminar. Es
+                  el respaldo del trabajo hecho, para ti y para nosotros.
+                </p>
+                <p className="mt-1.5">
+                  Son de uso interno del equipo: <strong>no se publican</strong>{" "}
+                  ni se comparten con nadie más.
+                </p>
+              </div>
+
               <FotoPicker
                 id={`foto-actual-${dogIdx}`}
                 label={`Foto de ${data.nombrePerro || "tu perrito"} hoy`}
@@ -1035,9 +1420,9 @@ export function FormReserva({
               </label>
               {fotos[dogIdx]?.sinPerroCerca && (
                 <p className="rounded-2xl bg-sky/30 px-4 py-3 text-xs leading-relaxed text-ink-soft">
-                  Sin problema — el equipo de Perrustingo le tomará una foto a{" "}
-                  {data.nombrePerro || "tu perrito"} apenas llegue, y otra al
-                  terminar el servicio.
+                  Sin problema, no es obligatoria. Igual le tomaremos una foto a{" "}
+                  {data.nombrePerro || "tu perrito"} apenas llegue al local y
+                  otra al terminar, para que quede el registro de la visita.
                 </p>
               )}
               <FotoPicker
@@ -1053,8 +1438,8 @@ export function FormReserva({
               />
               {fotoActualFalta && (
                 <p className="text-xs font-semibold text-ink-soft">
-                  La foto de tu perrito es necesaria para confirmar la reserva
-                  (y validar tu descuento de bienvenida).
+                  Sube la foto o marca la casilla de arriba si no lo tienes
+                  cerca{tieneCuenta ? " (la foto valida tu descuento de bienvenida)" : ""}.
                 </p>
               )}
             </div>
@@ -1065,13 +1450,134 @@ export function FormReserva({
               <div>
                 <p className="mb-1 text-sm font-bold text-ink">Fechas disponibles</p>
                 <p className="mb-2 text-xs text-ink-soft">
-                  Referencial — confirmamos la hora exacta por WhatsApp.{" "}
+                  {/* Antes acá decía "confirmamos la hora exacta por
+                      WhatsApp": desde la Fase 5 la hora la elige el
+                      cliente y queda tomada, así que ese texto mentía. */}
+                  Elija el día y la hora — el cupo queda reservado al enviar.{" "}
                   <a href="/agenda" className="font-bold text-teal-dark underline-offset-2 hover:underline">
                     Ver agenda semanal →
                   </a>
                 </p>
-                <MiniCalendario value={fechaDeseada} onChange={setFechaDeseada} />
+                <MiniCalendario
+                  value={fechaDeseada}
+                  onChange={(v) => {
+                    setFechaDeseada(v);
+                    setInicioElegido(null);
+                  }}
+                  minima={fechaMinima}
+                />
+                <SelectorHorario
+                  fecha={fechaDeseada}
+                  valor={inicioElegido}
+                  onChange={setInicioElegido}
+                />
               </div>
+
+              {/* Sin cuenta: los datos que con cuenta salen del perfil.
+                  El equipo los necesita para confirmar por WhatsApp, y la
+                  comuna alimenta las analíticas del negocio. */}
+              {!tieneCuenta && (
+                <div>
+                  <p className="mb-1 text-sm font-bold text-ink">Tus datos</p>
+                  <p className="mb-2 text-xs text-ink-soft">
+                    Para confirmarte la hora por WhatsApp.{" "}
+                    <a
+                      href="/registro"
+                      className="font-bold text-teal-dark underline-offset-2 hover:underline"
+                    >
+                      Crear una cuenta →
+                    </a>
+                  </p>
+
+                  <div className="grid gap-2">
+                    <div>
+                      <label htmlFor="contacto-nombre" className="sr-only">
+                        Tu nombre
+                      </label>
+                      <Input
+                        id="contacto-nombre"
+                        value={datosContacto.nombre}
+                        onChange={(v) => {
+                          setDatosContacto((d) => ({ ...d, nombre: v }));
+                          setErrorContacto("");
+                        }}
+                        /* Se ordena al salir del campo, no mientras escribe:
+                           corregirlo tecla a tecla le mueve el cursor. */
+                        onBlur={() =>
+                          setDatosContacto((d) => ({
+                            ...d,
+                            nombre: capitalizarNombre(d.nombre),
+                          }))
+                        }
+                        placeholder="Tu nombre"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="contacto-telefono" className="sr-only">
+                        Tu teléfono
+                      </label>
+                      <Input
+                        id="contacto-telefono"
+                        type="tel"
+                        value={datosContacto.telefono}
+                        onChange={(v) => {
+                          setDatosContacto((d) => ({ ...d, telefono: v }));
+                          setErrorContacto("");
+                        }}
+                        placeholder="+56 9 1234 5678"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="contacto-email" className="sr-only">
+                        Tu correo
+                      </label>
+                      <Input
+                        id="contacto-email"
+                        type="email"
+                        value={datosContacto.email}
+                        onChange={(v) => {
+                          setDatosContacto((d) => ({ ...d, email: v }));
+                          setErrorContacto("");
+                        }}
+                        placeholder="tu@correo.com"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="contacto-comuna" className="sr-only">
+                        Tu comuna
+                      </label>
+                      <select
+                        id="contacto-comuna"
+                        value={datosContacto.comuna}
+                        onChange={(e) => {
+                          setDatosContacto((d) => ({ ...d, comuna: e.target.value }));
+                          setErrorContacto("");
+                        }}
+                        className="w-full rounded-2xl border-2 border-ink/10 bg-white px-4 py-3.5 text-base font-semibold text-ink focus:border-teal focus:outline-none"
+                      >
+                        <option value="">¿De qué comuna eres?</option>
+                        {COMUNAS.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {errorContacto && (
+                    <p
+                      role="alert"
+                      className="mt-2 rounded-xl bg-[#fbdbe7] px-4 py-2 text-xs font-semibold text-[#7a1030]"
+                    >
+                      {errorContacto}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div>
                 <p className="mb-1 text-sm font-bold text-ink">Servicio</p>
@@ -1143,7 +1649,7 @@ export function FormReserva({
                           {r.esManual
                             ? "evaluación en puerta"
                             : r.estimado
-                              ? formatCLP(r.estimado.total)
+                              ? formatRangoCLP(r.estimado.total)
                               : "—"}
                         </span>
                       </p>
@@ -1152,17 +1658,28 @@ export function FormReserva({
                   {cantidad > 1 && totalEstimado > 0 && (
                     <p className="flex items-center justify-between border-t border-ink/10 pt-1.5 text-sm font-extrabold text-ink">
                       <span>Total estimado</span>
-                      <span>{formatCLP(totalEstimado)}</span>
+                      <span>{formatRangoCLP(totalEstimado)}</span>
                     </p>
                   )}
                 </div>
+                {/* Sin esto, el cliente ve "evaluación en puerta" donde
+                    esperaba un precio y no sabe qué hizo mal. Casi siempre es
+                    lo mismo: marcó un tamaño y después escribió un peso que
+                    no calza con ese tamaño. Decirlo permite corregirlo. */}
+                {algunoManual && (
+                  <p className="mt-2 rounded-2xl bg-[#fde4c8] px-4 py-3 text-xs leading-relaxed text-[#7a4d10]">
+                    El tamaño que elegiste no calza con el peso que
+                    escribiste, así que el valor lo confirmamos al verlo. Si
+                    fue un error, puedes volver atrás y corregirlo.
+                  </p>
+                )}
                 <p className="mt-2 text-xs leading-relaxed text-ink-soft">{NOTA_PRECIOS}</p>
               </div>
 
               <button
                 type="button"
                 onClick={confirmarReserva}
-                disabled={!fechaDeseada || !servicio || enviando}
+                disabled={!fechaDeseada || !inicioElegido || !servicio || enviando}
                 className={`flex w-full items-center justify-center gap-2 rounded-full py-4 font-display text-base font-extrabold shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform,box-shadow,opacity] duration-150 hover:shadow-[0_5px_0_rgba(6,58,64,.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(6,58,64,.25)] disabled:cursor-not-allowed disabled:opacity-40 ${
                   algunoManual
                     ? "bg-orange text-teal-ink hover:bg-[#f7ab52]"
@@ -1173,12 +1690,28 @@ export function FormReserva({
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
                   <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.122 1.528 5.858L0 24l6.335-1.652A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.007-1.37l-.36-.213-3.727.977.994-3.634-.234-.373A9.818 9.818 0 0112 2.182c5.426 0 9.818 4.392 9.818 9.818S17.426 21.818 12 21.818z"/>
                 </svg>
+                {/* Los dos textos tienen que decir que el botón ENVÍA.
+                    "Solicitar evaluación personalizada" a secas se leía como
+                    otra cosa —el señor Ignacio buscó el botón de enviar y
+                    creyó que no estaba—, y si a él le pasó, a un cliente
+                    también. */}
                 {enviando
                   ? "Preparando tu reserva…"
                   : algunoManual
-                    ? "Solicitar evaluación personalizada"
-                    : "Confirmar reserva por WhatsApp"}
+                    ? "Confirmar y pedir evaluación"
+                    : "Confirmar reserva"}
               </button>
+
+              {/* Decir lo que va a pasar ANTES de que pase. Al confirmar se
+                  abre WhatsApp, y una app que se abre sola sin aviso asusta
+                  — sobre todo a quien reserva desde el celular. Ademas deja
+                  claro que la reserva no queda cerrada hasta que el equipo
+                  confirme: prometer una hora que todavia no existe es la
+                  forma mas rapida de perder a un cliente en la puerta. */}
+              <p className="text-center text-xs leading-relaxed text-ink-soft">
+                Al confirmar, nuestra atención al cliente te escribe por
+                WhatsApp para cerrar la hora.
+              </p>
 
               {solicitudEstado === "registrada" && (
                 <p className="rise-in rounded-2xl bg-[#d8f0e3] px-5 py-3 text-center text-sm font-semibold text-teal-ink">
@@ -1186,11 +1719,58 @@ export function FormReserva({
                   el equipo la confirmará pronto.
                 </p>
               )}
-              {solicitudEstado === "error" && (
-                <p className="rise-in rounded-2xl bg-[#fde4c8] px-5 py-3 text-center text-sm font-semibold text-[#a34d00]">
-                  No pudimos registrar la solicitud en línea, pero tu mensaje de
-                  WhatsApp salió igual — el equipo te responderá por ahí.
+
+              {/* PRP-002 F6, vía B. WhatsApp no deja adjuntar la imagen desde
+                  un enlace `wa.me`: solo viaja texto. La hoja de compartir del
+                  teléfono sí la entrega como imagen, pero es un segundo toque
+                  y solo existe en móvil.
+
+                  Por eso el botón aparece únicamente si el navegador declara
+                  que puede compartir ESTOS archivos. Ofrecer un botón que
+                  después falla es peor que no ofrecerlo. */}
+              {/* Reintento. La foto se comparte sola al confirmar; este botón
+                  existe para quien cerró la hoja sin querer o eligió otra app.
+                  Sin él, esa persona se queda sin forma de mandar la foto y
+                  su reserva llega a medias. */}
+              {puedeCompartir && (
+                <button
+                  type="button"
+                  onClick={compartirLaFoto}
+                  className="w-full rounded-full border-2 border-teal px-5 py-3 font-display text-sm font-extrabold text-teal-dark transition-colors hover:bg-[#d5efe2]"
+                >
+                  📷 Enviar la foto de nuevo
+                </button>
+              )}
+              {avisoCompartir && (
+                <p className="text-center text-xs font-semibold text-ink-soft">
+                  {avisoCompartir}
                 </p>
+              )}
+              {solicitudEstado === "error" && (
+                /* Antes decía "tu mensaje de WhatsApp salió igual" sin haberlo
+                   comprobado. Le pasó al señor Ignacio: leyó que su mensaje
+                   había salido, y no había salido nada. Un aviso que afirma
+                   lo que no sabe es peor que no avisar. */
+                <p className="rise-in rounded-2xl bg-[#fde4c8] px-5 py-3 text-center text-sm font-semibold text-[#a34d00]">
+                  No pudimos guardar la solicitud en el sistema. Envía el
+                  mensaje por WhatsApp con el botón de abajo y el equipo te
+                  responde por ahí.
+                </p>
+              )}
+
+              {/* Salida de emergencia: si el navegador bloqueó la ventana, si
+                  la hoja de compartir se cerró, o si algo falló, el cliente
+                  igual tiene cómo mandar su mensaje. Sin esto queda atascado
+                  con la reserva a medias. */}
+              {urlWhatsApp && (
+                <a
+                  href={urlWhatsApp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full rounded-full bg-teal py-3.5 text-center font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform] duration-150 hover:bg-teal-dark active:translate-y-0.5"
+                >
+                  Abrir WhatsApp y enviar el mensaje
+                </a>
               )}
             </div>
           )}
@@ -1211,9 +1791,14 @@ export function FormReserva({
         {fase !== "cita" && (
           <button
             type="button"
-            onClick={avanzar}
-            disabled={bloqueaAvance}
-            className="flex-1 rounded-full bg-teal py-3.5 font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,box-shadow,opacity] hover:bg-teal-dark hover:shadow-[0_5px_0_rgba(6,58,64,.25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-teal"
+            onClick={intentarAvanzar}
+            /* A propósito NO va `disabled`: un botón apagado no se puede
+               pulsar, así que el cliente nunca se entera de qué le falta.
+               Se ve atenuado, pero responde y explica. */
+            aria-disabled={bloqueaAvance}
+            className={`flex-1 rounded-full bg-teal py-3.5 font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,box-shadow,opacity] hover:bg-teal-dark hover:shadow-[0_5px_0_rgba(6,58,64,.25)] ${
+              bloqueaAvance ? "opacity-50" : ""
+            }`}
           >
             {fase === "perro" && step === totalPasosPerro - 1 && dogIdx < cantidad - 1
               ? `Siguiente perrito →`
@@ -1221,6 +1806,17 @@ export function FormReserva({
           </button>
         )}
       </div>
+
+      {/* Sale solo cuando el cliente ya intentó avanzar: avisar antes de que
+          lo intente es regañar a alguien que todavía no hizo nada. */}
+      {intentoAvanzar && faltaAqui && (
+        <p
+          role="alert"
+          className="mt-3 rounded-2xl bg-[#fde4c8] px-4 py-3 text-center text-xs font-semibold leading-relaxed text-[#7a4d10]"
+        >
+          {faltaAqui}
+        </p>
+      )}
     </div>
   );
 }

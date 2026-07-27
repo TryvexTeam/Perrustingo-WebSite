@@ -15,7 +15,15 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function CitasPage() {
+/* En Next 16 los searchParams llegan como Promesa. */
+interface CitasPageProps {
+  searchParams: Promise<{ cita?: string }>;
+}
+
+export default async function CitasPage({ searchParams }: CitasPageProps) {
+  /* `?cita=<id>` abre esa ficha directo. Lo usan el enlace "Ver ficha" de la
+     jornada y el mensaje de WhatsApp de la reserva (PRP-002 F6). */
+  const { cita: citaPedida } = await searchParams;
   if (!supabaseConfigurado()) {
     return (
       <>
@@ -95,7 +103,7 @@ export default async function CitasPage() {
             </p>
           </div>
 
-          <ListaCitas citas={citas} />
+          <ListaCitas citas={citas} citaInicial={citaPedida} />
         </div>
       </main>
       <Footer />

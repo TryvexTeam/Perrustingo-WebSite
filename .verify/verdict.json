@@ -1,7 +1,0 @@
-{
-  "verdict": "pass",
-  "stateHash": "stamped:deploy",
-  "gate": "deploy",
-  "stampedBy": "verdict_stamp.py",
-  "ts": 1783143520
-}
