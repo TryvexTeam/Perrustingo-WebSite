@@ -453,16 +453,26 @@ function cuandoLegible(inicio: string | null, fechaDeseada: string): string {
   const base = inicio ?? `${fechaDeseada}T00:00:00${offsetNegocio(fechaDeseada)}`;
   const d = new Date(base);
   if (isNaN(d.getTime())) return fechaDeseada;
-  const dia = d.toLocaleDateString("es-CL", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: TZ_NEGOCIO,
-  });
+  /* La coma que es-CL mete entre el día de la semana y el número ("jueves,
+     6 de agosto") sobra cuando después viene otra coma y la hora: quedaba
+     "jueves, 6 de agosto, 03:00 p. m.", con tres pausas seguidas. */
+  const dia = d
+    .toLocaleDateString("es-CL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      timeZone: TZ_NEGOCIO,
+    })
+    .replace(/^(\p{L}+),\s*/u, "$1 ");
   if (!inicio) return dia;
+  /* 24 horas, como el resto del sitio. Con el formato por defecto salía
+     "03:00 p. m." en el asunto del correo mientras el selector de la web
+     decía "15:00" — el mismo dato escrito de dos maneras confunde al
+     cliente que compara. */
   const hora = d.toLocaleTimeString("es-CL", {
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
     timeZone: TZ_NEGOCIO,
   });
   return `${dia}, ${hora}`;
