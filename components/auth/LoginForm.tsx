@@ -70,7 +70,7 @@ export function LoginForm() {
           className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-[15px] text-ink outline-none transition focus:border-teal-dark focus:ring-2 focus:ring-teal-dark/20"
         />
         <div className="mt-1.5 text-right">
-          <Link href="/recuperar-contrasena" className="text-xs text-teal-dark hover:underline">
+          <Link href="/recuperar" className="text-xs text-teal-dark hover:underline">
             Olvide mi contrasena
           </Link>
         </div>
