@@ -755,9 +755,54 @@ export function FormReserva({
     }
     setEnviando(true);
 
-    /* La pestaña se abre de inmediato (gesto del usuario) y se redirige al
-       terminar las subidas — así el popup-blocker no se la come. */
-    const win = window.open("about:blank", "_blank");
+    /* ── La foto tiene que llegar al chat ──────────────────────────────
+
+       Pedido del señor Ignacio (27-jul): que el mensaje llegue CON la foto.
+
+       El enlace `wa.me?text=` no puede: transporta texto y nada más. La
+       única forma desde una web es `navigator.share` con archivos — la hoja
+       de compartir del teléfono, donde el cliente elige WhatsApp. Por ahí la
+       imagen entra al chat como imagen.
+
+       Y tiene que ser LO PRIMERO que ocurra tras el clic. `navigator.share`
+       exige "activación del usuario": si se llama después de esperar la
+       subida de fotos y la respuesta del servidor, el navegador ya considera
+       vencido el gesto y lo rechaza sin decir por qué. Por eso el mensaje se
+       arma acá con lo que ya está en pantalla, sin esperar nada.
+
+       Lo que se pierde en este camino es el enlace a la ficha (todavía no
+       existe el id de la cita). A cambio el equipo recibe la foto, que es lo
+       que sirve para preparar el corte. La cita queda registrada igual y
+       aparece en el panel. */
+    const archivosParaEnviar = fotos
+      .slice(0, cantidad)
+      .flatMap((f) => [f?.actual, f?.referencia])
+      .filter((f): f is File => Boolean(f));
+
+    const mensajeInmediato = buildWhatsAppMessageMulti(
+      perros.slice(0, cantidad).map((p) => {
+        const { estimado, esManual } = estimadoDe(p);
+        return { data: p, esManual, estimado };
+      }),
+      { fechaDeseada, servicio, contactoNombre: datosContacto.nombre }
+    );
+
+    const compartiendoConFoto =
+      archivosParaEnviar.length > 0 && puedeCompartirFotos(archivosParaEnviar);
+
+    /* Solo se abre la pestaña de WhatsApp si NO vamos por la hoja de
+       compartir: abrir las dos dejaría al cliente con dos caminos y el
+       mensaje duplicado. */
+    const win = compartiendoConFoto ? null : window.open("about:blank", "_blank");
+
+    if (compartiendoConFoto) {
+      void compartirFotos(archivosParaEnviar, mensajeInmediato).then((r) => {
+        /* Si la hoja se cierra sin elegir (AbortError) no se muestra error:
+           es el cliente diciendo "mejor no". Pero sí queda el botón para
+           reintentar, porque su reserva ya está tomada. */
+        if (!r.ok && r.error) setAvisoCompartir(r.error);
+      });
+    }
 
     void (async () => {
       const supabase = createClient();
@@ -877,7 +922,10 @@ export function FormReserva({
       const waUrl = WHATSAPP_BASE + encodeURIComponent(mensaje);
       if (win) {
         win.location.href = waUrl;
-      } else {
+      } else if (!compartiendoConFoto) {
+        /* Sin pestaña y sin hoja de compartir: se navega en la misma. Si el
+           cliente ya está compartiendo la foto NO se le arrastra a otra
+           pantalla en medio de la operación. */
         window.location.href = waUrl;
       }
       setEnviando(false);
@@ -1651,13 +1699,17 @@ export function FormReserva({
                   Por eso el botón aparece únicamente si el navegador declara
                   que puede compartir ESTOS archivos. Ofrecer un botón que
                   después falla es peor que no ofrecerlo. */}
+              {/* Reintento. La foto se comparte sola al confirmar; este botón
+                  existe para quien cerró la hoja sin querer o eligió otra app.
+                  Sin él, esa persona se queda sin forma de mandar la foto y
+                  su reserva llega a medias. */}
               {puedeCompartir && (
                 <button
                   type="button"
                   onClick={compartirLaFoto}
                   className="w-full rounded-full border-2 border-teal px-5 py-3 font-display text-sm font-extrabold text-teal-dark transition-colors hover:bg-[#d5efe2]"
                 >
-                  📷 Enviar también la foto
+                  📷 Enviar la foto de nuevo
                 </button>
               )}
               {avisoCompartir && (
