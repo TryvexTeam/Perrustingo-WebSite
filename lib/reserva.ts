@@ -352,6 +352,57 @@ export function faltaEnPaso(pasoId: string, data: FormData): string | null {
   }
 }
 
+/* ── El enlace a la ficha en el mensaje (PRP-002 F6) ──────────────────
+
+   WhatsApp no deja adjuntar una imagen desde un enlace `wa.me?text=`: solo
+   acepta texto. No es una limitación del sitio, es de WhatsApp, y no hay
+   forma de sortearla desde una página web.
+
+   Lo que sí se puede: mandar en el mensaje un enlace a la ficha de la cita.
+   El equipo lo abre con su sesión y ve las fotos ahí. Si el mensaje se
+   reenvía, quien no sea del equipo no ve nada — coherente con que las fotos
+   son respaldo interno (F4). */
+
+export interface EnlaceFicha {
+  /** Origen del sitio, sin barra final. */
+  origen: string;
+  /** IDs de las citas creadas. */
+  ids: string[];
+  /** Si el cliente adjuntó alguna foto. */
+  conFotos: boolean;
+}
+
+/** Añade al mensaje el enlace a la ficha, si hay una cita que enlazar.
+
+    Devuelve el mensaje intacto cuando no hay ids: si la reserva no llegó a
+    crearse, un enlace a una ficha inexistente sería peor que no ponerlo. */
+export function conEnlaceFicha(mensaje: string, enlace: EnlaceFicha | null): string {
+  if (!enlace || enlace.ids.length === 0 || !enlace.origen) return mensaje;
+
+  const url = `${enlace.origen.replace(/\/+$/, "")}/dashboard/citas?cita=${enlace.ids[0]}`;
+
+  /* El texto solo habla de fotos cuando las hay. Prometer "ver las fotos" a
+     un equipo que va a encontrar una ficha vacía es la clase de detalle que
+     hace que dejen de abrir el enlace.
+
+     SIN EMOJI, y no por gusto: verificado el 27-jul contra WhatsApp real, el
+     redirect de wa.me a api.whatsapp.com convierte los emojis de 4 bytes
+     (fuera del BMP, como 📷) en el carácter de reemplazo "�". Los signos
+     del BMP —las viñetas, la eñe, los acentos— sí sobreviven. Un rombo negro
+     al lado del enlace más importante del mensaje se lee como un error del
+     sitio, así que acá manda que llegue bien, no que se vea bonito. */
+  const titulo = enlace.conFotos
+    ? "Ficha y fotos de la cita (para el equipo)"
+    : "Ficha de la cita (para el equipo)";
+
+  const extra =
+    enlace.ids.length > 1
+      ? `\n(Las otras ${enlace.ids.length - 1} fichas están en el panel)`
+      : "";
+
+  return `${mensaje}\n\n${titulo}:\n${url}${extra}`;
+}
+
 export function buildWhatsAppMessage(
   data: FormData,
   esManual: boolean,

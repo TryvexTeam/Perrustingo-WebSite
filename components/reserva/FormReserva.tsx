@@ -16,6 +16,7 @@ import {
   detectarTamanoPorPeso,
   formatCLP,
   formatRangoCLP,
+  conEnlaceFicha,
   montoDeAjuste,
   textoDeAjuste,
   hayConflicto,
@@ -32,6 +33,7 @@ import { useAjustesPorTamano } from "@/lib/ajustesPrecio";
 import { fotoValida, subirFotoReserva } from "@/lib/fotos";
 import { WHATSAPP_NUMBER } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
+import { compartirFotos, puedeCompartirFotos } from "@/lib/compartir";
 import {
   COMUNAS,
   CONTACTO_VACIO,
@@ -46,6 +48,12 @@ import { SelectorHorario } from "@/components/reserva/SelectorHorario";
 import { BreedAvatar } from "@/components/ui/BreedAvatar";
 
 const WHATSAPP_BASE = `https://wa.me/${WHATSAPP_NUMBER}?text=`;
+
+/* Cuánto se espera a que el servidor confirme la reserva antes de abrir
+   WhatsApp igual. Seis segundos: suficiente para una respuesta normal
+   (incluso con la subida de fotos ya hecha antes), y poco para quien está
+   mirando una pestaña en blanco con el pulgar sobre el botón. */
+const ESPERA_RESERVA_MS = 6000;
 
 /* Wizard progresivo v2 — reserva multi-perrito (pedido de Rodolfo 19-jul):
    se pregunta cuántos perritos vienen y el bloque de preguntas se repite
@@ -497,6 +505,10 @@ export function FormReserva({
      Mientras esté apagado no se le reclama nada. */
   const [intentoAvanzar, setIntentoAvanzar] = useState(false);
 
+  /* Compartir la foto por la hoja del sistema (PRP-002 F6, vía B). */
+  const [avisoCompartir, setAvisoCompartir] = useState("");
+  const [puedeCompartir, setPuedeCompartir] = useState(false);
+
   const avanzar = useCallback(() => {
     if (fase === "cuantos") {
       setFase("perro");
@@ -661,6 +673,32 @@ export function FormReserva({
   const faltaAqui = paso ? faltaEnPaso(paso.id, data) : null;
   const bloqueaAvance = Boolean(faltaAqui) || fotoActualFalta;
 
+  /* ── Compartir la foto (PRP-002 F6, vía B) ─────────────────────────
+     La pregunta se hace en un efecto y no durante el render porque
+     `navigator.canShare` es una API del navegador: en el servidor no
+     existe, y consultarla al renderizar rompería la hidratación. */
+  const fotosParaCompartir = fotos
+    .slice(0, cantidad)
+    .flatMap((f) => [f?.actual, f?.referencia])
+    .filter((f): f is File => Boolean(f));
+
+  useEffect(() => {
+    setPuedeCompartir(puedeCompartirFotos(fotosParaCompartir));
+    // La lista se recalcula en cada render; lo que importa es cuántas hay.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fotosParaCompartir.length]);
+
+  const compartirLaFoto = async () => {
+    setAvisoCompartir("");
+    /* Se llama DENTRO del click, no dentro de un `then`: los navegadores
+       exigen que la hoja de compartir salga de un gesto del usuario. */
+    const r = await compartirFotos(
+      fotosParaCompartir,
+      `Foto de ${perros[0]?.nombrePerro || "mi perrito"} para la cita en Perrustingo 🐾`
+    );
+    if (!r.ok && r.error) setAvisoCompartir(r.error);
+  };
+
   /* Un solo lugar decide si se puede pasar de paso. Va acá y no más arriba
      porque necesita `bloqueaAvance`, que depende del paso actual. */
   const intentarAvanzar = () => {
@@ -758,7 +796,16 @@ export function FormReserva({
         })
       );
 
-      fetch("/api/reservas", {
+      /* Antes este POST no se esperaba: el mensaje de WhatsApp se armaba en
+         paralelo. Ahora hay que esperar la respuesta para poder incluir el
+         enlace a la ficha (PRP-002 F6), y eso trae un riesgo que hay que
+         tratar con cuidado: si el servidor tarda o falla, el cliente se
+         queda mirando una pestaña en blanco.
+
+         Por eso la espera tiene tope. Pasado ese tope el mensaje SALE IGUAL,
+         solo que sin enlace. El WhatsApp es el canal real del negocio:
+         perder la conversación es mucho peor que perder un enlace. */
+      const peticion = fetch("/api/reservas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         keepalive: true,
@@ -781,18 +828,51 @@ export function FormReserva({
             : null,
           perros: perrosPayload,
         }),
-      })
-        .then((r) => {
-          setSolicitudEstado(r.ok ? "registrada" : r.status === 503 ? "registrada" : "error");
-        })
-        .catch(() => setSolicitudEstado("error"));
+      });
 
-      const mensaje = buildWhatsAppMessageMulti(
-        perros.slice(0, cantidad).map((p) => {
-          const { estimado, esManual } = estimadoDe(p);
-          return { data: p, esManual, estimado };
-        }),
-        { fechaDeseada, servicio, contactoNombre: datosContacto.nombre }
+      let idsCreadas: string[] = [];
+      try {
+        const r = await Promise.race([
+          peticion,
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), ESPERA_RESERVA_MS)),
+        ]);
+
+        if (r) {
+          setSolicitudEstado(r.ok || r.status === 503 ? "registrada" : "error");
+          if (r.ok) {
+            const cuerpo = await r.json().catch(() => null);
+            idsCreadas = cuerpo?.data?.ids ?? [];
+          }
+        } else {
+          /* Se acabó la espera. La reserva puede estar creándose igual
+             (keepalive), así que no se declara error: se sigue sin enlace. */
+          void peticion.then((tardia) =>
+            setSolicitudEstado(tardia.ok || tardia.status === 503 ? "registrada" : "error")
+          );
+        }
+      } catch {
+        setSolicitudEstado("error");
+      }
+
+      /* "Hay fotos" = se subió alguna DE VERDAD, no que el cliente eligió un
+         archivo. Sin cuenta la subida no ocurre (la policy de storage exige
+         un uid), así que mirar el File del formulario haría que el mensaje
+         prometiera fotos que el equipo no va a encontrar en la ficha. */
+      const hayFotos = perrosPayload.some(
+        (p) => p.fotoActualRuta || p.fotoReferenciaRuta
+      );
+
+      const mensaje = conEnlaceFicha(
+        buildWhatsAppMessageMulti(
+          perros.slice(0, cantidad).map((p) => {
+            const { estimado, esManual } = estimadoDe(p);
+            return { data: p, esManual, estimado };
+          }),
+          { fechaDeseada, servicio, contactoNombre: datosContacto.nombre }
+        ),
+        idsCreadas.length > 0
+          ? { origen: window.location.origin, ids: idsCreadas, conFotos: hayFotos }
+          : null
       );
       const waUrl = WHATSAPP_BASE + encodeURIComponent(mensaje);
       if (win) {
@@ -802,7 +882,33 @@ export function FormReserva({
       }
       setEnviando(false);
     })();
-  }, [fechaDeseada, servicio, enviando, perros, cantidad, fotos, estimadoDe, contacto, cupon, descuentoGlobal]);
+    /* Las dependencias tienen que estar TODAS.
+
+       Faltaban `inicioElegido`, `datosContacto`, `tieneCuenta` y
+       `ofertaVigente`, y eso no era cosmético: el callback se quedaba con
+       el valor viejo de `inicioElegido` (null), entraba al guard de la
+       primera línea y salía sin hacer nada. El botón se veía habilitado
+       —porque el render sí tenía el valor nuevo—, no aparecía ningún error
+       en consola, y la reserva simplemente no ocurría.
+
+       Lo encontré probando F6: la primera reserva funcionó y las siguientes
+       "no hacían nada". En manos de un cliente eso es apretar Confirmar,
+       ver que no pasa nada, y cerrar la página. */
+  }, [
+    fechaDeseada,
+    inicioElegido,
+    servicio,
+    enviando,
+    perros,
+    cantidad,
+    fotos,
+    estimadoDe,
+    tieneCuenta,
+    datosContacto,
+    ofertaVigente,
+    cupon,
+    descuentoGlobal,
+  ]);
 
   /* El perrito acompaña el formulario */
   const razaSel = CATALOGO_RAZAS.find((r) => r.nombre === data.raza);
@@ -1534,6 +1640,29 @@ export function FormReserva({
                 <p className="rise-in rounded-2xl bg-[#d8f0e3] px-5 py-3 text-center text-sm font-semibold text-teal-ink">
                   🐾 Tu solicitud quedó registrada como <strong>pendiente</strong> —
                   el equipo la confirmará pronto.
+                </p>
+              )}
+
+              {/* PRP-002 F6, vía B. WhatsApp no deja adjuntar la imagen desde
+                  un enlace `wa.me`: solo viaja texto. La hoja de compartir del
+                  teléfono sí la entrega como imagen, pero es un segundo toque
+                  y solo existe en móvil.
+
+                  Por eso el botón aparece únicamente si el navegador declara
+                  que puede compartir ESTOS archivos. Ofrecer un botón que
+                  después falla es peor que no ofrecerlo. */}
+              {puedeCompartir && (
+                <button
+                  type="button"
+                  onClick={compartirLaFoto}
+                  className="w-full rounded-full border-2 border-teal px-5 py-3 font-display text-sm font-extrabold text-teal-dark transition-colors hover:bg-[#d5efe2]"
+                >
+                  📷 Enviar también la foto
+                </button>
+              )}
+              {avisoCompartir && (
+                <p className="text-center text-xs font-semibold text-ink-soft">
+                  {avisoCompartir}
                 </p>
               )}
               {solicitudEstado === "error" && (
