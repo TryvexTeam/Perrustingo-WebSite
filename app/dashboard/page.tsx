@@ -244,6 +244,7 @@ export default async function DashboardPage() {
           {/* Acciones rápidas */}
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
             {[
+              { label: "Hoy en el local", href: "/dashboard/hoy", emoji: "☀️" },
               { label: "Ver todas las citas", href: "/dashboard/citas", emoji: "📅" },
               { label: "Agenda semanal", href: "/agenda", emoji: "🗓️" },
               { label: "Analíticas", href: "/dashboard/analiticas", emoji: "📊" },
