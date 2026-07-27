@@ -857,7 +857,15 @@ export function FormReserva({
           </p>
         )}
         {fase === "perro" && paso!.hint && (
-          <p className="mt-1 text-sm text-ink-soft">{paso!.hint}</p>
+          /* El paso de fotos prometía "tu descuento queda validado" a todo el
+             mundo — incluido quien acaba de elegir reservar SIN cuenta, que
+             es justamente quien no tiene ese descuento. Prometer un beneficio
+             que no va a llegar se paga en la puerta del local. */
+          <p className="mt-1 text-sm text-ink-soft">
+            {paso!.id === "fotos" && !tieneCuenta
+              ? "Así el equipo llega preparado y sabe qué esperar"
+              : paso!.hint}
+          </p>
         )}
 
         <div className="mt-6">
@@ -1139,6 +1147,26 @@ export function FormReserva({
 
           {fase === "perro" && paso!.id === "fotos" && (
             <div className="space-y-5">
+              {/* PRP-002 F2 — el aviso va SIEMPRE, no solo cuando el cliente
+                  marca que no tiene al perrito cerca.
+
+                  Es una cortesía y también una protección: en el local se
+                  toman fotos del antes y el después como respaldo, y avisarlo
+                  antes de reservar evita la conversación incómoda de después.
+                  Se dice además qué NO se hace con ellas — quien deja una foto
+                  de su perrita quiere saber que no va a terminar en redes. */}
+              <div className="rounded-2xl bg-sky/30 px-4 py-3.5 text-xs leading-relaxed text-ink-soft">
+                <p className="font-bold text-ink">📸 Cómo usamos las fotos</p>
+                <p className="mt-1.5">
+                  En el local tomamos una foto al llegar y otra al terminar. Es
+                  el respaldo del trabajo hecho, para ti y para nosotros.
+                </p>
+                <p className="mt-1.5">
+                  Son de uso interno del equipo: <strong>no se publican</strong>{" "}
+                  ni se comparten con nadie más.
+                </p>
+              </div>
+
               <FotoPicker
                 id={`foto-actual-${dogIdx}`}
                 label={`Foto de ${data.nombrePerro || "tu perrito"} hoy`}
@@ -1172,9 +1200,9 @@ export function FormReserva({
               </label>
               {fotos[dogIdx]?.sinPerroCerca && (
                 <p className="rounded-2xl bg-sky/30 px-4 py-3 text-xs leading-relaxed text-ink-soft">
-                  Sin problema — el equipo de Perrustingo le tomará una foto a{" "}
-                  {data.nombrePerro || "tu perrito"} apenas llegue, y otra al
-                  terminar el servicio.
+                  Sin problema, no es obligatoria. Igual le tomaremos una foto a{" "}
+                  {data.nombrePerro || "tu perrito"} apenas llegue al local y
+                  otra al terminar, para que quede el registro de la visita.
                 </p>
               )}
               <FotoPicker
@@ -1190,8 +1218,8 @@ export function FormReserva({
               />
               {fotoActualFalta && (
                 <p className="text-xs font-semibold text-ink-soft">
-                  La foto de tu perrito es necesaria para confirmar la reserva
-                  (y validar tu descuento de bienvenida).
+                  Sube la foto o marca la casilla de arriba si no lo tienes
+                  cerca{tieneCuenta ? " (la foto valida tu descuento de bienvenida)" : ""}.
                 </p>
               )}
             </div>

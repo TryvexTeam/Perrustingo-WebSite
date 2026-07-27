@@ -50,3 +50,47 @@ export async function subirFotoReserva(
     return null;
   }
 }
+
+/* ── Foto del resultado, subida por el equipo (PRP-002 F3) ──────────── */
+
+export interface ResultadoSubida {
+  url: string | null;
+  error?: string;
+}
+
+/** Sube la foto del "después" de una cita. La sube quien está atendiendo,
+    desde su propio celular, con las manos recién secadas: si algo falla
+    tiene que decir QUÉ falló, no devolver null como la del cliente.
+
+    La ruta sigue empezando por el uid de quien sube — es lo que exige la
+    policy de storage (migración 004). Cambiarla a `<sesion_id>/` obligaría a
+    reescribir esa policy y a arriesgar que el cliente deje de poder subir. */
+export async function subirFotoResultado(
+  supabase: SupabaseClient,
+  uid: string,
+  citaId: string,
+  file: File
+): Promise<ResultadoSubida> {
+  const problema = fotoValida(file);
+  if (problema) return { url: null, error: problema };
+
+  try {
+    const comprimida = await comprimirImagen(file, PRESET_EVIDENCIA);
+    if (!comprimida) {
+      return { url: null, error: "No se pudo procesar la imagen. Intente con otra." };
+    }
+
+    const ruta = `${uid}/${Date.now()}-cita${citaId.slice(0, 8)}-despues.${comprimida.extension}`;
+    const { error } = await supabase.storage.from("reservas").upload(ruta, comprimida.blob, {
+      cacheControl: "3600",
+      contentType: comprimida.tipo,
+      upsert: false,
+    });
+    if (error) return { url: null, error: "No se pudo subir la foto. Revise la conexión." };
+
+    const { data } = supabase.storage.from("reservas").getPublicUrl(ruta);
+    return { url: data.publicUrl };
+  } catch {
+    return { url: null, error: "No se pudo subir la foto." };
+  }
+}

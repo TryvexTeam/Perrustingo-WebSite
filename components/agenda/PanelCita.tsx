@@ -3,10 +3,11 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { CitaSemana } from "@/lib/agenda";
-import { ESTADO_COLOR, ESTADO_LABEL, type FotoSesion } from "@/lib/citas";
+import { ESTADO_COLOR, ESTADO_LABEL } from "@/lib/citas";
 import { formatCLP } from "@/lib/reserva";
 import { cambiarEstadoCita, guardarNotasEquipo } from "@/app/dashboard/citas/actions";
 import { createClient } from "@/lib/supabase/client";
+import { FotosCita } from "@/components/admin/FotosCita";
 
 interface PanelCitaProps {
   cita: CitaSemana;
@@ -33,7 +34,6 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
   const [error, setError] = useState<string | null>(null);
   const [hora, setHora] = useState("10:00");
   const [duracion, setDuracion] = useState("1.5");
-  const [fotos, setFotos] = useState<FotoSesion[]>([]);
   const [notas, setNotas] = useState(cita.sesion?.notas_equipo ?? "");
   const [notasEstado, setNotasEstado] = useState<"idle" | "guardando" | "ok" | "error">("idle");
   const [historial, setHistorial] = useState<{ fecha: string; notas: string }[]>([]);
@@ -41,16 +41,11 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
   const sesionId = cita.sesion?.id;
   const perroId = cita.sesion?.perro_id;
 
-  /* Fotos de la cita + notas de visitas anteriores del mismo perrito
-     (RLS: solo el equipo llega a este panel). */
+  /* Notas de visitas anteriores del mismo perrito (RLS: solo el equipo llega
+     a este panel). Las fotos las carga <FotosCita>, que además las sube. */
   useEffect(() => {
     if (!sesionId) return;
     const supabase = createClient();
-    supabase
-      .from("fotos_sesion")
-      .select("id, tipo, url, notas")
-      .eq("sesion_id", sesionId)
-      .then(({ data }) => setFotos((data as FotoSesion[]) ?? []));
 
     if (perroId) {
       supabase
@@ -178,29 +173,10 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
           </dl>
         </section>
 
-        {/* Fotos que dejó el cliente (actual + referencia del corte) */}
-        {fotos.length > 0 && (
-          <section className="mb-4 rounded-2xl border border-zinc-100 p-4">
-            <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-teal-dark">
-              Fotos del cliente
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {fotos.map((f) => (
-                <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={f.url}
-                    alt={f.tipo === "referencia" ? "Referencia de corte" : `Foto ${f.tipo}`}
-                    className="h-28 w-full rounded-xl object-cover"
-                  />
-                  <span className="mt-1 block text-[11px] font-bold capitalize text-ink-soft">
-                    {f.tipo === "referencia" ? "✂️ Corte deseado" : `📷 ${f.tipo}`}
-                  </span>
-                </a>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* Fotos de la visita: las del cliente y el resultado que sube el
+            equipo. Antes esta sección solo mostraba lo que traía el cliente;
+            desde PRP-002 F3 también se sube el "después" desde acá. */}
+        {sesionId && <FotosCita sesionId={sesionId} estado={sesion.estado} />}
 
         {/* Historial del perrito: lo que dejaron los colegas en visitas previas */}
         {historial.length > 0 && (
