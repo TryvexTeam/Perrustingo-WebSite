@@ -489,7 +489,11 @@ export function buildWhatsAppMessage(
   if (precio > 0 || data.servicio || data.fechaDeseada) {
     lines.push("");
     if (precio > 0 && pesoValido) {
-      lines.push(`*Precio estimado:* desde ${formatCLP(precio)}`);
+      /* En rango, igual que en pantalla. Se me habia escapado esta ruta:
+         el formulario mostraba "$21.000 a $23.000" y el mensaje que llegaba
+         al equipo decia "desde $21.800". Dos cifras distintas para la misma
+         cita es justo lo que hace que un cliente reclame en la puerta. */
+      lines.push(`*Precio estimado:* ${formatRangoCLP(precio)}`);
       const est = calcularEstimado(data);
       if (est && est.ajustes.length > 0) {
         lines.push(
