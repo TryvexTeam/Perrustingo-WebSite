@@ -16,7 +16,7 @@ export default function NotFound() {
         Esta página se fue a pasear
       </p>
       <p className="mt-3 max-w-xs text-[15px] leading-relaxed text-ink-soft">
-        No encontramos lo que buscas. Quizás el enlace cambió o el perro se lo comió.
+        No encontramos lo que buscas. Quizás el enlace cambió o algún perrito se lo comió.
       </p>
       <div className="mt-8 flex flex-wrap justify-center gap-4">
         <Link

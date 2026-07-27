@@ -49,7 +49,7 @@ export function InfoInteres() {
                 <dt className="font-extrabold">💬 Reservas</dt>
                 <dd className="mt-1 text-ink-soft">
                   Agendamos directo por WhatsApp: envíanos el nombre, la raza o
-                  tamaño de tu perro y el servicio que necesitas.
+                  tamaño de tu perro o perra y el servicio que necesitas.
                 </dd>
               </div>
               <div>

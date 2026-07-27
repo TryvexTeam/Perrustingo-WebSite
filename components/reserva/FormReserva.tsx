@@ -301,7 +301,7 @@ type PasoId =
 
 /** Pasos que se repiten por perrito, en orden. */
 const PASOS_PERRO: { id: PasoId; pregunta: string; hint?: string }[] = [
-  { id: "nombre", pregunta: "¿Cómo se llama tu perro?" },
+  { id: "nombre", pregunta: "¿Cómo se llama tu perro o perra?" },
   { id: "raza", pregunta: "¿Qué raza es?" },
   { id: "edad", pregunta: "¿Qué edad tiene?", hint: "Aproximada está bien" },
   { id: "primera", pregunta: "¿Es su primera peluquería? ✨", hint: "En Perrustingo las primeras visitas son especiales: presentamos todo con calma para que crezca sin miedo" },

@@ -11,7 +11,7 @@ import { obtenerOfertasActivas } from "@/lib/ofertasDatos";
 export const metadata: Metadata = {
   title: "Reserva tu cita — Perrustingo",
   description:
-    "Completa el formulario con los datos de tu perro y recibe tu reserva lista para enviar por WhatsApp. Precio estimado en tiempo real.",
+    "Completa el formulario con los datos de tu perro o perra y recibe tu reserva lista para enviar por WhatsApp. Precio estimado en tiempo real.",
 };
 
 /* Reservar NO exige cuenta (PRP-003 F1, 26-jul). Antes sí, y cada visitante
@@ -109,7 +109,7 @@ export default async function ReservaPage({
               ¿Creamos tu cuenta?
             </h1>
             <p className="mx-auto mt-4 max-w-sm text-[15px] leading-relaxed text-ink-soft">
-              Con cuenta guardamos la ficha de tu perrito, ves tu historial de
+              Con cuenta guardamos la ficha de tu perro o perra, ves tu historial de
               visitas y no vuelves a escribir tus datos. Pero si prefieres,
               puedes reservar sin crear nada.
             </p>
@@ -169,7 +169,7 @@ export default async function ReservaPage({
             Reserva inteligente
           </p>
           <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
-            Cuéntanos sobre tu perro
+            Cuéntanos sobre tu perro o perra
           </h1>
           <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-ink-soft">
             Llena el formulario y te generamos el mensaje listo para WhatsApp —

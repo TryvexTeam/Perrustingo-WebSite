@@ -158,7 +158,7 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
         {/* Detalle del formulario */}
         <section className="mb-4 rounded-2xl border border-zinc-100 p-4">
           <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-teal-dark">
-            Ficha del perro
+            Ficha de la mascota
           </h3>
           <dl className="space-y-1.5 text-sm">
             {Object.entries(detalle).map(([clave, valor]) =>

@@ -34,7 +34,7 @@ export function Publicidad() {
             ¿Tienes un negocio para mascotas?
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-center text-sm leading-relaxed text-ink-soft">
-            Llega directamente a los dueños de perros de Renca y Santiago.
+            Llega directamente a las familias con perros y perras de Renca y Santiago.
             Contáctanos para conocer disponibilidad y tarifas.
           </p>
         </Reveal>

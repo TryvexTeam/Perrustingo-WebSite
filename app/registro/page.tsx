@@ -5,7 +5,7 @@ import { SiteMenu } from "@/components/layout/SiteMenu";
 
 export const metadata: Metadata = {
   title: "Crear cuenta — Perrustingo",
-  description: "Regístrate para guardar los datos de tu perro y agendar más rápido.",
+  description: "Regístrate para guardar los datos de tu perro o perra y agendar más rápido.",
 };
 
 export default function RegistroPage() {
@@ -22,7 +22,7 @@ export default function RegistroPage() {
               Crea tu cuenta
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-              Guarda los datos de tu perro y agenda más rápido la próxima vez.
+              Guarda los datos de tu perro o perra y agenda más rápido la próxima vez.
             </p>
           </div>
           <Suspense>

@@ -20,11 +20,11 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://perrustingo.cl"),
   title: "Perrustingo — Peluquería Canina en Renca",
   description:
-    "Bañamos, cortamos y consentimos a tu perro en Renca, Santiago. 4.6★ en Google con más de 135 opiniones. Agenda tu cita por WhatsApp.",
+    "Bañamos, cortamos y consentimos a tu perro o perra en Renca, Santiago. 4.6★ en Google con más de 135 opiniones. Agenda tu cita por WhatsApp.",
   openGraph: {
     title: "Perrustingo — Peluquería Canina en Renca",
     description:
-      "Bañamos, cortamos y consentimos a tu perro en Renca. 4.6★ · +135 opiniones en Google.",
+      "Bañamos, cortamos y consentimos a tu perro o perra en Renca. 4.6★ · +135 opiniones en Google.",
     url: "https://perrustingo.cl",
     siteName: "Perrustingo",
     images: [
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Perrustingo — Peluquería Canina en Renca",
     description:
-      "Bañamos, cortamos y consentimos a tu perro en Renca. 4.6★ · +135 opiniones en Google.",
+      "Bañamos, cortamos y consentimos a tu perro o perra en Renca. 4.6★ · +135 opiniones en Google.",
     images: ["/hero/hero-bg.png"],
   },
 };
@@ -57,7 +57,7 @@ const jsonLd = {
   "@type": "LocalBusiness",
   name: "Perrustingo",
   description:
-    "Peluquería canina en Renca, Santiago. Baño, corte y cuidado integral para tu perro.",
+    "Peluquería canina en Renca, Santiago. Baño, corte y cuidado integral para tu perro o perra.",
   url: "https://perrustingo.cl",
   telephone: "+4915237152283",
   image: "https://perrustingo.cl/logo.png",
