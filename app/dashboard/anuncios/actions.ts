@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { TAG_PROMOS } from "@/lib/promosServer";
-import { validarPromo, type Promo } from "@/lib/promos";
+import { normalizarUrlPromo, validarPromo, type Promo } from "@/lib/promos";
 
 interface ResultadoAccion {
   success: boolean;
@@ -73,6 +73,13 @@ export async function guardarPromosAction(promos: Promo[]): Promise<ResultadoAcc
         vertical: p.vertical,
         slot: p.slot,
         orden: p.orden,
+        /* Se guarda normalizada, no como la escribió el admin: "instagram.com/x"
+           entra sin esquema y saldría como enlace relativo a perrustingo.com.
+           `validarPromo` ya rechazó lo que no sea http o https. */
+        url: (() => {
+          const r = normalizarUrlPromo(p.url);
+          return "error" in r ? null : r.url;
+        })(),
         updated_at: new Date().toISOString(),
       })),
       { onConflict: "id" }

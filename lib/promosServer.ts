@@ -22,7 +22,7 @@ export async function obtenerPromosServer(): Promise<Promo[]> {
 
   try {
     const respuesta = await fetch(
-      `${url}/rest/v1/promos?select=id,nombre,img,alt,vertical,slot,orden&order=orden`,
+      `${url}/rest/v1/promos?select=id,nombre,img,alt,vertical,slot,orden,url&order=orden`,
       {
         headers: { apikey: key, Authorization: `Bearer ${key}` },
         next: { tags: [TAG_PROMOS], revalidate: REVALIDAR_SEGUNDOS },
