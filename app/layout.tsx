@@ -23,6 +23,11 @@ export const metadata: Metadata = {
      y cualquier URL con parámetros compiten entre sí por la misma posición
      en vez de sumar. */
   alternates: { canonical: "/" },
+  /* Verificación de Google Search Console (27-jul). Es lo que le permite a
+     Google confirmar que este sitio es nuestro y aceptar el sitemap; sin
+     ella, no hay forma de pedirle que indexe ni de ver por qué palabras nos
+     encuentran. No se puede borrar: si desaparece, la propiedad se cae. */
+  verification: { google: "SzuR0lfq8KqMbMKR_FyckfkUDpvRIx1bEDVMqz-f17M" },
   title: {
     default: "Peluquería Canina en Renca — Perrustingo",
     template: "%s · Perrustingo",
