@@ -124,9 +124,12 @@ export interface FormData {
   tipoPelo: TipoPelo | "";
   tipoPeloOtro: string;
   // Paso 3 — salud y temperamento
-  unasEncarnadas: "si" | "no" | "";
-  secrecionOcular: "si" | "no" | "";
-  tieneAlergia: "si" | "no" | "";
+  /* "no_lo_se" es una respuesta legítima, no un campo sin llenar: mucha
+     gente no le ha mirado las uñas a su perro. Obligar a elegir sí o no
+     produce datos inventados, y un "no" falso hace que el equipo no revise. */
+  unasEncarnadas: "si" | "no" | "no_lo_se" | "";
+  secrecionOcular: "si" | "no" | "no_lo_se" | "";
+  tieneAlergia: "si" | "no" | "no_lo_se" | "";
   cualAlergia: string;
   temperamentoGeneral: Temperamento | "complicado" | "";
   conPatitas: Temperamento | "";
@@ -269,6 +272,14 @@ export function buildWhatsAppMessage(
   if (data.unasEncarnadas === "si") saludItems.push("uñas encarnadas");
   if (data.secrecionOcular === "si") saludItems.push("secreción ocular");
   if (data.tieneAlergia === "si" && data.cualAlergia) saludItems.push(`alergia: ${data.cualAlergia}`);
+  /* Lo que el dueño no sabe también viaja: es justamente lo que el equipo
+     tiene que mirar al recibir al perrito. */
+  const porRevisar = [
+    data.unasEncarnadas === "no_lo_se" && "uñas",
+    data.secrecionOcular === "no_lo_se" && "ojos",
+    data.tieneAlergia === "no_lo_se" && "alergias",
+  ].filter(Boolean) as string[];
+  if (porRevisar.length > 0) saludItems.push(`por revisar: ${porRevisar.join(", ")}`);
 
   const tempGeneral =
     data.temperamentoGeneral === "complicado"
@@ -360,6 +371,12 @@ export function construirDetalle(data: FormData): Record<string, string> {
   if (data.unasEncarnadas === "si") salud.push("uñas encarnadas");
   if (data.secrecionOcular === "si") salud.push("secreción ocular");
   if (data.tieneAlergia === "si" && data.cualAlergia) salud.push(`alergia: ${data.cualAlergia}`);
+  const dudas = [
+    data.unasEncarnadas === "no_lo_se" && "uñas",
+    data.secrecionOcular === "no_lo_se" && "ojos",
+    data.tieneAlergia === "no_lo_se" && "alergias",
+  ].filter(Boolean) as string[];
+  if (dudas.length > 0) salud.push(`por revisar: ${dudas.join(", ")}`);
 
   const zonas = (
     [

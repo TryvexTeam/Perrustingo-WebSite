@@ -1096,12 +1096,20 @@ export function FormReserva({
                 ["secrecionOcular", "Secreción ocular"],
                 ["tieneAlergia", "¿Enfermedad o alergia?"],
               ] as [keyof FormData, string][]).map(([key, label]) => (
-                <div key={key} className="flex items-center justify-between gap-3">
+                /* "No lo sé" es una respuesta real (pedido del señor Ignacio,
+                   27-jul): poca gente le ha revisado las uñas o los ojos a su
+                   perro. Sin esa opción, quien no sabe marca "No" para poder
+                   seguir — y ese "No" falso hace que el equipo no revise. */
+                <div key={key} className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-bold text-ink">{label}</p>
                   <div className="flex gap-2">
-                    {(["si", "no"] as const).map((v) => (
+                    {([
+                      ["si", "Sí"],
+                      ["no", "No"],
+                      ["no_lo_se", "No lo sé"],
+                    ] as const).map(([v, etiqueta]) => (
                       <Chip key={v} active={data[key] === v} onClick={() => upd(key, v)}>
-                        {v === "si" ? "Sí" : "No"}
+                        {etiqueta}
                       </Chip>
                     ))}
                   </div>
