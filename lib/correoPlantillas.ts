@@ -24,10 +24,22 @@ const ORANGE_SOFT = "#fdeed8";
    apuntarlo al origen de turno dejaría el hueco de una imagen rota en cada
    prueba.
 
-   Es `icon-192.png` y no `logo.jpeg` por peso: el jpeg pesa 2,1 MB, el png
-   47 KB, y son el mismo dibujo. Dos megas que se bajan cada vez que alguien
-   abre el correo, en el celular y con datos, para verlo a 56 píxeles. */
-const URL_LOGO = "https://perrustingo.com/icon-192.png";
+   `logo-correo.jpg` se genera desde `logo.jpeg`, el logo vigente, y existe
+   por dos razones:
+
+   · Peso. El original son 2,1 MB para verse a 64 píxeles, y esos megas se
+     bajan cada vez que alguien abre el correo, en el celular y con datos.
+     Recortado y comprimido queda en 15 KB — la misma imagen, 145 veces más
+     liviana.
+   · Legibilidad. El logo completo lleva un anillo de herramientas y el
+     nombre escrito; a 64 píxeles todo eso se vuelve un manchón. El recorte
+     deja el perrito dentro del corazón, que es lo que se reconoce en
+     pequeño, y el nombre lo pone el texto de al lado.
+
+   Ojo si se regenera: NO usar `icon-*.png` ni `logo.png`. Esos son el logo
+   ANTIGUO (el perro beige sobre verde) y siguen en `public/` — me equivoqué
+   con ellos la primera vez. El vigente es `logo.jpeg`. */
+const URL_LOGO = "https://perrustingo.com/logo-correo.jpg";
 
 /** Un perrito, con lo que el correo necesita mostrar de él. */
 export interface PerroCorreo {
@@ -108,8 +120,8 @@ function envoltura(contenido: string, preheader: string, pie: string): string {
         <tr><td style="background:${TEAL_INK};padding:22px 32px;">
           <table role="presentation" cellpadding="0" cellspacing="0"><tr>
             <td style="padding-right:14px;vertical-align:middle;">
-              <img src="${URL_LOGO}" width="60" height="60" alt="Perrustingo"
-                   style="display:block;width:60px;height:60px;border:0;border-radius:14px;background:#ffffff;">
+              <img src="${URL_LOGO}" width="64" height="64" alt="Perrustingo"
+                   style="display:block;width:64px;height:64px;border:0;border-radius:14px;background:#ffffff;">
             </td>
             <td style="vertical-align:middle;">
               <div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:bold;color:#ffffff;letter-spacing:-0.5px;">Perrustingo</div>
