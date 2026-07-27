@@ -17,6 +17,8 @@ import {
   formatCLP,
   formatRangoCLP,
   conEnlaceFicha,
+  conEnlacesFoto,
+  type FotoEnMensaje,
   montoDeAjuste,
   textoDeAjuste,
   hayConflicto,
@@ -31,7 +33,7 @@ import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
 import { useAjustesPorTamano } from "@/lib/ajustesPrecio";
 import { fotoValida, subirFotoReserva } from "@/lib/fotos";
-import { WHATSAPP_NUMBER } from "@/lib/site";
+import { WHATSAPP_NUMBER, hayWhatsAppConfigurado } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
 import { compartirFotos, puedeCompartirFotos } from "@/lib/compartir";
 import {
@@ -761,54 +763,31 @@ export function FormReserva({
     }
     setEnviando(true);
 
-    /* ── La foto tiene que llegar al chat ──────────────────────────────
+    /* ── Primero el destinatario correcto, después la foto ─────────────
 
-       Pedido del señor Ignacio (27-jul): que el mensaje llegue CON la foto.
+       El 27-jul se probó desde el celular del señor Ignacio y apareció el
+       problema que manda en este diseño: la hoja de compartir del teléfono
+       —el único camino por el que una web puede meter una imagen dentro de
+       un chat— NO permite fijar a quién se le manda. Abre WhatsApp y pide
+       elegir un contacto. Si Perrustingo no está en la agenda del cliente,
+       no lo encuentra, y el mensaje se pierde o le llega a otra persona.
 
-       El enlace `wa.me?text=` no puede: transporta texto y nada más. La
-       única forma desde una web es `navigator.share` con archivos — la hoja
-       de compartir del teléfono, donde el cliente elige WhatsApp. Por ahí la
-       imagen entra al chat como imagen.
+       `wa.me/<numero>` sí fija el destinatario: abre el chat del salón
+       aunque el cliente nunca lo haya agendado. Lo que no puede es llevar
+       archivos.
 
-       Y tiene que ser LO PRIMERO que ocurra tras el clic. `navigator.share`
-       exige "activación del usuario": si se llama después de esperar la
-       subida de fotos y la respuesta del servidor, el navegador ya considera
-       vencido el gesto y lo rechaza sin decir por qué. Por eso el mensaje se
-       arma acá con lo que ya está en pantalla, sin esperar nada.
+       Entre "llega con foto pero quizá a nadie" y "llega seguro al salón,
+       con la foto a un clic de distancia", manda lo segundo. La foto no se
+       pierde: se sube al servidor y queda en la ficha de la cita, que es
+       donde el equipo la mira para preparar el corte. El mensaje lleva el
+       enlace a esa ficha, y después de enviarlo queda el botón para adjuntar
+       la imagen al chat si el cliente quiere. */
 
-       Lo que se pierde en este camino es el enlace a la ficha (todavía no
-       existe el id de la cita). A cambio el equipo recibe la foto, que es lo
-       que sirve para preparar el corte. La cita queda registrada igual y
-       aparece en el panel. */
-    const archivosParaEnviar = fotos
-      .slice(0, cantidad)
-      .flatMap((f) => [f?.actual, f?.referencia])
-      .filter((f): f is File => Boolean(f));
-
-    const mensajeInmediato = buildWhatsAppMessageMulti(
-      perros.slice(0, cantidad).map((p) => {
-        const { estimado, esManual } = estimadoDe(p);
-        return { data: p, esManual, estimado };
-      }),
-      { fechaDeseada, servicio, contactoNombre: datosContacto.nombre }
-    );
-
-    const compartiendoConFoto =
-      archivosParaEnviar.length > 0 && puedeCompartirFotos(archivosParaEnviar);
-
-    /* Solo se abre la pestaña de WhatsApp si NO vamos por la hoja de
-       compartir: abrir las dos dejaría al cliente con dos caminos y el
-       mensaje duplicado. */
-    const win = compartiendoConFoto ? null : window.open("about:blank", "_blank");
-
-    if (compartiendoConFoto) {
-      void compartirFotos(archivosParaEnviar, mensajeInmediato).then((r) => {
-        /* Si la hoja se cierra sin elegir (AbortError) no se muestra error:
-           es el cliente diciendo "mejor no". Pero sí queda el botón para
-           reintentar, porque su reserva ya está tomada. */
-        if (!r.ok && r.error) setAvisoCompartir(r.error);
-      });
-    }
+    /* Sin número configurado no se abre nada. Antes había uno de prueba
+       escrito en el código y las reservas se le mandaban a un desconocido:
+       preferible que el cliente vea "no pudimos abrir WhatsApp" —su reserva
+       queda igual en el panel— a que sus datos salgan hacia cualquier lado. */
+    const win = hayWhatsAppConfigurado() ? window.open("about:blank", "_blank") : null;
 
     void (async () => {
       const supabase = createClient();
@@ -918,27 +897,61 @@ export function FormReserva({
         (p) => p.fotoActualRuta || p.fotoReferenciaRuta
       );
 
-      const mensaje = conEnlaceFicha(
-        buildWhatsAppMessageMulti(
-          perros.slice(0, cantidad).map((p) => {
-            const { estimado, esManual } = estimadoDe(p);
-            return { data: p, esManual, estimado };
-          }),
-          { fechaDeseada, servicio, contactoNombre: datosContacto.nombre }
+      /* Las fotos van DENTRO del mensaje, como enlaces con vista previa. Es
+         lo más cerca del adjunto que permite `wa.me`, y a diferencia de la
+         hoja de compartir no depende de que el cliente elija bien el chat.
+
+         Solo se enlaza lo que existe de verdad: cada entrada se arma con la
+         ruta que volvió de la subida y con el id que devolvió el servidor.
+         Un enlace a una foto que no se guardó le muestra al equipo un 404 y
+         le enseña a no abrirlos más. */
+      const fotosDelMensaje: FotoEnMensaje[] = idsCreadas
+        .map((sesionId, i) => {
+          const p = perrosPayload[i];
+          const tipos: ("antes" | "referencia")[] = [];
+          if (p?.fotoActualRuta) tipos.push("antes");
+          if (p?.fotoReferenciaRuta) tipos.push("referencia");
+          return {
+            sesionId,
+            nombre: perros[i]?.nombrePerro?.trim() || `perrito ${i + 1}`,
+            tipos,
+          };
+        })
+        .filter((f) => f.tipos.length > 0);
+
+      const mensaje = conEnlacesFoto(
+        conEnlaceFicha(
+          buildWhatsAppMessageMulti(
+            perros.slice(0, cantidad).map((p) => {
+              const { estimado, esManual } = estimadoDe(p);
+              return { data: p, esManual, estimado };
+            }),
+            { fechaDeseada, servicio, contactoNombre: datosContacto.nombre }
+          ),
+          idsCreadas.length > 0
+            ? { origen: window.location.origin, ids: idsCreadas, conFotos: hayFotos }
+            : null
         ),
-        idsCreadas.length > 0
-          ? { origen: window.location.origin, ids: idsCreadas, conFotos: hayFotos }
-          : null
+        window.location.origin,
+        fotosDelMensaje
       );
+      if (!hayWhatsAppConfigurado()) {
+        setAvisoCompartir(
+          "Tu solicitud quedó registrada, pero no pudimos abrir WhatsApp desde el sitio. El equipo la ve en su panel y te contactará."
+        );
+        setEnviando(false);
+        return;
+      }
+
       const waUrl = WHATSAPP_BASE + encodeURIComponent(mensaje);
       // Se guarda SIEMPRE, antes de intentar abrir nada.
       setUrlWhatsApp(waUrl);
       if (win) {
         win.location.href = waUrl;
-      } else if (!compartiendoConFoto) {
-        /* Sin pestaña y sin hoja de compartir: se navega en la misma. Si el
-           cliente ya está compartiendo la foto NO se le arrastra a otra
-           pantalla en medio de la operación. */
+      } else {
+        /* El navegador bloqueó la pestaña (pasa en iOS cuando el clic quedó
+           lejos en el tiempo). Se navega en la misma: perder la pestaña es
+           molesto, perder el mensaje es perder la reserva. */
         window.location.href = waUrl;
       }
       setEnviando(false);
@@ -1720,26 +1733,39 @@ export function FormReserva({
                 </p>
               )}
 
-              {/* PRP-002 F6, vía B. WhatsApp no deja adjuntar la imagen desde
-                  un enlace `wa.me`: solo viaja texto. La hoja de compartir del
-                  teléfono sí la entrega como imagen, pero es un segundo toque
-                  y solo existe en móvil.
+              {/* PRP-002 F6. Paso opcional y explícito, no automático.
 
-                  Por eso el botón aparece únicamente si el navegador declara
-                  que puede compartir ESTOS archivos. Ofrecer un botón que
-                  después falla es peor que no ofrecerlo. */}
-              {/* Reintento. La foto se comparte sola al confirmar; este botón
-                  existe para quien cerró la hoja sin querer o eligió otra app.
-                  Sin él, esa persona se queda sin forma de mandar la foto y
-                  su reserva llega a medias. */}
-              {puedeCompartir && (
-                <button
-                  type="button"
-                  onClick={compartirLaFoto}
-                  className="w-full rounded-full border-2 border-teal px-5 py-3 font-display text-sm font-extrabold text-teal-dark transition-colors hover:bg-[#d5efe2]"
-                >
-                  📷 Enviar la foto de nuevo
-                </button>
+                  Automático fue el primer diseño y estaba mal: la hoja de
+                  compartir no permite fijar destinatario, así que el cliente
+                  terminaba eligiendo un contacto a mano —y si no tenía a
+                  Perrustingo agendado, no lo encontraba—. Ahora el mensaje ya
+                  salió al chat correcto por `wa.me`; esto solo agrega la
+                  imagen, y por eso el texto avisa que hay que elegir el mismo
+                  chat. El botón aparece únicamente si el navegador declara que
+                  puede compartir ESTOS archivos: ofrecer uno que después falla
+                  es peor que no ofrecerlo. */}
+              {/* `urlWhatsApp` y no solo `puedeCompartir`: el texto habla de
+                  "la misma conversación que acabas de abrir", y antes de
+                  confirmar esa conversación no existe. Se veía ofreciendo
+                  adjuntar una foto a un chat que todavía no se abría. */}
+              {puedeCompartir && urlWhatsApp && (
+                <div className="rounded-2xl bg-[#eaf7f1] px-4 py-4">
+                  <p className="text-center text-xs font-semibold leading-relaxed text-teal-ink">
+                    Tu foto ya quedó guardada en la ficha y el equipo la ve al
+                    abrir tu cita. Si además la quieres en el chat:
+                  </p>
+                  <button
+                    type="button"
+                    onClick={compartirLaFoto}
+                    className="mt-3 w-full rounded-full border-2 border-teal px-5 py-3 font-display text-sm font-extrabold text-teal-dark transition-colors hover:bg-[#d5efe2]"
+                  >
+                    Adjuntar la foto al chat
+                  </button>
+                  <p className="mt-2 text-center text-[11px] leading-relaxed text-ink-soft">
+                    Se abrirá el menú de tu teléfono: elige WhatsApp y luego la
+                    misma conversación de Perrustingo que acabas de abrir.
+                  </p>
+                </div>
               )}
               {avisoCompartir && (
                 <p className="text-center text-xs font-semibold text-ink-soft">
