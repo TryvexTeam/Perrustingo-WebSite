@@ -18,15 +18,19 @@ export function Footer() {
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center justify-items-center gap-6 md:grid-cols-3">
           <nav
             aria-label="Enlaces legales"
-            className="flex gap-6 text-xs font-bold uppercase tracking-wide text-teal-ink md:justify-self-start"
+            /* -my-2 compensa el padding: el area tactil crece a 32px pero la
+               fila ocupa lo mismo de alto que antes. Con 16px de alto estos
+               enlaces quedaban por debajo del minimo tocable (WCAG 2.5.8) y
+               en un telefono se fallaba el toque. */
+            className="-my-2 flex gap-6 text-xs font-bold uppercase tracking-wide text-teal-ink md:justify-self-start"
           >
-            <Link href="/politicas" className="transition-colors hover:text-teal-dark">
+            <Link href="/politicas" className="inline-flex items-center py-2 transition-colors hover:text-teal-dark">
               Políticas
             </Link>
-            <Link href="/#advertencias" className="transition-colors hover:text-teal-dark">
+            <Link href="/#advertencias" className="inline-flex items-center py-2 transition-colors hover:text-teal-dark">
               Advertencias
             </Link>
-            <Link href="/#visita" className="transition-colors hover:text-teal-dark">
+            <Link href="/#visita" className="inline-flex items-center py-2 transition-colors hover:text-teal-dark">
               Contacto
             </Link>
           </nav>
@@ -41,12 +45,12 @@ export function Footer() {
             />
           </Link>
 
-          <div className="flex items-center gap-5 text-sm font-bold text-teal-ink md:justify-self-end">
+          <div className="-my-2 flex items-center gap-5 text-sm font-bold text-teal-ink md:justify-self-end">
             <a
               href={SITE.instagram}
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors hover:text-teal-dark"
+              className="inline-flex items-center py-2 transition-colors hover:text-teal-dark"
             >
               Instagram
             </a>
@@ -54,7 +58,7 @@ export function Footer() {
               href={SITE.facebook}
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors hover:text-teal-dark"
+              className="inline-flex items-center py-2 transition-colors hover:text-teal-dark"
             >
               Facebook
             </a>

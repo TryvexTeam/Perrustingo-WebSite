@@ -106,7 +106,7 @@ export function EnVivoLanding() {
         </span>
         <Link
           href="/agenda"
-          className="text-sm font-extrabold text-teal-dark underline-offset-2 hover:underline"
+          className="-my-1.5 inline-flex items-center py-1.5 text-sm font-extrabold text-teal-dark underline-offset-2 hover:underline"
         >
           Ver agenda →
         </Link>

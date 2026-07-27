@@ -14,7 +14,7 @@ export function AntesDespues() {
               href="https://instagram.com/perrustingo"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-bold uppercase tracking-wide text-teal-dark transition-colors hover:text-teal-ink"
+              className="-my-2 inline-flex items-center py-2 text-sm font-bold uppercase tracking-wide text-teal-dark transition-colors hover:text-teal-ink"
             >
               Ver más en Instagram →
             </a>
