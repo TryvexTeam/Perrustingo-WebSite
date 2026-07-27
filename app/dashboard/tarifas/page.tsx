@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Footer } from "@/components/layout/Footer";
 import { SiteMenu } from "@/components/layout/SiteMenu";
 import { EditorTarifas } from "@/components/admin/EditorTarifas";
+import { EditorTramos } from "@/components/admin/EditorTramos";
 import { EditorAjustesPrecio } from "@/components/admin/EditorAjustesPrecio";
 
 export const metadata: Metadata = {
@@ -27,6 +28,13 @@ export default function TarifasPage() {
             formulario de reserva.
           </p>
 
+          {/* Va primero porque es el que manda: el precio base sale del tramo
+              por peso. El editor por tamaño de abajo sigue sirviendo para los
+              cachorros de raza conocida (que se cobran por el tamaño adulto) y
+              como red si la tabla de tramos quedara vacía. */}
+          <div className="mt-8">
+            <EditorTramos />
+          </div>
           <div className="mt-8">
             <EditorTarifas />
           </div>

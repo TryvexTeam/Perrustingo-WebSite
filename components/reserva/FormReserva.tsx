@@ -32,6 +32,8 @@ import {
 } from "@/lib/reserva";
 import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
+import { useTramos } from "@/lib/tramosDatos";
+import { precioDe } from "@/lib/tramos";
 import { useAjustesPorTamano } from "@/lib/ajustesPrecio";
 import { fotoValida, subirFotoReserva } from "@/lib/fotos";
 import { WHATSAPP_NUMBER, hayWhatsAppConfigurado } from "@/lib/site";
@@ -516,6 +518,7 @@ export function FormReserva({
   }, [tieneCuenta]);
 
   const tarifas = useTarifas();
+  const tramos = useTramos();
   const ajustes = useAjustesPorTamano();
   // Los descuentos globales (cupón, primera cita) NO son por tamaño: se
   // muestran una sola vez para toda la reserva, que puede tener perritos
@@ -734,7 +737,12 @@ export function FormReserva({
      Acumularlos puede dejar el precio bajo el costo, así que gana el mayor.
      La oferta sale de la tabla `ofertas` — el mismo dato que ve el cliente
      en la invitación, así que lo prometido es lo que se cobra. */
-  const baseParaComparar = tarifas.base[detectarTamanoPorPeso(parseFloat(data.pesoKg) || 10)];
+  /* Se compara contra el mismo precio que se va a cobrar (el del tramo), no
+     contra el de la tabla vieja: si difieren, un porcentaje de descuento se
+     calcularía sobre una base que el cliente nunca ve. */
+  const pesoParaComparar = parseFloat(data.pesoKg) || 10;
+  const baseParaComparar =
+    precioDe(tramos, pesoParaComparar) ?? tarifas.base[detectarTamanoPorPeso(pesoParaComparar)];
   const ofertaVigente = mejorOferta(
     ofertas,
     { conCuenta: tieneCuenta, visitasPrevias },
@@ -786,11 +794,31 @@ export function FormReserva({
       if (descuentoGlobal) extra.push(descuentoGlobal);
 
       return {
-        estimado: calcularEstimado(d, baseCachorro ?? tarifas.base[tamanoAuto], extra, cfg),
+        /* El precio base sale del TRAMO por peso (migración 026), no del tamaño.
+           Ése era el defecto que encontró el cliente probando la página: un
+           perrito de 8 kg caía en "Pequeño (6–10 kg)" y cobraba $20.000 cuando
+           corresponden $25.000–$30.000. Con cinco escalones, los bordes siempre
+           cobran de menos.
+
+           El orden de los `??` importa y no es casual:
+           1. `baseCachorro` manda cuando es cachorro de raza conocida — se cobra
+              por el tamaño que va a tener de adulto, no por lo que pesa hoy.
+           2. si no, el tramo que corresponde a su peso real.
+           3. si no hay tramos (base caída), la tabla por tamaño. Cobrar de menos
+              es mejor que no poder cotizar, pero nunca es la primera opción. */
+        estimado: calcularEstimado(
+          d,
+          baseCachorro ?? precioDe(tramos, peso) ?? tarifas.base[tamanoAuto],
+          extra,
+          cfg
+        ),
         esManual,
       };
     },
-    [tarifas, ajustes, descuentoGlobal]
+    // `tramos` va en las dependencias o el estimado se queda con la tabla que
+    // había al montar: el admin cambiaría un precio y el formulario seguiría
+    // cotizando el viejo hasta recargar.
+    [tarifas, tramos, ajustes, descuentoGlobal]
   );
 
   const actual = estimadoDe(data);

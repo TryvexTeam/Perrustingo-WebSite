@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { TARIFAS_DEFAULT, type Tarifas } from "@/lib/tarifas";
 import type { FilaAjustePrecioAdmin } from "@/lib/ajustesPrecio";
 import { admiteMontoFijo, TAMANOS, type TamanoKey, type TipoAjuste } from "@/lib/reserva";
+import { validar as validarTramos, type Tramo } from "@/lib/tramos";
 
 interface ResultadoAccion {
   success: boolean;
@@ -257,6 +258,84 @@ export async function guardarAjustesPrecioAction(
     return {
       success: false,
       error: `No se guardó "${filas[sinEfecto].etiqueta.trim()}" (fila faltante o permisos).`,
+    };
+  }
+
+  revalidatePath("/dashboard/tarifas");
+  revalidatePath("/reserva");
+  return { success: true };
+}
+
+/* ── Tramos de precio por peso (migración 026) ─────────────────────────────
+   Pedido del cliente el 27-jul: los cinco tamaños fijos cobraban de menos en
+   los bordes —un perrito de 8 kg salía $20.000 cuando corresponden $25.000 a
+   $30.000— y ajustar eso obligaba a un despliegue. Con esta acción los cortes y
+   los precios se cambian desde el panel. */
+
+/** Guarda la tabla completa de tramos. Solo admin; la RLS de `tramos_precio`
+    exige lo mismo del lado de la base. */
+export async function guardarTramosAction(tramos: Tramo[]): Promise<ResultadoAccion> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Sesión expirada." };
+
+  const { data: perfil } = await supabase
+    .from("perfiles")
+    .select("rol")
+    .eq("id", user.id)
+    .single();
+  if (perfil?.rol !== "admin") {
+    return { success: false, error: "Sin permisos." };
+  }
+
+  // Se valida con el MISMO dominio que usa el formulario público, no con una
+  // copia: dos reglas de validación que se separan es cómo entra una tabla que
+  // el panel acepta y el cotizador no sabe leer.
+  const problemas = validarTramos(tramos);
+  if (problemas.length > 0) {
+    return { success: false, error: problemas.map((p) => p.mensaje).join(" ") };
+  }
+
+  // Se reemplaza la tabla entera dentro de la misma operación: si se borrara
+  // primero y fallara el insert, el sitio quedaría sin ningún tramo y sin poder
+  // cotizar. Por eso el insert va antes que el borrado, y el borrado solo
+  // alcanza a los que ya no están.
+  const filas = tramos.map((t) => ({
+    nombre: t.nombre.trim(),
+    desde_kg: t.desdeKg,
+    precio: t.precio,
+    activo: true,
+  }));
+
+  const { data: guardadas, error: errorInsert } = await supabase
+    .from("tramos_precio")
+    .upsert(filas, { onConflict: "desde_kg" })
+    .select("id, desde_kg");
+
+  if (errorInsert) return { success: false, error: errorInsert.message };
+  if (!guardadas || guardadas.length !== filas.length) {
+    return {
+      success: false,
+      error: `Guardé ${guardadas?.length ?? 0} de ${filas.length} tramos. No borro los anteriores hasta que estén todos.`,
+    };
+  }
+
+  // Recién ahora se limpian los tramos que el admin quitó.
+  const bordesVigentes = tramos.map((t) => t.desdeKg);
+  const { error: errorBorrado } = await supabase
+    .from("tramos_precio")
+    .delete()
+    .not("desde_kg", "in", `(${bordesVigentes.join(",")})`);
+
+  if (errorBorrado) {
+    // Los nuevos ya están guardados y el sitio cotiza bien; lo que quedó es un
+    // tramo viejo de más. Se dice, en vez de reportar un éxito limpio.
+    return {
+      success: false,
+      error: `Los tramos nuevos quedaron guardados, pero no pude eliminar los antiguos: ${errorBorrado.message}`,
     };
   }
 
