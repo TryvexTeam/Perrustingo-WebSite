@@ -505,6 +505,12 @@ export function FormReserva({
      Mientras esté apagado no se le reclama nada. */
   const [intentoAvanzar, setIntentoAvanzar] = useState(false);
 
+  /* Si por lo que sea no se logró abrir WhatsApp, el cliente NO puede
+     quedarse sin manera de mandar su mensaje: se guarda el enlace y se le
+     ofrece un botón. Le pasó al señor Ignacio probando en el celular —vio
+     "tu mensaje salió igual" y no había salido nada—. */
+  const [urlWhatsApp, setUrlWhatsApp] = useState("");
+
   /* Compartir la foto por la hoja del sistema (PRP-002 F6, vía B). */
   const [avisoCompartir, setAvisoCompartir] = useState("");
   const [puedeCompartir, setPuedeCompartir] = useState(false);
@@ -816,12 +822,17 @@ export function FormReserva({
           const f = fotos[i];
           /* Rutas del bucket, no URLs: desde PRP-002 F4 las fotos son
              privadas y el enlace se firma al mirarlas. */
-          const [fotoActualRuta, fotoReferenciaRuta] = user
-            ? await Promise.all([
-                f?.actual ? subirFotoReserva(supabase, user.id, f.actual, i, "actual") : null,
-                f?.referencia ? subirFotoReserva(supabase, user.id, f.referencia, i, "referencia") : null,
-              ])
-            : [null, null];
+          /* Se sube haya o no sesión. Antes esto era `user ? ... : [null,null]`
+             y el resultado fue que la foto del cliente NO se guardaba nunca
+             en el camino sin cuenta —que es el camino normal—. Lo descubrió
+             el señor Ignacio probando desde el celular: adjuntó la foto, la
+             reserva se creó, y en la base había cero fotos. */
+          const [fotoActualRuta, fotoReferenciaRuta] = await Promise.all([
+            f?.actual ? subirFotoReserva(supabase, user?.id ?? null, f.actual, i, "actual") : null,
+            f?.referencia
+              ? subirFotoReserva(supabase, user?.id ?? null, f.referencia, i, "referencia")
+              : null,
+          ]);
           return {
             detalle: construirDetalle(p),
             precioEstimado: estimado?.total ?? null,
@@ -920,6 +931,8 @@ export function FormReserva({
           : null
       );
       const waUrl = WHATSAPP_BASE + encodeURIComponent(mensaje);
+      // Se guarda SIEMPRE, antes de intentar abrir nada.
+      setUrlWhatsApp(waUrl);
       if (win) {
         win.location.href = waUrl;
       } else if (!compartiendoConFoto) {
@@ -1649,6 +1662,17 @@ export function FormReserva({
                     </p>
                   )}
                 </div>
+                {/* Sin esto, el cliente ve "evaluación en puerta" donde
+                    esperaba un precio y no sabe qué hizo mal. Casi siempre es
+                    lo mismo: marcó un tamaño y después escribió un peso que
+                    no calza con ese tamaño. Decirlo permite corregirlo. */}
+                {algunoManual && (
+                  <p className="mt-2 rounded-2xl bg-[#fde4c8] px-4 py-3 text-xs leading-relaxed text-[#7a4d10]">
+                    El tamaño que elegiste no calza con el peso que
+                    escribiste, así que el valor lo confirmamos al verlo. Si
+                    fue un error, puedes volver atrás y corregirlo.
+                  </p>
+                )}
                 <p className="mt-2 text-xs leading-relaxed text-ink-soft">{NOTA_PRECIOS}</p>
               </div>
 
@@ -1666,10 +1690,15 @@ export function FormReserva({
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
                   <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.122 1.528 5.858L0 24l6.335-1.652A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.007-1.37l-.36-.213-3.727.977.994-3.634-.234-.373A9.818 9.818 0 0112 2.182c5.426 0 9.818 4.392 9.818 9.818S17.426 21.818 12 21.818z"/>
                 </svg>
+                {/* Los dos textos tienen que decir que el botón ENVÍA.
+                    "Solicitar evaluación personalizada" a secas se leía como
+                    otra cosa —el señor Ignacio buscó el botón de enviar y
+                    creyó que no estaba—, y si a él le pasó, a un cliente
+                    también. */}
                 {enviando
                   ? "Preparando tu reserva…"
                   : algunoManual
-                    ? "Solicitar evaluación personalizada"
+                    ? "Confirmar y pedir evaluación"
                     : "Confirmar reserva"}
               </button>
 
@@ -1718,10 +1747,30 @@ export function FormReserva({
                 </p>
               )}
               {solicitudEstado === "error" && (
+                /* Antes decía "tu mensaje de WhatsApp salió igual" sin haberlo
+                   comprobado. Le pasó al señor Ignacio: leyó que su mensaje
+                   había salido, y no había salido nada. Un aviso que afirma
+                   lo que no sabe es peor que no avisar. */
                 <p className="rise-in rounded-2xl bg-[#fde4c8] px-5 py-3 text-center text-sm font-semibold text-[#a34d00]">
-                  No pudimos registrar la solicitud en línea, pero tu mensaje de
-                  WhatsApp salió igual — el equipo te responderá por ahí.
+                  No pudimos guardar la solicitud en el sistema. Envía el
+                  mensaje por WhatsApp con el botón de abajo y el equipo te
+                  responde por ahí.
                 </p>
+              )}
+
+              {/* Salida de emergencia: si el navegador bloqueó la ventana, si
+                  la hoja de compartir se cerró, o si algo falló, el cliente
+                  igual tiene cómo mandar su mensaje. Sin esto queda atascado
+                  con la reserva a medias. */}
+              {urlWhatsApp && (
+                <a
+                  href={urlWhatsApp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full rounded-full bg-teal py-3.5 text-center font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform] duration-150 hover:bg-teal-dark active:translate-y-0.5"
+                >
+                  Abrir WhatsApp y enviar el mensaje
+                </a>
               )}
             </div>
           )}

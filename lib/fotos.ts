@@ -39,7 +39,11 @@ export function fotoValida(file: File): string | null {
     Falla suave: una foto caída nunca debe botar la reserva completa. */
 export async function subirFotoReserva(
   supabase: SupabaseClient,
-  uid: string,
+  /* `null` cuando el cliente reserva sin cuenta, que es el camino normal
+     desde PRP-003. Antes esta función exigía un uid y, sin él, la foto
+     simplemente no se subía: la reserva se creaba, el panel quedaba vacío y
+     nadie se enteraba. La foto del "antes" no llegaba casi nunca. */
+  uid: string | null,
   file: File,
   perroIndex: number,
   tag: TagFoto
@@ -50,7 +54,13 @@ export async function subirFotoReserva(
     // demasiado. Subirlo igual sería justo lo que la compresión evita.
     if (!comprimida) return null;
 
-    const ruta = `${uid}/${Date.now()}-perro${perroIndex + 1}-${tag}.${comprimida.extension}`;
+    /* Sin sesión va a `anon/`, la carpeta que habilita la migración 023.
+       El nombre lleva un identificador aleatorio para que dos personas
+       reservando a la vez no choquen — sin uid, el timestamp solo no
+       alcanza. */
+    const carpeta = uid ?? "anon";
+    const sufijo = uid ? "" : `-${crypto.randomUUID().slice(0, 8)}`;
+    const ruta = `${carpeta}/${Date.now()}${sufijo}-perro${perroIndex + 1}-${tag}.${comprimida.extension}`;
     const { error } = await supabase.storage.from(BUCKET_FOTOS).upload(ruta, comprimida.blob, {
       cacheControl: "3600",
       contentType: comprimida.tipo,
