@@ -251,6 +251,8 @@ export default async function DashboardPage() {
               { label: "Anuncios", href: "/dashboard/anuncios", emoji: "📣", onlyAdmin: true },
               { label: "Usuarios", href: "/dashboard/usuarios", emoji: "👥", onlyAdmin: true },
               { label: "Disponibilidad", href: "/dashboard/disponibilidad", emoji: "🕘", onlyAdmin: true },
+              { label: "Ofertas", href: "/dashboard/ofertas", emoji: "🎁", onlyAdmin: true },
+              { label: "Descargar respaldo", href: "/api/respaldo", emoji: "💾", onlyAdmin: true },
             ]
               .filter((a) => !a.onlyAdmin || perfil.rol === "admin")
               .map((accion) => (
@@ -264,6 +266,19 @@ export default async function DashboardPage() {
                 </a>
               ))}
           </div>
+
+          {/* El plan gratuito de Supabase NO incluye respaldos (verificado en
+              el panel el 26-jul). Decirlo acá, donde está el botón, en vez de
+              dejar que alguien asuma que "seguro el proveedor los tiene". */}
+          {perfil.rol === "admin" && (
+            <p className="mt-4 rounded-2xl bg-[#fde4c8] px-5 py-4 text-xs leading-relaxed text-[#7a4d10]">
+              💾 <strong>El plan actual de la base de datos no hace respaldos
+              automáticos.</strong> Si se pierden los datos, no hay de dónde
+              recuperarlos. Descargue el respaldo cada cierto tiempo y guárdelo
+              fuera del computador del local — o considere el plan pago, que
+              respalda a diario.
+            </p>
+          )}
         </div>
       </main>
       <Footer />
