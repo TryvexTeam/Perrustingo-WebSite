@@ -19,15 +19,17 @@ interface Resultado {
    reventaría en producción con un error críptico. */
 const TIPO_DESPUES = "despues";
 
+/* `<uid>/<archivo>`: la ruta que produce lib/fotos.ts y la única forma que
+   la policy de storage acepta. Se valida acá porque, aunque la genere
+   nuestro propio código, llega por la red — sin esto, cualquiera con sesión
+   podría dejar la "evidencia" apuntando a otra carpeta. */
+const RUTA_VALIDA = /^[0-9a-f-]{36}\/[A-Za-z0-9._-]+$/;
+
 export async function registrarFotoResultado(
   citaId: string,
-  url: string
+  ruta: string
 ): Promise<Resultado> {
-  // La URL la produce el cliente. Aunque venga de nuestro propio código,
-  // llega por la red: si no se valida, cualquiera con sesión podría dejar
-  // apuntada la "evidencia" a un sitio ajeno.
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!base || !url.startsWith(`${base}/storage/v1/object/public/reservas/`)) {
+  if (!RUTA_VALIDA.test(ruta)) {
     return { success: false, error: "La foto no quedó guardada correctamente." };
   }
 
@@ -54,7 +56,7 @@ export async function registrarFotoResultado(
     .insert({
       sesion_id: citaId,
       tipo: TIPO_DESPUES,
-      url,
+      ruta,
       subida_por: user.id,
     })
     .select("id");

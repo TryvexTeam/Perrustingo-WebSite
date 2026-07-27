@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { subirFotoResultado } from "@/lib/fotos";
+import { subirFotoResultado, rutaDeFoto, firmarFotos } from "@/lib/fotos";
 import { registrarFotoResultado } from "@/app/dashboard/citas/fotos-actions";
 
 /* Las fotos de una cita: lo que trajo el cliente y lo que dejó el equipo
@@ -19,7 +19,10 @@ import { registrarFotoResultado } from "@/app/dashboard/citas/fotos-actions";
 interface FotoSesion {
   id: string;
   tipo: string;
-  url: string;
+  /** Ruta dentro del bucket privado (lo normal desde PRP-002 F4). */
+  ruta: string | null;
+  /** URL pública de las filas viejas — se conserva para no perderlas. */
+  url: string | null;
   notas: string | null;
   subida_por: string | null;
   created_at: string | null;
@@ -31,6 +34,34 @@ interface FotosCitaProps {
   estado: string;
 }
 
+/* Una miniatura que sabe qué hacer cuando el enlace todavía no llegó o no se
+   pudo firmar: mostrar un hueco honesto en vez de un ícono de imagen rota. */
+function Miniatura({ enlace, alt, pie }: { enlace: string | null; alt: string; pie: string }) {
+  if (!enlace) {
+    return (
+      <div>
+        <div className="flex h-28 w-full items-center justify-center rounded-xl bg-cream text-[11px] font-semibold text-ink-soft">
+          Cargando…
+        </div>
+        <span className="mt-1 block text-[11px] font-bold text-ink-soft">{pie}</span>
+      </div>
+    );
+  }
+  return (
+    <a href={enlace} target="_blank" rel="noopener noreferrer">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={enlace}
+        alt={alt}
+        width={200}
+        height={112}
+        className="h-28 w-full rounded-xl object-cover"
+      />
+      <span className="mt-1 block text-[11px] font-bold text-ink-soft">{pie}</span>
+    </a>
+  );
+}
+
 const ETIQUETA: Record<string, string> = {
   antes: "📷 Al llegar",
   durante: "📷 Durante",
@@ -40,6 +71,8 @@ const ETIQUETA: Record<string, string> = {
 
 export function FotosCita({ sesionId, estado }: FotosCitaProps) {
   const [fotos, setFotos] = useState<FotoSesion[]>([]);
+  /* ruta -> enlace firmado. El bucket es privado: sin esto no se ve nada. */
+  const [enlaces, setEnlaces] = useState<Record<string, string>>({});
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState("");
   const entrada = useRef<HTMLInputElement>(null);
@@ -48,10 +81,17 @@ export function FotosCita({ sesionId, estado }: FotosCitaProps) {
     const supabase = createClient();
     const { data } = await supabase
       .from("fotos_sesion")
-      .select("id, tipo, url, notas, subida_por, created_at")
+      .select("id, tipo, ruta, url, notas, subida_por, created_at")
       .eq("sesion_id", sesionId)
       .order("created_at", { ascending: true });
-    setFotos((data as FotoSesion[]) ?? []);
+
+    const filas = (data as FotoSesion[]) ?? [];
+    setFotos(filas);
+
+    // Un solo viaje para firmar todas: una ficha con seis fotos no puede
+    // hacer seis idas y vueltas con el perrito esperando en la mesa.
+    const rutas = filas.map((f) => rutaDeFoto(f)).filter(Boolean) as string[];
+    setEnlaces(await firmarFotos(supabase, rutas));
   }, [sesionId]);
 
   useEffect(() => {
@@ -76,14 +116,14 @@ export function FotosCita({ sesionId, estado }: FotosCitaProps) {
     // Primero el archivo a Storage (comprimido), después la fila. Si la fila
     // falla queda un objeto huérfano — molesto, pero preferible al revés:
     // una fila que promete una foto que no existe sí rompe la evidencia.
-    const { url, error: errSubida } = await subirFotoResultado(supabase, user.id, sesionId, file);
-    if (!url) {
+    const { ruta, error: errSubida } = await subirFotoResultado(supabase, user.id, sesionId, file);
+    if (!ruta) {
       setSubiendo(false);
       setError(errSubida ?? "No se pudo subir la foto.");
       return;
     }
 
-    const registro = await registrarFotoResultado(sesionId, url);
+    const registro = await registrarFotoResultado(sesionId, ruta);
     setSubiendo(false);
     if (entrada.current) entrada.current.value = "";
 
@@ -92,6 +132,12 @@ export function FotosCita({ sesionId, estado }: FotosCitaProps) {
       return;
     }
     await cargar();
+  };
+
+  /* El enlace firmado de esa foto, si se pudo firmar. */
+  const enlaceDe = (f: FotoSesion): string | null => {
+    const ruta = rutaDeFoto(f);
+    return ruta ? enlaces[ruta] ?? null : null;
   };
 
   const delCliente = fotos.filter((f) => f.tipo !== "despues");
@@ -109,21 +155,17 @@ export function FotosCita({ sesionId, estado }: FotosCitaProps) {
         <>
           <p className="mb-2 text-[11px] font-bold text-ink-soft">Antes</p>
           <div className="mb-4 grid grid-cols-2 gap-2">
-            {delCliente.map((f) => (
-              <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={f.url}
+            {delCliente.map((f) => {
+              const enlace = enlaceDe(f);
+              return (
+                <Miniatura
+                  key={f.id}
+                  enlace={enlace}
                   alt={ETIQUETA[f.tipo] ?? f.tipo}
-                  width={200}
-                  height={112}
-                  className="h-28 w-full rounded-xl object-cover"
+                  pie={ETIQUETA[f.tipo] ?? f.tipo}
                 />
-                <span className="mt-1 block text-[11px] font-bold text-ink-soft">
-                  {ETIQUETA[f.tipo] ?? f.tipo}
-                </span>
-              </a>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
@@ -133,24 +175,19 @@ export function FotosCita({ sesionId, estado }: FotosCitaProps) {
       {resultado.length > 0 ? (
         <div className="mb-3 grid grid-cols-2 gap-2">
           {resultado.map((f) => (
-            <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={f.url}
-                alt="Resultado del servicio"
-                width={200}
-                height={112}
-                className="h-28 w-full rounded-xl object-cover"
-              />
-              <span className="mt-1 block text-[11px] font-bold text-ink-soft">
-                ✨ Resultado
-                {f.created_at &&
-                  ` · ${new Date(f.created_at).toLocaleDateString("es-CL", {
-                    day: "numeric",
-                    month: "short",
-                  })}`}
-              </span>
-            </a>
+            <Miniatura
+              key={f.id}
+              enlace={enlaceDe(f)}
+              alt="Resultado del servicio"
+              pie={`✨ Resultado${
+                f.created_at
+                  ? ` · ${new Date(f.created_at).toLocaleDateString("es-CL", {
+                      day: "numeric",
+                      month: "short",
+                    })}`
+                  : ""
+              }`}
+            />
           ))}
         </div>
       ) : (

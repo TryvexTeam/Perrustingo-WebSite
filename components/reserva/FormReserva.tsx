@@ -731,7 +731,9 @@ export function FormReserva({
         perros.slice(0, cantidad).map(async (p, i) => {
           const { estimado, esManual } = estimadoDe(p);
           const f = fotos[i];
-          const [fotoActualUrl, fotoReferenciaUrl] = user
+          /* Rutas del bucket, no URLs: desde PRP-002 F4 las fotos son
+             privadas y el enlace se firma al mirarlas. */
+          const [fotoActualRuta, fotoReferenciaRuta] = user
             ? await Promise.all([
                 f?.actual ? subirFotoReserva(supabase, user.id, f.actual, i, "actual") : null,
                 f?.referencia ? subirFotoReserva(supabase, user.id, f.referencia, i, "referencia") : null,
@@ -741,8 +743,8 @@ export function FormReserva({
             detalle: construirDetalle(p),
             precioEstimado: estimado?.total ?? null,
             esManual,
-            fotoActualUrl,
-            fotoReferenciaUrl,
+            fotoActualRuta,
+            fotoReferenciaRuta,
             ficha: {
               nombre: p.nombrePerro,
               raza: p.raza === "Otro" ? p.razaOtro || "Otro" : p.raza,

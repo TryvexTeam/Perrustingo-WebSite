@@ -9,10 +9,23 @@ import { comprimirImagen, PRESET_EVIDENCIA } from "./imagen";
 
    Desde PRP-002 F1 se comprimen antes de subir: una foto de celular pesa
    3–5 MB y así baja a ~150 KB. Sin esto el almacenamiento se llena en
-   semanas y cada pantalla que muestre la foto se vuelve lenta. */
+   semanas y cada pantalla que muestre la foto se vuelve lenta.
+
+   Desde PRP-002 F4 el bucket es PRIVADO. Estas funciones ya no devuelven una
+   URL: devuelven la RUTA del objeto. La diferencia importa — una URL pública
+   deja de existir cuando el bucket se cierra, la ruta sobrevive a cualquier
+   cambio de política y es lo único que hace falta para firmar un enlace
+   temporal cuando alguien con permiso quiere ver la foto. */
 
 const MAX_BYTES = 8 * 1024 * 1024;
 const TIPOS_OK = ["image/jpeg", "image/png", "image/webp", "image/heic"];
+
+export const BUCKET_FOTOS = "reservas";
+
+/* Cuánto vive un enlace firmado. Diez minutos alcanzan de sobra para abrir
+   la foto y mirarla; si el enlace se reenvía por ahí, caduca antes de llegar
+   a ninguna parte. */
+export const SEGUNDOS_FIRMA = 600;
 
 export type TagFoto = "actual" | "referencia";
 
@@ -22,7 +35,7 @@ export function fotoValida(file: File): string | null {
   return null;
 }
 
-/** Sube una foto y devuelve su URL pública, o null si falla.
+/** Sube una foto y devuelve su RUTA dentro del bucket, o null si falla.
     Falla suave: una foto caída nunca debe botar la reserva completa. */
 export async function subirFotoReserva(
   supabase: SupabaseClient,
@@ -38,14 +51,13 @@ export async function subirFotoReserva(
     if (!comprimida) return null;
 
     const ruta = `${uid}/${Date.now()}-perro${perroIndex + 1}-${tag}.${comprimida.extension}`;
-    const { error } = await supabase.storage.from("reservas").upload(ruta, comprimida.blob, {
+    const { error } = await supabase.storage.from(BUCKET_FOTOS).upload(ruta, comprimida.blob, {
       cacheControl: "3600",
       contentType: comprimida.tipo,
       upsert: false,
     });
     if (error) return null;
-    const { data } = supabase.storage.from("reservas").getPublicUrl(ruta);
-    return data.publicUrl;
+    return ruta;
   } catch {
     return null;
   }
@@ -54,7 +66,7 @@ export async function subirFotoReserva(
 /* ── Foto del resultado, subida por el equipo (PRP-002 F3) ──────────── */
 
 export interface ResultadoSubida {
-  url: string | null;
+  ruta: string | null;
   error?: string;
 }
 
@@ -72,25 +84,83 @@ export async function subirFotoResultado(
   file: File
 ): Promise<ResultadoSubida> {
   const problema = fotoValida(file);
-  if (problema) return { url: null, error: problema };
+  if (problema) return { ruta: null, error: problema };
 
   try {
     const comprimida = await comprimirImagen(file, PRESET_EVIDENCIA);
     if (!comprimida) {
-      return { url: null, error: "No se pudo procesar la imagen. Intente con otra." };
+      return { ruta: null, error: "No se pudo procesar la imagen. Intente con otra." };
     }
 
     const ruta = `${uid}/${Date.now()}-cita${citaId.slice(0, 8)}-despues.${comprimida.extension}`;
-    const { error } = await supabase.storage.from("reservas").upload(ruta, comprimida.blob, {
+    const { error } = await supabase.storage.from(BUCKET_FOTOS).upload(ruta, comprimida.blob, {
       cacheControl: "3600",
       contentType: comprimida.tipo,
       upsert: false,
     });
-    if (error) return { url: null, error: "No se pudo subir la foto. Revise la conexión." };
+    if (error) return { ruta: null, error: "No se pudo subir la foto. Revise la conexión." };
 
-    const { data } = supabase.storage.from("reservas").getPublicUrl(ruta);
-    return { url: data.publicUrl };
+    return { ruta };
   } catch {
-    return { url: null, error: "No se pudo subir la foto." };
+    return { ruta: null, error: "No se pudo subir la foto." };
   }
+}
+
+/* ── Mostrar una foto de un bucket privado ──────────────────────────── */
+
+/** Fila de `fotos_sesion` en lo que respecta a dónde está la imagen. */
+export interface OrigenFoto {
+  ruta: string | null;
+  url: string | null;
+}
+
+/* Marca de una URL pública del bucket, para poder recuperar la ruta de las
+   filas escritas antes de que el bucket se cerrara. */
+const MARCA_PUBLICA = `/storage/v1/object/public/${BUCKET_FOTOS}/`;
+
+/** La ruta de la foto, venga como venga la fila.
+
+    Existe por una ventana concreta: entre que la base se cierra y que el
+    sitio nuevo se despliega, producción sigue corriendo el código viejo y
+    puede escribir filas con `url` pública. Esas fotos existen y son válidas
+    — solo que su enlace ya no sirve. Extraer la ruta de la URL las rescata
+    en vez de mostrarlas rotas. */
+export function rutaDeFoto(foto: OrigenFoto): string | null {
+  if (foto.ruta) return foto.ruta;
+  if (!foto.url) return null;
+  const i = foto.url.indexOf(MARCA_PUBLICA);
+  if (i === -1) return null;
+  // decodeURIComponent: Storage escapa los caracteres raros en la URL, pero
+  // la API de firma espera la ruta tal cual está guardada.
+  try {
+    return decodeURIComponent(foto.url.slice(i + MARCA_PUBLICA.length));
+  } catch {
+    return foto.url.slice(i + MARCA_PUBLICA.length);
+  }
+}
+
+/** Firma varias fotos de una vez y devuelve ruta → enlace temporal.
+
+    En lote y no una por una: una ficha con seis fotos haría seis viajes de
+    red, y el panel se abre con el perrito esperando en la mesa. Las que
+    fallen simplemente no aparecen en el mapa — el llamador decide qué
+    mostrar en su lugar, que es mejor que romper toda la galería por una. */
+export async function firmarFotos(
+  supabase: SupabaseClient,
+  rutas: string[]
+): Promise<Record<string, string>> {
+  const limpias = rutas.filter(Boolean);
+  if (limpias.length === 0) return {};
+
+  const { data, error } = await supabase.storage
+    .from(BUCKET_FOTOS)
+    .createSignedUrls(limpias, SEGUNDOS_FIRMA);
+
+  if (error || !data) return {};
+
+  const mapa: Record<string, string> = {};
+  for (const item of data) {
+    if (item.signedUrl && item.path) mapa[item.path] = item.signedUrl;
+  }
+  return mapa;
 }

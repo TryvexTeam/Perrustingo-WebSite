@@ -26,8 +26,22 @@ const perroSchema = z.object({
   detalle: z.record(z.string(), z.string()),
   precioEstimado: z.number().int().min(0).max(500000).nullable(),
   esManual: z.boolean().optional().default(false),
-  fotoActualUrl: z.string().url().nullable().optional().default(null),
-  fotoReferenciaUrl: z.string().url().nullable().optional().default(null),
+  /* Desde PRP-002 F4 el bucket es privado y lo que viaja es la RUTA del
+     objeto, no una URL. Se valida la forma: `<uid>/<archivo>`, sin saltos
+     de carpeta ni protocolos — es un dato que llega por la red y termina
+     escrito en la ficha del cliente. */
+  fotoActualRuta: z
+    .string()
+    .regex(/^[0-9a-f-]{36}\/[A-Za-z0-9._-]+$/, "Ruta de foto inválida")
+    .nullable()
+    .optional()
+    .default(null),
+  fotoReferenciaRuta: z
+    .string()
+    .regex(/^[0-9a-f-]{36}\/[A-Za-z0-9._-]+$/, "Ruta de foto inválida")
+    .nullable()
+    .optional()
+    .default(null),
   ficha: z
     .object({
       nombre: z.string().trim().max(60).optional().default(""),
@@ -229,7 +243,7 @@ export async function POST(request: NextRequest) {
           tipo_pelo: perro.ficha.tipoPelo,
           temperamento: perro.ficha.temperamento,
           alergias: perro.ficha.alergias,
-          foto_url: perro.fotoActualUrl,
+          foto_url: perro.fotoActualRuta,
         })
         .select("id")
         .single();
@@ -311,14 +325,14 @@ export async function POST(request: NextRequest) {
 
     /* Fotos: actual = 'antes', referencia del corte = 'referencia' */
     const fotosRows = [
-      perro.fotoActualUrl && { sesion_id: sesionId, tipo: "antes", url: perro.fotoActualUrl },
-      perro.fotoReferenciaUrl && {
+      perro.fotoActualRuta && { sesion_id: sesionId, tipo: "antes", ruta: perro.fotoActualRuta },
+      perro.fotoReferenciaRuta && {
         sesion_id: sesionId,
         tipo: "referencia",
-        url: perro.fotoReferenciaUrl,
+        ruta: perro.fotoReferenciaRuta,
         notas: "Referencia de corte elegida por el cliente",
       },
-    ].filter(Boolean) as { sesion_id: string; tipo: string; url: string; notas?: string }[];
+    ].filter(Boolean) as { sesion_id: string; tipo: string; ruta: string; notas?: string }[];
 
     if (fotosRows.length > 0) {
       const { error: errFotos } = await supabase.from("fotos_sesion").insert(fotosRows);
