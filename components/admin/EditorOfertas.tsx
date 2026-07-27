@@ -300,6 +300,21 @@ export function EditorOfertas({ ofertasIniciales, leadTimeDias }: EditorOfertasP
                         ? `Solo en la visita ${oferta.desdeVisita}.`
                         : `De la visita ${oferta.desdeVisita} a la ${oferta.hastaVisita}.`}
                   </p>
+
+                  {/* Sin cuenta no se puede saber cuántas visitas lleva
+                      alguien: contar por teléfono a cualquiera que lo pida
+                      permitiría averiguar quién es cliente del local
+                      probando números (PRP-004 F3). Se dice acá en vez de
+                      dejar que la oferta falle en silencio. */}
+                  {oferta.desdeVisita > 1 && !oferta.soloConCuenta && (
+                    <p className="mt-2 rounded-xl bg-[#fde4c8] px-3 py-2 text-[11px] leading-relaxed text-[#7a4d10]">
+                      ⚠️ Esta oferta empieza en la visita {oferta.desdeVisita} pero
+                      está abierta a todos. A quien reserve <strong>sin cuenta</strong>{" "}
+                      no se le puede contar el historial, así que no la recibirá.
+                      Marque &ldquo;solo para quien tenga cuenta&rdquo; para que se
+                      entienda como beneficio de registrarse.
+                    </p>
+                  )}
                 </div>
               </div>
 
