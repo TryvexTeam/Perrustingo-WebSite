@@ -3,7 +3,14 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseConfigurado } from "@/lib/citas";
 import { offsetNegocio } from "@/lib/agenda";
-import { validarContacto } from "@/lib/contacto";
+import { normalizarTelefono, validarContacto } from "@/lib/contacto";
+import {
+  consumir,
+  ipDe,
+  textoEspera,
+  LIMITE_RESERVA_IP,
+  LIMITE_RESERVA_TELEFONO,
+} from "@/lib/rateLimit";
 import { evaluarReserva } from "@/lib/disponibilidad";
 import { obtenerDisponibilidad, obtenerOcupacion } from "@/lib/disponibilidadDatos";
 
@@ -14,21 +21,6 @@ import { obtenerDisponibilidad, obtenerOcupacion } from "@/lib/disponibilidadDat
    Degradación: si la DB del cliente aún no tiene las migraciones 002/004
    (columnas contacto_* / cupon_*), reintenta con el set mínimo de columnas
    de schema.sql para no perder la solicitud. */
-
-const VENTANA_MS = 10 * 60 * 1000;
-const MAX_POR_VENTANA = 8;
-const intentos = new Map<string, { count: number; desde: number }>();
-
-function excedeLimite(ip: string): boolean {
-  const ahora = Date.now();
-  const reg = intentos.get(ip);
-  if (!reg || ahora - reg.desde > VENTANA_MS) {
-    intentos.set(ip, { count: 1, desde: ahora });
-    return false;
-  }
-  reg.count += 1;
-  return reg.count > MAX_POR_VENTANA;
-}
 
 const perroSchema = z.object({
   detalle: z.record(z.string(), z.string()),
@@ -106,14 +98,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-  if (excedeLimite(ip)) {
-    return NextResponse.json(
-      { success: false, error: "Demasiadas solicitudes. Intenta en unos minutos." },
-      { status: 429 }
-    );
-  }
-
   let body: unknown;
   try {
     body = await request.json();
@@ -138,6 +122,45 @@ export async function POST(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  /* Rate limit compartido entre instancias (PRP-004 F1). Antes era un Map
+     en memoria: en serverless cada instancia tenía el suyo, así que el
+     límite real era "8 × instancias" y se reiniciaba en cada despliegue.
+
+     Dos capas, porque una sola no alcanza:
+     · por IP, que frena el ruido pero se rota con facilidad;
+     · por teléfono, que es lo que de verdad ata la reserva a una persona.
+     Se consume la de IP primero para no gastar una consulta si ya excedió. */
+  const limiteIp = await consumir(supabase, "reserva-ip", ipDe(request.headers), LIMITE_RESERVA_IP);
+  if (!limiteIp.permitido) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: `Demasiadas solicitudes. Intente en ${textoEspera(limiteIp.reiniciaEn)}.`,
+      },
+      { status: 429, headers: { "Retry-After": String(limiteIp.reiniciaEn) } }
+    );
+  }
+
+  const limiteTel = await consumir(
+    supabase,
+    "reserva-tel",
+    normalizarTelefono(contacto.telefono),
+    LIMITE_RESERVA_TELEFONO
+  );
+  if (!limiteTel.permitido) {
+    return NextResponse.json(
+      {
+        success: false,
+        // Se le dice con qué dato chocó: si es una persona real con varios
+        // perritos, sabe que debe llamar en vez de insistir.
+        error: `Ya se registraron varias solicitudes con este teléfono. Intente en ${textoEspera(
+          limiteTel.reiniciaEn
+        )} o escríbanos por WhatsApp.`,
+      },
+      { status: 429, headers: { "Retry-After": String(limiteTel.reiniciaEn) } }
+    );
+  }
 
   /* Reserva sin cuenta (PRP-003 F1): quien no tiene sesión escribe su
      contacto en el formulario. Se revalida acá porque el navegador es un
