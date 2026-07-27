@@ -6,7 +6,7 @@ import { Reveal } from "@/components/ui/Reveal";
 const PREGUNTAS = [
   {
     q: "¿Necesito hacer reserva o puedo llegar sin cita?",
-    a: "Trabajamos solo con cita previa para garantizar atención personalizada y sin esperas. Puedes agendar por WhatsApp o usando nuestro formulario de reserva inteligente.",
+    a: "Trabajamos solo con cita previa para garantizar atención personalizada y sin esperas. Agenda con el formulario de reserva inteligente: te toma un minuto y queda con el precio estimado. Al terminar te ponemos en contacto con nuestra atención al cliente por WhatsApp.",
   },
   {
     q: "¿Cuánto tiempo tarda el servicio?",

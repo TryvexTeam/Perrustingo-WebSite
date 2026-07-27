@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://perrustingo.cl"),
   title: "Perrustingo — Peluquería Canina en Renca",
   description:
-    "Bañamos, cortamos y consentimos a tu perro o perra en Renca, Santiago. 4.6★ en Google con más de 135 opiniones. Agenda tu cita por WhatsApp.",
+    "Bañamos, cortamos y consentimos a tu perro o perra en Renca, Santiago. 4.6★ en Google con más de 135 opiniones. Agenda tu cita online.",
   openGraph: {
     title: "Perrustingo — Peluquería Canina en Renca",
     description:

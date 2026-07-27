@@ -22,7 +22,7 @@ const SECCIONES = [
   {
     titulo: "Política de reservas",
     puntos: [
-      "Gestionamos las reservas por WhatsApp: indícanos nombre, raza o tamaño y el servicio.",
+      "Las reservas se hacen desde la web. Una vez reservada, nuestra atención al cliente te contacta por WhatsApp para confirmar.",
       "Recibimos citas hasta las 17:00. Los miércoles son nuestro día de mayor demanda.",
       "Si no puedes asistir, avísanos con anticipación para que liberemos el cupo a otra familia.",
     ],

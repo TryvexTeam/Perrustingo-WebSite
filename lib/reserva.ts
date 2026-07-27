@@ -203,6 +203,49 @@ export function formatCLP(n: number): string {
   return "$" + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
+/* ── El precio que ve el cliente es un rango, no una cifra exacta ──────
+
+   Pedido del señor Ignacio (27-jul). La razón es comercial y honesta a la
+   vez: el valor final depende del estado real del pelo, del comportamiento
+   y del tamaño, y se confirma en la puerta. Un "$38.400" clavado promete
+   una exactitud que el negocio no puede sostener, y cuando en el local
+   sale distinto, el cliente siente que le cambiaron el precio.
+
+   Un rango redondo dice la verdad —"va a estar entre 38 y 40"— y deja al
+   equipo margen para cobrar lo justo sin discutir. */
+
+const PASO_REDONDEO = 1000;
+/* Cuánto se abre el rango hacia arriba. 2.000 sobre un servicio de ~20.000
+   es un 10 %: suficiente para absorber un perro enredado, y lo bastante
+   angosto para que el número siga significando algo. Un rango demasiado
+   ancho no es una estimación, es una evasiva. */
+const ANCHO_RANGO = 2000;
+
+export interface RangoPrecio {
+  desde: number;
+  hasta: number;
+}
+
+/** Convierte un precio calculado en el rango redondo que ve el cliente. */
+export function rangoPrecio(n: number): RangoPrecio {
+  if (n <= 0) return { desde: 0, hasta: 0 };
+  const desde = Math.floor(n / PASO_REDONDEO) * PASO_REDONDEO;
+  return { desde, hasta: desde + ANCHO_RANGO };
+}
+
+/** "$38.000 a $40.000" — la forma en que se muestra un estimado.
+
+    Bajo mil pesos se muestra el valor exacto: redondear 800 hacia abajo da
+    un piso de $0 y eso se lee como "gratis". No pasa con las tarifas reales
+    (el servicio más barato ronda los 20.000), pero un formateador que puede
+    decir "gratis" por un error de cálculo no debe existir. */
+export function formatRangoCLP(n: number): string {
+  if (n <= 0) return formatCLP(0);
+  if (n < PASO_REDONDEO) return formatCLP(n);
+  const { desde, hasta } = rangoPrecio(n);
+  return `${formatCLP(desde)} a ${formatCLP(hasta)}`;
+}
+
 export function buildWhatsAppMessage(
   data: FormData,
   esManual: boolean,
@@ -517,7 +560,7 @@ export function buildWhatsAppMessageMulti(
     if (raza) lines.push(`• Raza: ${raza}`);
     if (data.pesoKg) lines.push(`• Peso: ${data.pesoKg} kg`);
     if (estimado) {
-      lines.push(`• Estimado: ${formatCLP(estimado.total)}`);
+      lines.push(`• Estimado: ${formatRangoCLP(estimado.total)}`);
       total += estimado.total;
     }
     if (esManual) {
@@ -527,7 +570,7 @@ export function buildWhatsAppMessageMulti(
   });
 
   lines.push("");
-  if (total > 0) lines.push(`*Total estimado:* ${formatCLP(total)}`);
+  if (total > 0) lines.push(`*Total estimado:* ${formatRangoCLP(total)}`);
   if (compartido.servicio) lines.push(`*Servicio:* ${compartido.servicio}`);
   if (compartido.fechaDeseada) lines.push(`*Fecha deseada:* ${compartido.fechaDeseada}`);
   if (algunoManual) {

@@ -15,6 +15,7 @@ import {
   construirDetalle,
   detectarTamanoPorPeso,
   formatCLP,
+  formatRangoCLP,
   montoDeAjuste,
   textoDeAjuste,
   hayConflicto,
@@ -811,7 +812,7 @@ export function FormReserva({
               💰 Estimado {cantidad > 1 ? `· ${data.nombrePerro || `perrito ${dogIdx + 1}`}` : "en vivo"}
             </span>
             <span className="font-display text-xl font-extrabold">
-              {formatCLP(actual.estimado.total)}
+              {formatRangoCLP(actual.estimado.total)}
             </span>
           </div>
           {actual.estimado.ajustes.length > 0 && (
@@ -890,7 +891,7 @@ export function FormReserva({
                 </button>
               ))}
               <p className="col-span-3 text-center text-xs text-ink-soft">
-                ¿Más de {MAX_PERROS}? Escríbenos directo por WhatsApp y lo coordinamos.
+                ¿Más de {MAX_PERROS}? Reserva por acá y lo coordinamos al contactarte.
               </p>
             </div>
           )}
@@ -1030,7 +1031,7 @@ export function FormReserva({
                     ✅ <strong>{TAMANO_LABELS[tamanoAuto]}</strong>
                     <span className="block">
                       Precio estimado:{" "}
-                      <strong>{formatCLP(actual.estimado.total)}</strong>
+                      <strong>{formatRangoCLP(actual.estimado.total)}</strong>
                     </span>
                     <span className="mt-1 block text-xs font-normal opacity-80">{NOTA_PRECIOS}</span>
                   </span>
@@ -1421,7 +1422,7 @@ export function FormReserva({
                           {r.esManual
                             ? "evaluación en puerta"
                             : r.estimado
-                              ? formatCLP(r.estimado.total)
+                              ? formatRangoCLP(r.estimado.total)
                               : "—"}
                         </span>
                       </p>
@@ -1430,7 +1431,7 @@ export function FormReserva({
                   {cantidad > 1 && totalEstimado > 0 && (
                     <p className="flex items-center justify-between border-t border-ink/10 pt-1.5 text-sm font-extrabold text-ink">
                       <span>Total estimado</span>
-                      <span>{formatCLP(totalEstimado)}</span>
+                      <span>{formatRangoCLP(totalEstimado)}</span>
                     </p>
                   )}
                 </div>
@@ -1455,8 +1456,19 @@ export function FormReserva({
                   ? "Preparando tu reserva…"
                   : algunoManual
                     ? "Solicitar evaluación personalizada"
-                    : "Confirmar reserva por WhatsApp"}
+                    : "Confirmar reserva"}
               </button>
+
+              {/* Decir lo que va a pasar ANTES de que pase. Al confirmar se
+                  abre WhatsApp, y una app que se abre sola sin aviso asusta
+                  — sobre todo a quien reserva desde el celular. Ademas deja
+                  claro que la reserva no queda cerrada hasta que el equipo
+                  confirme: prometer una hora que todavia no existe es la
+                  forma mas rapida de perder a un cliente en la puerta. */}
+              <p className="text-center text-xs leading-relaxed text-ink-soft">
+                Al confirmar, nuestra atención al cliente te escribe por
+                WhatsApp para cerrar la hora.
+              </p>
 
               {solicitudEstado === "registrada" && (
                 <p className="rise-in rounded-2xl bg-[#d8f0e3] px-5 py-3 text-center text-sm font-semibold text-teal-ink">
