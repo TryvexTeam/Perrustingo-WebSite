@@ -21,7 +21,11 @@ import {
   type DatosCorreo,
   type PerroCorreo,
 } from "@/lib/correoPlantillas";
-import { obtenerDisponibilidad, obtenerOcupacion } from "@/lib/disponibilidadDatos";
+import {
+  obtenerDisponibilidad,
+  obtenerExcepciones,
+  obtenerOcupacion,
+} from "@/lib/disponibilidadDatos";
 
 /* POST /api/reservas v2 — reserva multi-perrito (1-3). Crea UNA sesión
    'pendiente' por perrito; si el usuario está logueado además guarda/actualiza
@@ -204,6 +208,20 @@ export async function POST(request: NextRequest) {
      horarios imposibles, pero esto es un POST público: quien mande el
      cuerpo a mano se salta la UI entera. La decisión se toma con el MISMO
      motor que usa el formulario, así que no pueden discrepar. */
+  /* Fecha bloqueada por el local (migración 026). Va FUERA del `if (inicio)`
+     a propósito: el resto de la puerta solo corre cuando vino un bloque
+     horario, así que una reserva sin hora —el camino viejo, todavía
+     aceptado— se saltaba la validación entera. Un día libre se podía tomar
+     simplemente omitiendo `inicio`. */
+  const excepciones = await obtenerExcepciones(supabase, fechaDeseada, fechaDeseada);
+  const fechaBloqueada = excepciones.find((e) => e.fecha === fechaDeseada);
+  if (fechaBloqueada) {
+    return NextResponse.json(
+      { success: false, error: fechaBloqueada.mensaje },
+      { status: 409 }
+    );
+  }
+
   if (inicio) {
     const { config, tramos, capacidad } = await obtenerDisponibilidad(supabase);
     const dia = new Date(inicio);
@@ -221,6 +239,7 @@ export async function POST(request: NextRequest) {
       config,
       capacidad,
       ocupacion,
+      excepciones,
       // Una reserva de tres perritos ocupa tres lugares de ese bloque.
       cupos: perros.length,
     });
