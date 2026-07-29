@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { crearClienteServicio } from "@/lib/supabase/servicio";
 import { offsetNegocio } from "@/lib/agenda";
 import { eliminarEventoCita, upsertEventoCita } from "@/lib/google/calendar";
 import type { EstadoCita } from "@/lib/citas";
@@ -45,7 +46,24 @@ export async function cambiarEstadoCita(
     return { success: false, error: "Sin permisos." };
   }
 
-  const { data: cita } = await supabase
+  /* Esta lectura va por el cliente de servicio, no por la sesión de quien
+     aprieta el botón.
+
+     Desde la migración 027 el rol 'trabajador' ya no puede leer `sesiones`:
+     con su sesión, esta consulta vuelve vacía y el panel respondía "Cita no
+     encontrada" al confirmar. Y la vista `sesiones_equipo` tampoco sirve
+     acá, porque le entrega el contacto en NULL y estos datos alimentan el
+     evento de Google Calendar, que es del negocio y sí los lleva.
+
+     No hay filtración: lo leído se usa para validar la transición y para
+     armar el evento del calendario. Nada de esto vuelve al navegador — la
+     acción solo devuelve `success` o un mensaje de error.
+
+     El permiso ya se comprobó arriba: sin rol de equipo no se llega hasta
+     acá. */
+  const lector = crearClienteServicio() ?? supabase;
+
+  const { data: cita } = await lector
     .from("sesiones")
     .select("estado, fecha_cita, fecha_fin, servicio, contacto_nombre, contacto_telefono, contacto_email, detalle_form")
     .eq("id", citaId)
