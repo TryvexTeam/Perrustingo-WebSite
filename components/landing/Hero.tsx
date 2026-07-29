@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { HeroClouds } from "./HeroClouds";
+import { AccesoCuenta } from "./AccesoCuenta";
 const BANDERAS = [
   { src: "/flags/chile.svg", alt: "Chile" },
   { src: "/flags/brasil.svg", alt: "Brasil" },
@@ -115,6 +116,11 @@ export function Hero() {
             >
               Ver servicios ↓
             </a>
+          </div>
+
+          {/* Entrar / Registrarse: antes solo estaban dentro del menú. */}
+          <div className="rise-in [animation-delay:320ms]">
+            <AccesoCuenta />
           </div>
 
         </div>
