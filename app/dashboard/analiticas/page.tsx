@@ -65,7 +65,7 @@ export default async function AnaliticasPage({ searchParams }: AnaliticasPagePro
   const { inicio, fin } = limitesConsulta(rango);
 
   const { data: filas } = await supabase
-    .from("sesiones")
+    .from("sesiones_equipo")
     .select("estado, fecha_cita, servicio, precio_base, precio_final, cliente_id, contacto_comuna, oferta_id")
     .gte("fecha_cita", inicio)
     .lt("fecha_cita", fin)

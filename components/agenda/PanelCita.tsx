@@ -49,7 +49,7 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
 
     if (perroId) {
       supabase
-        .from("sesiones")
+        .from("sesiones_equipo")
         .select("fecha_cita, notas_equipo")
         .eq("perro_id", perroId)
         .neq("id", sesionId)
@@ -127,7 +127,13 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
           </button>
         </div>
 
-        {/* Contacto del solicitante */}
+        {/* Contacto del solicitante.
+
+            El correo y el teléfono llegan en NULL cuando quien mira no es
+            admin (migración 027): la vista `sesiones_equipo` los recorta en
+            la base, no acá. Por eso este bloque no pregunta por el rol —
+            simplemente no dibuja lo que no vino. Un dato ausente no se
+            puede olvidar de esconder. */}
         <section className="mb-4 rounded-2xl bg-cream p-4">
           <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-teal-dark">
             Contacto
