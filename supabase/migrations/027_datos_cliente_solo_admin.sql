@@ -24,12 +24,17 @@
 -- teléfono". Así que el trabajador pierde el SELECT sobre la tabla y pasa a
 -- leer por la vista de más abajo. Conserva el UPDATE, que es lo que necesita
 -- para mover estados y dejar notas.
+-- Los DROP van antes de cada CREATE porque Postgres no tiene
+-- `CREATE POLICY IF NOT EXISTS`: sin esto, un segundo intento aborta a mitad
+-- de camino y deja la migración aplicada por partes. Ya pasó una vez.
 DROP POLICY IF EXISTS "equipo_ve_todas_sesiones" ON public.sesiones;
 
+DROP POLICY IF EXISTS "admin_maneja_sesiones" ON public.sesiones;
 CREATE POLICY "admin_maneja_sesiones" ON public.sesiones
   FOR ALL USING (public.get_rol() = 'admin')
   WITH CHECK (public.get_rol() = 'admin');
 
+DROP POLICY IF EXISTS "trabajador_actualiza_sesiones" ON public.sesiones;
 CREATE POLICY "trabajador_actualiza_sesiones" ON public.sesiones
   FOR UPDATE USING (public.get_rol() = 'trabajador')
   WITH CHECK (public.get_rol() = 'trabajador');
@@ -90,7 +95,6 @@ GRANT SELECT ON public.sesiones_equipo TO authenticated;
 -- panel lo usaba: dashboard/page.tsx hace join a perfiles(nombre, telefono).
 -- El trabajador conserva su propio perfil por la política `perfil_propio`.
 DROP POLICY IF EXISTS "admin_ve_todos_perfiles" ON public.perfiles;
-
 CREATE POLICY "admin_ve_todos_perfiles" ON public.perfiles
   FOR SELECT USING (public.get_rol() = 'admin');
 
