@@ -61,14 +61,29 @@ export async function cambiarEstadoCita(
 
      El permiso ya se comprobó arriba: sin rol de equipo no se llega hasta
      acá. */
-  const lector = crearClienteServicio() ?? supabase;
+  const servicio = crearClienteServicio();
+  const lector = servicio ?? supabase;
 
-  const { data: cita } = await lector
+  const { data: cita, error: errorLectura } = await lector
     .from("sesiones")
     .select("estado, fecha_cita, fecha_fin, servicio, contacto_nombre, contacto_telefono, contacto_email, detalle_form")
     .eq("id", citaId)
     .single();
-  if (!cita) return { success: false, error: "Cita no encontrada." };
+
+  if (!cita) {
+    /* Este fallo era mudo: se descartaba el error de Postgres y solo se
+       decía "no encontrada", que puede ser cualquier cosa — id inexistente,
+       permiso denegado o credencial de servidor ausente. Se registra el
+       diagnóstico para poder distinguirlos desde los logs. */
+    console.error("[cambiarEstadoCita] no se pudo leer la cita", {
+      citaId,
+      rol: perfil.rol,
+      conClienteDeServicio: Boolean(servicio),
+      codigo: errorLectura?.code ?? null,
+      mensaje: errorLectura?.message ?? null,
+    });
+    return { success: false, error: "Cita no encontrada." };
+  }
 
   const permitidas = TRANSICIONES_EQUIPO[cita.estado] ?? [];
   if (!permitidas.includes(nuevoEstado)) {
