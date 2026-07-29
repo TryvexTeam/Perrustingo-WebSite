@@ -113,6 +113,33 @@ export async function cambiarEstadoCita(
 
   if (error) return { success: false, error: "No se pudo actualizar." };
 
+  /* Un UPDATE bloqueado por RLS no falla: simplemente no toca ninguna fila.
+     Sin comprobarlo, el panel diría "listo" sobre una cita que quedó igual —
+     que es exactamente lo que se reportó. Se relee con el cliente de
+     servicio, que sí puede ver la fila, para confirmar que el cambio ocurrió
+     de verdad antes de dar el éxito por bueno. */
+  if (servicio) {
+    const { data: verificacion } = await servicio
+      .from("sesiones")
+      .select("estado")
+      .eq("id", citaId)
+      .single();
+
+    if (verificacion && verificacion.estado !== nuevoEstado) {
+      console.error("[cambiarEstadoCita] el UPDATE no toco ninguna fila", {
+        citaId,
+        rol: perfil.rol,
+        estadoPrevio: cita.estado,
+        estadoPedido: nuevoEstado,
+        estadoActual: verificacion.estado,
+      });
+      return {
+        success: false,
+        error: "La base de datos rechazó el cambio (permisos). Avise al equipo técnico.",
+      };
+    }
+  }
+
   /* Espejo en Google Calendar. El respaldo NUNCA bloquea al panel: la cita ya
      quedó guardada en la base, así que un fallo de Google se registra y se
      sigue. Si faltan las envs, las funciones son no-op silencioso.
