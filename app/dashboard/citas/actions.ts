@@ -71,16 +71,16 @@ export async function cambiarEstadoCita(
     .single();
 
   if (!cita) {
-    /* Este fallo era mudo: se descartaba el error de Postgres y solo se
-       decía "no encontrada", que puede ser cualquier cosa — id inexistente,
-       permiso denegado o credencial de servidor ausente. Se registra el
-       diagnóstico para poder distinguirlos desde los logs. */
+    /* El fallo era mudo: se descartaba el error de Postgres y se decía "no
+       encontrada", que tapa causas muy distintas — id inexistente, permiso
+       denegado o credencial de servidor ausente. Se registra para poder
+       distinguirlas; fue lo que destapó que a `service_role` le faltaba el
+       GRANT sobre `sesiones` (migración 028). */
     console.error("[cambiarEstadoCita] no se pudo leer la cita", {
       citaId,
       rol: perfil.rol,
       conClienteDeServicio: Boolean(servicio),
       codigo: errorLectura?.code ?? null,
-      mensaje: errorLectura?.message ?? null,
     });
     return { success: false, error: "Cita no encontrada." };
   }
