@@ -167,6 +167,50 @@ function bloquePerros(perros: PerroCorreo[], conFotos: boolean): string {
     .join("");
 }
 
+/** "Su perrito está listo" (pedido de Rodolfo, reunión 27-jul).
+
+    Este correo existe por una razón de privacidad, no de comodidad: desde la
+    migración 027 el peluquero no ve el teléfono ni el correo del cliente. El
+    aviso lo arma y lo manda el servidor, así que la persona se entera igual
+    y el dato nunca pasa por la pantalla de quien atiende. */
+export function correoPerroListo(d: {
+  nombreCliente: string;
+  nombrePerro: string | null;
+  servicio: string;
+}): { asunto: string; html: string } {
+  const perro = d.nombrePerro?.trim();
+  const quien = perro ? esc(perro) : "su perrito";
+  const saludo = d.nombreCliente.split(" ")[0] || "";
+
+  const contenido = `
+    <div style="font-family:Verdana,Geneva,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${TEAL};font-weight:bold;">Listo para retirar</div>
+    <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:26px;line-height:1.3;color:${TEAL_INK};margin:8px 0 0;">
+      ${saludo ? `${esc(saludo)}, ` : ""}${quien} ya está listo 🐾
+    </h1>
+    <p style="font-family:Verdana,Geneva,sans-serif;font-size:14px;line-height:1.8;color:${INK_SOFT};margin:14px 0 0;">
+      Terminamos ${esc(d.servicio.toLowerCase())} y quedó regio. Puede pasar a
+      buscarlo cuando le acomode, dentro del horario del salón.
+    </p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${CREAM};border-radius:16px;margin:22px 0;">
+      <tr><td style="padding:18px 22px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          ${fila("Servicio", esc(d.servicio))}
+          ${perro ? fila("Perrito", esc(perro)) : ""}
+        </table>
+      </td></tr>
+    </table>`;
+
+  return {
+    asunto: `${perro ? `${perro} está listo` : "Su perrito está listo"} 🐾`,
+    html: envoltura(
+      contenido,
+      `${quien} ya está listo para retirar.`,
+      "Si necesita algo, responda este correo y le contestamos."
+    ),
+  };
+}
+
 /** Correo para el cliente: confirma que la solicitud llegó y le deja el
     WhatsApp a un toque para seguirla. */
 export function correoCliente(d: DatosCorreo): { asunto: string; html: string } {

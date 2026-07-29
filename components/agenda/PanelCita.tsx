@@ -6,6 +6,7 @@ import type { CitaSemana } from "@/lib/agenda";
 import { ESTADO_COLOR, ESTADO_LABEL } from "@/lib/citas";
 import { formatCLP } from "@/lib/reserva";
 import { cambiarEstadoCita, guardarNotasEquipo } from "@/app/dashboard/citas/actions";
+import { avisarPerroListoAction } from "@/app/dashboard/citas/aviso-actions";
 import { createClient } from "@/lib/supabase/client";
 import { FotosCita } from "@/components/admin/FotosCita";
 
@@ -37,6 +38,10 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
   const [notas, setNotas] = useState(cita.sesion?.notas_equipo ?? "");
   const [notasEstado, setNotasEstado] = useState<"idle" | "guardando" | "ok" | "error">("idle");
   const [historial, setHistorial] = useState<{ fecha: string; notas: string }[]>([]);
+  /* Aviso "está listo". Estado propio y no el `pending` general: mientras se
+     manda el correo, los botones de estado tienen que seguir usables. */
+  const [aviso, setAviso] = useState<"idle" | "enviando" | "enviado" | "error">("idle");
+  const [avisoError, setAvisoError] = useState("");
 
   const sesionId = cita.sesion?.id;
   const perroId = cita.sesion?.perro_id;
@@ -49,7 +54,7 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
 
     if (perroId) {
       supabase
-        .from("sesiones")
+        .from("sesiones_equipo")
         .select("fecha_cita, notas_equipo")
         .eq("perro_id", perroId)
         .neq("id", sesionId)
@@ -75,6 +80,23 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
     startTransition(async () => {
       const res = await guardarNotasEquipo(sesion.id, notas);
       setNotasEstado(res.success ? "ok" : "error");
+    });
+  };
+
+  /* El correo lo arma y lo manda el servidor: acá solo viaja el id de la
+     cita. Ni el correo ni el teléfono del cliente pasan por este navegador,
+     que es justamente el del peluquero. */
+  const avisarListo = () => {
+    setAviso("enviando");
+    setAvisoError("");
+    startTransition(async () => {
+      const res = await avisarPerroListoAction(sesion.id);
+      if (!res.success) {
+        setAviso("error");
+        setAvisoError(res.error ?? "No se pudo enviar el aviso.");
+        return;
+      }
+      setAviso("enviado");
     });
   };
 
@@ -127,7 +149,13 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
           </button>
         </div>
 
-        {/* Contacto del solicitante */}
+        {/* Contacto del solicitante.
+
+            El correo y el teléfono llegan en NULL cuando quien mira no es
+            admin (migración 027): la vista `sesiones_equipo` los recorta en
+            la base, no acá. Por eso este bloque no pregunta por el rol —
+            simplemente no dibuja lo que no vino. Un dato ausente no se
+            puede olvidar de esconder. */}
         <section className="mb-4 rounded-2xl bg-cream p-4">
           <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-teal-dark">
             Contacto
@@ -279,6 +307,35 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
               Marcar en proceso
             </button>
           )}
+          {/* Aviso al cliente. Aparece cuando el trabajo ya está en marcha o
+              terminado — antes de eso no hay nada que avisar. Sirve para los
+              dos roles: el peluquero avisa sin ver el contacto, y así no
+              depende de que el admin esté disponible. */}
+          {["en_proceso", "completada"].includes(cita.estado) && (
+            <div>
+              <button
+                type="button"
+                disabled={pending || aviso === "enviando" || aviso === "enviado"}
+                onClick={avisarListo}
+                className="w-full rounded-full border-2 border-teal px-5 py-3 font-display text-sm font-extrabold text-teal-dark transition-colors hover:bg-sky/40 disabled:opacity-50"
+              >
+                {aviso === "enviando" && "Enviando aviso…"}
+                {aviso === "enviado" && "✓ Aviso enviado al cliente"}
+                {(aviso === "idle" || aviso === "error") && "Avisar que está listo 🐾"}
+              </button>
+              {aviso === "error" && (
+                <p role="alert" className="mt-2 text-xs font-semibold text-[#7a1030]">
+                  {avisoError}
+                </p>
+              )}
+              {aviso === "enviado" && (
+                <p className="mt-2 text-xs font-semibold text-ink-soft">
+                  Le llegó un correo avisando que puede pasar a buscarlo.
+                </p>
+              )}
+            </div>
+          )}
+
           {cita.estado === "en_proceso" && (
             <button
               type="button"

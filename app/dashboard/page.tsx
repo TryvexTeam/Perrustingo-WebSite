@@ -119,12 +119,14 @@ export default async function DashboardPage() {
   const finHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1).toISOString();
 
   const { data: citasHoy } = await supabase
-    .from("sesiones")
-    .select(`
-      id, estado, fecha_cita, servicio, precio_base, precio_final,
-      perros ( nombre, raza, peso_kg, temperamento ),
-      perfiles!sesiones_cliente_id_fkey ( nombre, telefono )
-    `)
+    .from("sesiones_equipo")
+    /* Sin joins: `sesiones_equipo` es una vista y PostgREST no le deduce las
+       claves foráneas. Los datos del perrito ya vienen en `detalle_form`
+       (snapshot del formulario) y los del cliente en las columnas
+       `contacto_*`, que la vista deja en NULL si quien mira no es admin. */
+    .select(
+      "id, estado, fecha_cita, servicio, precio_base, precio_final, contacto_nombre, contacto_telefono, detalle_form"
+    )
     .gte("fecha_cita", inicioHoy)
     .lt("fecha_cita", finHoy)
     .order("fecha_cita");
@@ -168,16 +170,23 @@ export default async function DashboardPage() {
             ) : (
               <div className="space-y-3">
                 {citasHoy.map((cita) => {
-                  type PerroRow = { nombre: string; raza: string; peso_kg: number; temperamento: string };
-                  type ClienteRow = { nombre: string; telefono: string };
-                  const perrosRaw = cita.perros as unknown;
-                  const perro: PerroRow | null = Array.isArray(perrosRaw)
-                    ? (perrosRaw[0] as PerroRow) ?? null
-                    : (perrosRaw as PerroRow | null);
-                  const clienteRaw = cita.perfiles as unknown;
-                  const cliente: ClienteRow | null = Array.isArray(clienteRaw)
-                    ? (clienteRaw[0] as ClienteRow) ?? null
-                    : (clienteRaw as ClienteRow | null);
+                  /* El detalle del formulario es un snapshot de texto: trae
+                     lo que la persona escribió al reservar, sin depender de
+                     que la ficha del perrito exista en `perros`. */
+                  const detalle = (cita.detalle_form ?? {}) as Record<string, string>;
+                  const perro = {
+                    nombre: detalle.nombrePerro ?? null,
+                    raza: detalle.raza ?? null,
+                    peso_kg: detalle.pesoKg ?? null,
+                    temperamento: detalle.temperamento ?? null,
+                  };
+                  /* `contacto_telefono` llega en NULL cuando quien mira no es
+                     admin (migración 027), así que el enlace de WhatsApp de
+                     más abajo simplemente no se dibuja para el peluquero. */
+                  const cliente = {
+                    nombre: cita.contacto_nombre as string | null,
+                    telefono: cita.contacto_telefono as string | null,
+                  };
 
                   return (
                     <div

@@ -49,21 +49,21 @@ export function EnVivo() {
 
       const [pendientes, confirmadas, enProceso, completadas] = await Promise.all([
         supabase
-          .from("sesiones")
+          .from("sesiones_equipo")
           .select("id", { count: "exact", head: true })
           .eq("estado", "pendiente"),
         supabase
-          .from("sesiones")
+          .from("sesiones_equipo")
           .select("id", { count: "exact", head: true })
           .eq("estado", "confirmada")
           .gte("fecha_cita", inicio)
           .lt("fecha_cita", fin),
         supabase
-          .from("sesiones")
+          .from("sesiones_equipo")
           .select("id", { count: "exact", head: true })
           .eq("estado", "en_proceso"),
         supabase
-          .from("sesiones")
+          .from("sesiones_equipo")
           .select("id", { count: "exact", head: true })
           .eq("estado", "completada")
           .gte("fecha_cita", inicio)

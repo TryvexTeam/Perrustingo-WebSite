@@ -33,7 +33,13 @@ export interface DisponibilidadConfig {
       un control que vive solo en el código se puede rodear yendo directo
       a la API. */
   maxCitasActivasTelefono: number;
+  /** Texto por defecto de una fecha bloqueada (migración 026). Editable
+      desde el panel: es lo que leen los clientes de Rodolfo. */
+  mensajeDiaLleno: string;
 }
+
+export const MENSAJE_DIA_LLENO_DEFAULT =
+  "Los cupos de este día ya están tomados. Pruebe con otra fecha 🐾";
 
 export const CONFIG_DEFAULT: DisponibilidadConfig = {
   leadTimeDias: 1,
@@ -41,6 +47,7 @@ export const CONFIG_DEFAULT: DisponibilidadConfig = {
   capacidadFallback: 1,
   pendienteOcupa: true,
   maxCitasActivasTelefono: 4,
+  mensajeDiaLleno: MENSAJE_DIA_LLENO_DEFAULT,
 };
 
 export interface Tramo {
@@ -59,6 +66,32 @@ export interface Bloque {
   etiqueta: string;
   /** Cuántos cupos quedan libres. */
   libres: number;
+}
+
+/** Una fecha que el local decidió no atender (migración 026).
+
+    Se modela aparte de los tramos porque son cosas distintas: el tramo dice
+    "los martes se atiende de 9 a 19" y la excepción dice "este martes no".
+    Meterlo en los tramos obligaría a desactivar todos los martes.
+
+    `mensaje` es lo que lee el cliente, y por pedido de Rodolfo habla de
+    cupos agotados, no de local cerrado: un día libre no debe leerse como
+    que el negocio no está funcionando. El motivo real no viaja hasta acá
+    —se queda en la base— así que este objeto es seguro de mandar al
+    navegador. */
+export interface Excepcion {
+  /** YYYY-MM-DD. */
+  fecha: string;
+  mensaje: string;
+}
+
+/** Texto que se muestra cuando no hay nada que ofrecer y la fecha no está
+    bloqueada a mano: el día simplemente se llenó o no se atiende. */
+export const MENSAJE_SIN_CUPO = "Ese día no queda ningún horario libre. Pruebe con otra fecha 🐾";
+
+/** La excepción de esa fecha, si la hay. */
+export function excepcionDe(fecha: string, excepciones: Excepcion[]): Excepcion | null {
+  return excepciones.find((e) => e.fecha === fecha) ?? null;
 }
 
 /** Minutos desde medianoche de un "HH:MM[:SS]". */
@@ -165,9 +198,12 @@ export function bloquesDisponibles(
   config: DisponibilidadConfig,
   capacidad: number,
   ocupacion: Record<string, number>,
-  ahora: Date = new Date()
+  ahora: Date = new Date(),
+  excepciones: Excepcion[] = []
 ): Bloque[] {
   if (!cumpleLeadTime(fecha, config, ahora)) return [];
+  // Una fecha bloqueada no ofrece nada, aunque el tramo semanal la atienda.
+  if (excepcionDe(fecha, excepciones)) return [];
 
   const esHoy = fecha === hoyEnSantiago(ahora);
   const minutosAhora = esHoy
@@ -196,7 +232,12 @@ export type MotivoRechazo =
   | "lead_time"
   | "fuera_de_horario"
   | "sin_cupo"
-  | "fecha_invalida";
+  | "fecha_invalida"
+  /* El local bloqueó esa fecha a mano. Se distingue de `sin_cupo` para poder
+     medirlo y depurarlo, pero el MENSAJE que recibe el cliente habla de
+     cupos: el motivo nunca sale de la aplicación (el endpoint devuelve
+     `mensaje`, no `motivo`). */
+  | "dia_bloqueado";
 
 export interface Veredicto {
   ok: boolean;
@@ -221,13 +262,25 @@ export function evaluarReserva(params: {
   ocupacion: Record<string, number>;
   cupos?: number;
   ahora?: Date;
+  excepciones?: Excepcion[];
 }): Veredicto {
   const { fecha, inicio, tramos, config, capacidad, ocupacion } = params;
   const cupos = params.cupos ?? 1;
   const ahora = params.ahora ?? new Date();
+  const excepciones = params.excepciones ?? [];
 
   if (!FORMATO_FECHA.test(fecha)) {
     return { ok: false, motivo: "fecha_invalida", mensaje: "La fecha no es válida." };
+  }
+
+  /* Antes que nada: la fecha puede estar bloqueada aunque el tramo semanal
+     la atienda y aunque queden cupos. Esta comprobación tiene que vivir acá
+     y no solo en la pantalla — si el formulario esconde el día pero el
+     endpoint lo acepta, basta con mandar el request a mano para reservar el
+     día libre de Rodolfo. */
+  const bloqueada = excepcionDe(fecha, excepciones);
+  if (bloqueada) {
+    return { ok: false, motivo: "dia_bloqueado", mensaje: bloqueada.mensaje };
   }
 
   if (!cumpleLeadTime(fecha, config, ahora)) {

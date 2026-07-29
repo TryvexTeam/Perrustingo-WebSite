@@ -4,7 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { Footer } from "@/components/layout/Footer";
 import { SiteMenu } from "@/components/layout/SiteMenu";
 import { EditorDisponibilidad } from "@/components/admin/EditorDisponibilidad";
+import { EditorExcepciones } from "@/components/admin/EditorExcepciones";
+import type { ExcepcionEditable } from "@/app/dashboard/disponibilidad/actions";
 import { obtenerDisponibilidad } from "@/lib/disponibilidadDatos";
+import { hoyEnSantiago } from "@/lib/disponibilidad";
 
 export const metadata: Metadata = {
   title: "Disponibilidad — Panel Perrustingo",
@@ -54,6 +57,24 @@ export default async function DisponibilidadPage() {
     .select("id", { count: "exact", head: true })
     .eq("es_peluquero", true);
 
+  /* Fechas bloqueadas. Se lee la TABLA y no la función pública porque esta
+     es la pantalla del admin: acá sí corresponde ver la nota interna.
+     Solo de hoy en adelante — las pasadas ya no afectan a nadie y llenarían
+     la lista con vacaciones del año pasado. Si la migración 026 aún no está
+     aplicada, `error` viene con 42P01 y la sección se muestra vacía en vez
+     de tumbar toda la página de disponibilidad. */
+  const { data: filasExcepciones } = await supabase
+    .from("disponibilidad_excepciones")
+    .select("fecha, mensaje, nota_interna")
+    .gte("fecha", hoyEnSantiago())
+    .order("fecha");
+
+  const excepciones: ExcepcionEditable[] = (filasExcepciones ?? []).map((f) => ({
+    fecha: (f.fecha as string).slice(0, 10),
+    mensaje: (f.mensaje as string | null) ?? "",
+    notaInterna: (f.nota_interna as string | null) ?? "",
+  }));
+
   return (
     <>
       <SiteMenu />
@@ -71,12 +92,16 @@ export default async function DisponibilidadPage() {
             formulario de reserva ofrece exactamente lo que quede acá.
           </p>
 
-          <div className="mt-8">
+          <div className="mt-8 space-y-6">
             <EditorDisponibilidad
               configInicial={config}
               tramosIniciales={tramos}
               peluqueros={count ?? 0}
               capacidad={capacidad}
+            />
+            <EditorExcepciones
+              excepcionesIniciales={excepciones}
+              mensajePorDefecto={config.mensajeDiaLleno}
             />
           </div>
         </div>

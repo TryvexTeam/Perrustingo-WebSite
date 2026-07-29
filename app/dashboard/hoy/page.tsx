@@ -65,7 +65,7 @@ export default async function HoyPage({ searchParams }: HoyPageProps) {
   const offset = offsetNegocio(fecha);
   const [{ data: filas }, disponibilidad] = await Promise.all([
     supabase
-      .from("sesiones")
+      .from("sesiones_equipo")
       .select(
         "id, estado, fecha_cita, servicio, precio_base, precio_final, contacto_nombre, contacto_telefono, detalle_form, notas_equipo"
       )

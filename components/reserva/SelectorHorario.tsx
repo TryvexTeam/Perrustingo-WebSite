@@ -4,12 +4,18 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   bloquesDisponibles,
+  excepcionDe,
   CONFIG_DEFAULT,
+  MENSAJE_SIN_CUPO,
   type Bloque,
   type DisponibilidadConfig,
   type Tramo,
 } from "@/lib/disponibilidad";
-import { obtenerDisponibilidad, obtenerOcupacion } from "@/lib/disponibilidadDatos";
+import {
+  obtenerDisponibilidad,
+  obtenerExcepciones,
+  obtenerOcupacion,
+} from "@/lib/disponibilidadDatos";
 import { offsetNegocio } from "@/lib/agenda";
 
 /* Horarios reales de un día (PRP-001 Fase 5).
@@ -30,6 +36,10 @@ export function SelectorHorario({ fecha, valor, onChange }: SelectorHorarioProps
   const [capacidad, setCapacidad] = useState(1);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
+  /* Texto a mostrar cuando el día no ofrece nada. Es state y no una
+     constante porque cuando Rodolfo bloquea la fecha, el mensaje lo escribe
+     él desde el panel. */
+  const [mensajeVacio, setMensajeVacio] = useState(MENSAJE_SIN_CUPO);
 
   useEffect(() => {
     if (!fecha) return;
@@ -47,10 +57,29 @@ export function SelectorHorario({ fecha, valor, onChange }: SelectorHorarioProps
         const offset = offsetNegocio(fecha);
         const desde = `${fecha}T00:00:00${offset}`;
         const hasta = `${fecha}T23:59:59${offset}`;
-        const ocupacion = await obtenerOcupacion(supabase, desde, hasta);
+        const [ocupacion, excepciones] = await Promise.all([
+          obtenerOcupacion(supabase, desde, hasta),
+          obtenerExcepciones(supabase, fecha, fecha),
+        ]);
         if (cancelado) return;
         setCapacidad(capacidad);
-        setBloques(bloquesDisponibles(fecha, tramos, config as DisponibilidadConfig, capacidad, ocupacion));
+        /* Si el local bloqueó esta fecha, el mensaje lo pone Rodolfo. La
+           regla del negocio es que hable de cupos tomados y no de local
+           cerrado: un día libre no debe leerse como que no están
+           trabajando. */
+        const bloqueada = excepcionDe(fecha, excepciones);
+        setMensajeVacio(bloqueada?.mensaje ?? MENSAJE_SIN_CUPO);
+        setBloques(
+          bloquesDisponibles(
+            fecha,
+            tramos,
+            config as DisponibilidadConfig,
+            capacidad,
+            ocupacion,
+            new Date(),
+            excepciones
+          )
+        );
       } catch {
         if (!cancelado) setError(true);
       } finally {
@@ -90,8 +119,8 @@ export function SelectorHorario({ fecha, valor, onChange }: SelectorHorarioProps
 
   if (bloques.length === 0) {
     return (
-      <p className="mt-3 rounded-2xl bg-cream px-4 py-3 text-xs font-semibold text-ink-soft">
-        Ese día no queda ningún horario libre. Pruebe con otra fecha 🐾
+      <p role="status" className="mt-3 rounded-2xl bg-cream px-4 py-3 text-xs font-semibold text-ink-soft">
+        {mensajeVacio}
       </p>
     );
   }

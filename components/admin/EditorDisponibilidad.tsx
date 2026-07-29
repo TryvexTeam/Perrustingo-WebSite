@@ -248,6 +248,28 @@ export function EditorDisponibilidad({
           </p>
         </div>
 
+        <div className="mt-4 rounded-2xl bg-cream px-4 py-3">
+          <label htmlFor="mensaje-lleno" className="text-sm font-bold text-ink">
+            Mensaje cuando un día no tiene cupo
+          </label>
+          <input
+            id="mensaje-lleno"
+            type="text"
+            maxLength={200}
+            value={config.mensajeDiaLleno}
+            onChange={(e) => {
+              setConfig((c) => ({ ...c, mensajeDiaLleno: e.target.value }));
+              tocar();
+            }}
+            disabled={guardando}
+            className="mt-2 w-full rounded-xl border-2 border-white bg-white px-3 py-2 text-sm font-semibold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
+          />
+          <p className="mt-1.5 text-[11px] leading-relaxed text-ink-soft">
+            Lo que lee el cliente en los días que usted bloquea más abajo, si
+            no le escribe un mensaje propio a esa fecha.
+          </p>
+        </div>
+
         <label className="mt-4 flex items-start gap-2 rounded-2xl bg-cream px-4 py-3">
           <input
             type="checkbox"

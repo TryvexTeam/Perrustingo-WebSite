@@ -21,6 +21,17 @@ export interface ConfigEditable {
   capacidadFallback: number;
   pendienteOcupa: boolean;
   maxCitasActivasTelefono: number;
+  mensajeDiaLleno: string;
+}
+
+/** Una fecha bloqueada tal como la edita el admin. A diferencia de lo que
+    ve el cliente, acá sí viaja `notaInterna`: es la pantalla de Rodolfo. */
+export interface ExcepcionEditable {
+  /** YYYY-MM-DD. */
+  fecha: string;
+  /** Vacío = usar el texto general de la config. */
+  mensaje: string;
+  notaInterna: string;
 }
 
 /* Escrituras de la disponibilidad (PRP-001 Fase 5). Guard admin + RLS,
@@ -85,6 +96,13 @@ export async function guardarDisponibilidadAction(
   ) {
     return { success: false, error: "El tope por teléfono debe estar entre 0 y 50." };
   }
+  const mensajeDiaLleno = config.mensajeDiaLleno.trim();
+  if (mensajeDiaLleno.length < 1 || mensajeDiaLleno.length > 200) {
+    return {
+      success: false,
+      error: "El mensaje de día sin cupo debe tener entre 1 y 200 caracteres.",
+    };
+  }
 
   for (const tramo of tramos) {
     if (!Number.isInteger(tramo.diaSemana) || tramo.diaSemana < 0 || tramo.diaSemana > 6) {
@@ -108,6 +126,7 @@ export async function guardarDisponibilidadAction(
       capacidad_fallback: config.capacidadFallback,
       pendiente_ocupa: config.pendienteOcupa,
       max_citas_activas_telefono: config.maxCitasActivasTelefono,
+      mensaje_dia_lleno: mensajeDiaLleno,
       updated_at: new Date().toISOString(),
     })
     .eq("singleton", true)
@@ -144,6 +163,81 @@ export async function guardarDisponibilidadAction(
     );
     if (errorInsert) return { success: false, error: "No se pudieron guardar los horarios." };
   }
+
+  revalidatePath("/dashboard/disponibilidad");
+  revalidatePath("/reserva");
+  return { success: true };
+}
+
+/* ── Fechas bloqueadas (migración 026) ──────────────────────────
+   Se editan de a una y no en bloque como los tramos: bloquear un día es una
+   decisión puntual ("el 12 me tomo la tarde"), y un guardado masivo haría
+   que un error de tipeo borrara vacaciones ya cargadas. */
+
+const FECHA = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Bloquea una fecha, o actualiza el texto si ya estaba bloqueada. */
+export async function bloquearFechaAction(
+  excepcion: ExcepcionEditable
+): Promise<ResultadoAccion> {
+  const sesion = await exigirAdmin();
+  if ("error" in sesion) return { success: false, error: sesion.error };
+
+  if (!FECHA.test(excepcion.fecha)) {
+    return { success: false, error: "Fecha inválida." };
+  }
+
+  const mensaje = excepcion.mensaje.trim();
+  if (mensaje.length > 200) {
+    return { success: false, error: "El mensaje no puede pasar de 200 caracteres." };
+  }
+  const nota = excepcion.notaInterna.trim();
+  if (nota.length > 200) {
+    return { success: false, error: "La nota no puede pasar de 200 caracteres." };
+  }
+
+  const { error } = await sesion.supabase.from("disponibilidad_excepciones").upsert(
+    {
+      fecha: excepcion.fecha,
+      // Vacío se guarda como NULL, no como "": así la función de la base
+      // cae en el texto general en vez de mostrarle una cadena vacía al
+      // cliente.
+      mensaje: mensaje || null,
+      nota_interna: nota || null,
+    },
+    { onConflict: "fecha" }
+  );
+
+  if (error) {
+    return {
+      success: false,
+      error:
+        error.code === "42P01"
+          ? "Falta aplicar la migración 026 en la base de datos."
+          : error.code === "42501"
+            ? "La base de datos rechazó el cambio (permisos)."
+            : "No se pudo bloquear la fecha.",
+    };
+  }
+
+  revalidatePath("/dashboard/disponibilidad");
+  revalidatePath("/reserva");
+  return { success: true };
+}
+
+/** Vuelve a abrir una fecha. */
+export async function liberarFechaAction(fecha: string): Promise<ResultadoAccion> {
+  const sesion = await exigirAdmin();
+  if ("error" in sesion) return { success: false, error: sesion.error };
+
+  if (!FECHA.test(fecha)) return { success: false, error: "Fecha inválida." };
+
+  const { error } = await sesion.supabase
+    .from("disponibilidad_excepciones")
+    .delete()
+    .eq("fecha", fecha);
+
+  if (error) return { success: false, error: "No se pudo liberar la fecha." };
 
   revalidatePath("/dashboard/disponibilidad");
   revalidatePath("/reserva");
