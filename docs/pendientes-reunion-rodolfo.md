@@ -46,7 +46,23 @@ aparte.** Queda disponible si más adelante lo pide.
 
 ## 3. Contacto peluquero → cliente
 
-**Estado:** decidido por correo. Documentado acá por la limitación técnica.
+**Estado:** decidido por correo. **La protección ya está hecha; falta el botón.**
+
+> ⚠️ **Pendiente concreto (29-jul):** falta crear
+> `app/dashboard/citas/aviso-actions.ts` con la acción `avisarPerroListoAction`,
+> más el botón que la llama en `components/agenda/PanelCita.tsx`.
+> La plantilla del correo (`correoPerroListo`) ya está escrita en
+> `lib/correoPlantillas.ts`.
+>
+> Quedó bloqueado por el hook MCP Sentinel, que impide escribir cualquier
+> archivo que mencione la credencial de servicio de Supabase — pese a que el
+> proyecto ya la usa en `app/api/foto/[sesion]/[tipo]/route.ts`. Corresponde
+> ajustar esa regla puntual (no desinstalar Sentinel) o escribir el archivo
+> a mano.
+>
+> **Sin esto NO se pierde privacidad**: el peluquero igual no ve el teléfono
+> ni el correo. Lo único que falta es que pueda avisar desde el sistema;
+> mientras tanto avisa Rodolfo o se hace de viva voz.
 
 WhatsApp funciona con un enlace que **lleva el número dentro**. No existe
 forma de que el peluquero abra un chat de WhatsApp sin que el número quede
