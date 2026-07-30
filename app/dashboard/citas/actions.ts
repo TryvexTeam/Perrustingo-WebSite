@@ -63,6 +63,7 @@ export async function cambiarEstadoCita(
      acá. */
   const servicio = crearClienteServicio();
   const lector = servicio ?? supabase;
+  const escritor = servicio ?? supabase;
 
   const { data: cita, error: errorLectura } = await lector
     .from("sesiones")
@@ -81,6 +82,10 @@ export async function cambiarEstadoCita(
       rol: perfil.rol,
       conClienteDeServicio: Boolean(servicio),
       codigo: errorLectura?.code ?? null,
+      /* El `code` solo viene en errores de PostgREST. Una credencial inválida
+         la rechaza el gateway antes, con un cuerpo que no trae `code` — y sin
+         el mensaje el fallo se veía idéntico a "la fila no existe". */
+      mensaje: errorLectura?.message ?? null,
     });
     return { success: false, error: "Cita no encontrada." };
   }
@@ -106,38 +111,38 @@ export async function cambiarEstadoCita(
     cambios.fecha_fin = new Date(inicio.getTime() + duracion * 3_600_000).toISOString();
   }
 
-  const { error } = await supabase
+  /* La escritura va por el mismo camino que la lectura, y por la misma
+     razón (migración 029): para MODIFICAR una fila Postgres primero tiene
+     que ENCONTRARLA, y esa búsqueda usa las políticas de lectura. Como el
+     peluquero ya no puede leer `sesiones`, su UPDATE no encontraba nada y
+     se ejecutaba sin error sobre cero filas — el panel decía "listo" y la
+     cita quedaba igual.
+
+     El control no se pierde: arriba se verificó el rol del equipo y que la
+     transición de estado sea válida. */
+  const { data: tocadas, error } = await escritor
     .from("sesiones")
     .update(cambios)
-    .eq("id", citaId);
+    .eq("id", citaId)
+    /* `.select()` para saber si la fila se tocó de verdad. Un UPDATE que no
+       afecta nada no falla, y sin esto volveríamos a prometer un cambio que
+       no ocurrió — que fue justamente el síntoma reportado. */
+    .select("id");
 
   if (error) return { success: false, error: "No se pudo actualizar." };
 
-  /* Un UPDATE bloqueado por RLS no falla: simplemente no toca ninguna fila.
-     Sin comprobarlo, el panel diría "listo" sobre una cita que quedó igual —
-     que es exactamente lo que se reportó. Se relee con el cliente de
-     servicio, que sí puede ver la fila, para confirmar que el cambio ocurrió
-     de verdad antes de dar el éxito por bueno. */
-  if (servicio) {
-    const { data: verificacion } = await servicio
-      .from("sesiones")
-      .select("estado")
-      .eq("id", citaId)
-      .single();
-
-    if (verificacion && verificacion.estado !== nuevoEstado) {
-      console.error("[cambiarEstadoCita] el UPDATE no toco ninguna fila", {
-        citaId,
-        rol: perfil.rol,
-        estadoPrevio: cita.estado,
-        estadoPedido: nuevoEstado,
-        estadoActual: verificacion.estado,
-      });
-      return {
-        success: false,
-        error: "La base de datos rechazó el cambio (permisos). Avise al equipo técnico.",
-      };
-    }
+  if (!tocadas || tocadas.length === 0) {
+    console.error("[cambiarEstadoCita] el UPDATE no toco ninguna fila", {
+      citaId,
+      rol: perfil.rol,
+      estadoPrevio: cita.estado,
+      estadoPedido: nuevoEstado,
+      conClienteDeServicio: Boolean(servicio),
+    });
+    return {
+      success: false,
+      error: "La base de datos rechazó el cambio. Avise al equipo técnico.",
+    };
   }
 
   /* Espejo en Google Calendar. El respaldo NUNCA bloquea al panel: la cita ya
@@ -209,12 +214,19 @@ export async function guardarNotasEquipo(
     return { success: false, error: "Sin permisos." };
   }
 
-  const { error } = await supabase
+  /* Mismo caso que `cambiarEstadoCita`: sin lectura sobre `sesiones`, el
+     UPDATE del peluquero no encuentra la fila y se pierde en silencio.
+     La nota se guardaría "con éxito" y no quedaría escrita. */
+  const { data: tocadas, error } = await (crearClienteServicio() ?? supabase)
     .from("sesiones")
     .update({ notas_equipo: notas.trim() || null, updated_at: new Date().toISOString() })
-    .eq("id", citaId);
+    .eq("id", citaId)
+    .select("id");
 
   if (error) return { success: false, error: "No se pudo guardar la nota." };
+  if (!tocadas || tocadas.length === 0) {
+    return { success: false, error: "La base de datos rechazó el cambio. Avise al equipo técnico." };
+  }
 
   revalidatePath("/dashboard/citas");
   return { success: true };
