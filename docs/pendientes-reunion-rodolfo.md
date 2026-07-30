@@ -147,6 +147,33 @@ Cerrar solo la primera deja la segunda abierta. El plan es cerrar ambas a
 nivel de base de datos, no solo de pantalla: una restricción que vive únicamente
 en la interfaz se rodea desde el navegador.
 
+## 8. Aviso "está listo": ¿copia al salón para avisar también por WhatsApp?
+
+**Estado:** pendiente de respuesta de Rodolfo. La página ya se corrigió.
+
+**Contexto.** Como Rodolfo pidió que los peluqueros no vieran el contacto del
+cliente, el aviso de "su perrito está listo" sale **por correo desde el
+servidor**: el peluquero aprieta el botón sin ver a quién le llega. La página
+de inicio prometía ese aviso "por WhatsApp" — texto que quedó viejo y ya se
+corrigió (30-jul): ahora dice correo, que es lo que de verdad pasa.
+
+**La pregunta para Rodolfo:** cuando el aviso le llega al correo del cliente,
+¿quiere que **también llegue una copia al correo del salón**? Con esa copia,
+él (o quien administre) sabría en el momento que el perrito está listo y
+podría escribirle al cliente por WhatsApp desde su propio teléfono — el aviso
+por WhatsApp seguiría existiendo, pero lo daría el admin, que sí puede ver el
+contacto. La alternativa es dejarlo solo por correo al cliente.
+
+| Si Rodolfo dice | Qué implica |
+|---|---|
+| Solo correo al cliente (como hoy) | Nada que hacer |
+| Copia al salón para avisar él por WhatsApp | Cambio chico: el mismo aviso se manda también a la casilla del salón, con el enlace de WhatsApp del cliente listo para tocar. El peluquero sigue sin ver nada |
+
+**Dato para la conversación:** la casilla del salón ya recibe un correo por
+cada reserva nueva, así que esto sería un correo más del mismo estilo. Y si
+más adelante quiere que el WhatsApp salga solo, sin pasar por él, eso es la
+WhatsApp Business API del punto 3 — con su costo por conversación.
+
 ---
 
 # Deuda técnica interna

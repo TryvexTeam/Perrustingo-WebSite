@@ -26,11 +26,15 @@ const BENEFICIOS: {
     visual: (
       <IluSlot
         src="/ilustraciones/whatsapp.png"
-        alt="Burbuja de WhatsApp en 3D"
+        alt="Burbuja de mensaje en 3D"
         fallback={<IluWhatsApp className="h-[74%] w-[74%]" />}
       />
     ),
-    titulo: "Aviso por WhatsApp",
+    /* Por correo, no por WhatsApp (corregido 30-jul): desde que el peluquero
+       no ve el contacto del cliente (migración 027), el aviso "está listo"
+       sale por correo desde el servidor. Prometer WhatsApp acá era anunciar
+       un canal que ya no se usa para esto. */
+    titulo: "Aviso al correo",
     detalle: "Te escribimos apenas está listo.",
   },
   {

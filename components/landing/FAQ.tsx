@@ -10,7 +10,7 @@ const PREGUNTAS = [
   },
   {
     q: "¿Cuánto tiempo tarda el servicio?",
-    a: "Depende del tamaño y el estado del pelo. Un Mini/Toy puede tomar 1 hora; uno Gigante con pelo enredado puede tomar 3–4 horas. Te avisamos por WhatsApp apenas esté listo.",
+    a: "Depende del tamaño y el estado del pelo. Un Mini/Toy puede tomar 1 hora; uno Gigante con pelo enredado puede tomar 3–4 horas. Te avisamos por correo apenas esté listo.",
   },
   {
     q: "¿Por qué los precios son estimados y pueden variar?",
@@ -30,7 +30,7 @@ const PREGUNTAS = [
   },
   {
     q: "¿Puedo quedarme durante el servicio?",
-    a: "Preferimos que los papás esperen afuera — los perros suelen comportarse mejor cuando su familia no está presente. Puedes esperar en un lugar cercano y te avisamos por WhatsApp apenas puedas venir a buscarlo.",
+    a: "Preferimos que los papás esperen afuera — los perros suelen comportarse mejor cuando su familia no está presente. Puedes esperar en un lugar cercano y te avisamos por correo apenas puedas venir a buscarlo.",
   },
   {
     q: "¿Atienden perros y perras con problemas de salud?",
