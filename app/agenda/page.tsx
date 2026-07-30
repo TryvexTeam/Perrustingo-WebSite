@@ -45,7 +45,7 @@ async function cargarAgenda(): Promise<DatosAgenda> {
       const { data } = await supabase
         .from("sesiones_equipo")
         .select(
-          "id, estado, fecha_cita, fecha_fin, servicio, precio_base, precio_final, contacto_nombre, contacto_email, contacto_telefono, detalle_form, notas_cliente, notas_equipo, perro_id"
+          "id, estado, fecha_cita, fecha_fin, servicio, precio_base, precio_final, contacto_nombre, contacto_email, contacto_telefono, detalle_form, notas_cliente, notas_equipo, perro_id, aviso_listo_en"
         )
         .in("estado", ["pendiente", "confirmada", "en_proceso"])
         .not("fecha_cita", "is", null)

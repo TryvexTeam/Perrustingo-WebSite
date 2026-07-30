@@ -39,8 +39,15 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
   const [notasEstado, setNotasEstado] = useState<"idle" | "guardando" | "ok" | "error">("idle");
   const [historial, setHistorial] = useState<{ fecha: string; notas: string }[]>([]);
   /* Aviso "está listo". Estado propio y no el `pending` general: mientras se
-     manda el correo, los botones de estado tienen que seguir usables. */
-  const [aviso, setAviso] = useState<"idle" | "enviando" | "enviado" | "error">("idle");
+     manda el correo, los botones de estado tienen que seguir usables.
+
+     Arranca en "enviado" si la cita ya trae la marca (migración 030). Antes
+     arrancaba siempre en "idle", así que cerrar y reabrir el panel volvía a
+     habilitar el botón y el cliente recibía el aviso dos veces. */
+  const avisadoEn = cita.sesion?.aviso_listo_en ?? null;
+  const [aviso, setAviso] = useState<"idle" | "enviando" | "enviado" | "error">(
+    avisadoEn ? "enviado" : "idle"
+  );
   const [avisoError, setAvisoError] = useState("");
 
   const sesionId = cita.sesion?.id;
@@ -330,7 +337,14 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
               )}
               {aviso === "enviado" && (
                 <p className="mt-2 text-xs font-semibold text-ink-soft">
-                  Le llegó un correo avisando que puede pasar a buscarlo.
+                  {avisadoEn
+                    ? /* Con la hora, quien retoma una cita ajena sabe si el
+                         aviso salió recién o hace rato. Sin punto final: el
+                         formato es-CL ya termina en "p. m.". */
+                      `Avisado el ${new Date(avisadoEn).toLocaleString("es-CL", {
+                        timeZone: "America/Santiago",
+                      })}`
+                    : "Le llegó un correo avisando que puede pasar a buscarlo."}
                 </p>
               )}
             </div>
