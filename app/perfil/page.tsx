@@ -92,20 +92,29 @@ export default async function PerfilPage() {
                 </a>
               </p>
             ) : (
+              /* Cada perro lleva directo al formulario de reserva, donde su
+                 ficha aparece precargada para tocar y confirmar (30-jul).
+                 Antes esta lista era puro adorno — se veían los perros pero
+                 no se podía hacer nada con ellos, que fue justamente el
+                 reclamo. */
               <div className="space-y-2">
                 {perros.map((p) => (
-                  <div
+                  <a
                     key={p.id}
-                    className="flex items-center gap-3 rounded-2xl border border-zinc-100 px-4 py-3"
+                    href="/reserva"
+                    className="flex items-center gap-3 rounded-2xl border border-zinc-100 px-4 py-3 transition-colors hover:border-teal/40 hover:bg-sky/20"
                   >
                     <span className="text-2xl">🐶</span>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold text-ink">{p.nombre}</p>
                       <p className="text-xs text-ink-soft">
                         {p.raza} · {p.peso_kg} kg
                       </p>
                     </div>
-                  </div>
+                    <span className="text-xs font-bold text-teal-dark">
+                      Agendar cita →
+                    </span>
+                  </a>
                 ))}
               </div>
             )}
