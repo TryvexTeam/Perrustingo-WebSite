@@ -88,11 +88,20 @@ export function EnVivo() {
     void cargar();
     const intervalo = setInterval(() => void cargar(), POLL_MS);
 
-    let canal: { unsubscribe: () => void } | null = null;
+    /* El canal se arma dentro de un `async`, así que la limpieza puede correr
+       ANTES de que el canal exista. Sin esta bandera no había nada que limpiar
+       y el segundo montaje se topaba con el canal del primero: `channel()`
+       devuelve el canal ya existente cuando el tema coincide, y agregarle un
+       `postgres_changes` después de `subscribe()` lanza excepción. */
+    let cancelado = false;
+    let cerrarCanal: (() => void) | null = null;
+
     void (async () => {
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
-      canal = supabase
+      if (cancelado) return;
+
+      const canal = supabase
         .channel("sesiones-en-vivo")
         .on(
           "postgres_changes",
@@ -106,11 +115,18 @@ export function EnVivo() {
           }
         )
         .subscribe();
+
+      /* `removeChannel` y no `unsubscribe`: además de cortar la suscripción lo
+         saca del registro del cliente, que es lo que libera el nombre del tema
+         para el próximo montaje. */
+      cerrarCanal = () => void supabase.removeChannel(canal);
+      if (cancelado) cerrarCanal();
     })();
 
     return () => {
+      cancelado = true;
       clearInterval(intervalo);
-      canal?.unsubscribe();
+      cerrarCanal?.();
     };
   }, [configurado, cargar]);
 
