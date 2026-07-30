@@ -145,7 +145,17 @@ export async function guardarDisponibilidadAction(
     return { success: false, error: "No se guardó la configuración (permisos)." };
   }
 
-  // Reemplazo completo de los tramos.
+  /* Reemplazo completo de los tramos. Desde acá no hay transacción —
+     PostgREST hace una petición por operación—, así que borrar-e-insertar
+     tiene un hueco: si el insert falla después del borrado, el salón queda
+     SIN NINGÚN horario publicado y el formulario no ofrece ninguna hora, en
+     silencio, hasta que alguien vuelva a guardar (con tramos vacíos no hay
+     fallback: `obtenerDisponibilidad` devuelve lista vacía tal cual).
+     Se leen los tramos vigentes antes de borrar para poder restaurarlos. */
+  const { data: tramosPrevios } = await sesion.supabase
+    .from("disponibilidad_tramos")
+    .select("dia_semana, hora_inicio, hora_fin, activo");
+
   const { error: errorBorrado } = await sesion.supabase
     .from("disponibilidad_tramos")
     .delete()
@@ -161,7 +171,31 @@ export async function guardarDisponibilidadAction(
         activo: t.activo,
       }))
     );
-    if (errorInsert) return { success: false, error: "No se pudieron guardar los horarios." };
+    if (errorInsert) {
+      /* Restaurar lo que había. Si también falla, decirlo con todas sus
+         letras: "no se guardó" a secas dejaría creer que el horario anterior
+         sigue vigente, cuando en realidad no queda ninguno. */
+      if (tramosPrevios && tramosPrevios.length > 0) {
+        const { error: errorRestauracion } = await sesion.supabase
+          .from("disponibilidad_tramos")
+          .insert(tramosPrevios);
+        if (errorRestauracion) {
+          console.error("[disponibilidad] tramos borrados y sin restaurar", {
+            mensaje: errorRestauracion.message,
+          });
+          return {
+            success: false,
+            error:
+              "No se guardaron los horarios Y el horario anterior no se pudo restaurar: " +
+              "ahora mismo el sitio no ofrece ninguna hora. Vuelva a guardar cuanto antes.",
+          };
+        }
+      }
+      return {
+        success: false,
+        error: "No se pudieron guardar los horarios. El horario anterior sigue vigente.",
+      };
+    }
   }
 
   revalidatePath("/dashboard/disponibilidad");
