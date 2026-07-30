@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { crearClienteServicio } from "@/lib/supabase/servicio";
 import { enviarCorreo, correoConfigurado } from "@/lib/correo";
@@ -55,11 +56,25 @@ export async function avisarPerroListoAction(citaId: string): Promise<ResultadoA
 
   const { data: cita } = await admin
     .from("sesiones")
-    .select("estado, servicio, contacto_nombre, contacto_email, detalle_form")
+    .select("estado, servicio, contacto_nombre, contacto_email, detalle_form, aviso_listo_en")
     .eq("id", citaId)
     .single();
 
   if (!cita) return { success: false, error: "Cita no encontrada." };
+
+  /* Ya se avisó. El botón del panel se bloquea al enviar, pero ese estado
+     vive solo mientras el panel esté abierto: cerrarlo y reabrirlo lo
+     reiniciaba y el cliente recibía el aviso de nuevo (pasó el 30-jul, dos
+     correos en tres minutos). La única defensa que sobrevive a una recarga
+     es la que está en la base. */
+  if (cita.aviso_listo_en) {
+    /* Sin punto final: el formato es-CL ya termina en "p. m." y quedaban dos
+       puntos seguidos. */
+    const cuando = new Date(cita.aviso_listo_en).toLocaleString("es-CL", {
+      timeZone: "America/Santiago",
+    });
+    return { success: false, error: `Ya se avisó el ${cuando} — no se reenvía` };
+  }
 
   /* Solo cuando el trabajo ya está en marcha o terminado. Avisar antes hace
      que la persona llegue a un perrito a medio secar, y un correo enviado no
@@ -88,6 +103,26 @@ export async function avisarPerroListoAction(citaId: string): Promise<ResultadoA
   if (!envio.ok) {
     return { success: false, error: "No se pudo enviar el aviso. Intente de nuevo." };
   }
+
+  /* Se marca DESPUÉS de que Resend aceptó, no antes: si el envío falla, la
+     cita queda sin marcar y el aviso se puede reintentar. Al revés —marcar
+     primero— un fallo de red dejaría al cliente sin aviso y sin manera de
+     mandarlo de nuevo. */
+  const { error: errorMarca } = await admin
+    .from("sesiones")
+    .update({ aviso_listo_en: new Date().toISOString() })
+    .eq("id", citaId);
+
+  if (errorMarca) {
+    /* El correo YA salió; no se puede deshacer. Se registra para que quede
+       rastro de que la marca no quedó y el aviso podría repetirse. */
+    console.error("[avisarPerroListo] el correo salió pero no se marcó la cita", {
+      citaId,
+      mensaje: errorMarca.message,
+    });
+  }
+
+  revalidatePath("/dashboard/citas");
 
   /* Solo el veredicto. Ni el correo, ni el teléfono, ni el id del mensaje:
      nada con que reconstruir el dato protegido. */

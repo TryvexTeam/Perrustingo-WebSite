@@ -62,6 +62,8 @@ export interface SesionEquipo {
   notas_cliente: string | null;
   notas_equipo?: string | null;
   perro_id?: string | null;
+  /** Cuándo se avisó al cliente que puede pasar a buscarlo. `null` = todavía no. */
+  aviso_listo_en?: string | null;
 }
 
 /** Foto adjunta a una sesión (subida por el cliente o el equipo). */
