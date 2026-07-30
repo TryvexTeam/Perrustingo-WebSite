@@ -15,6 +15,7 @@ import {
 import {
   actualizarDatosPerfilAction,
   cambiarRolAction,
+  eliminarCuentaAction,
   marcarPeluqueroAction,
 } from "@/app/dashboard/usuarios/actions";
 
@@ -45,6 +46,10 @@ export function GestorUsuarios({ perfiles, emails, adminId }: GestorUsuariosProp
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState("");
+  /* Confirmación en dos pasos para el borrado: el primer clic solo arma el
+     segundo. Un borrado de cuenta no se deshace, así que acá no hay acción
+     de un solo clic. */
+  const [confirmandoBorrado, setConfirmandoBorrado] = useState<string | null>(null);
 
   const aplicar = (id: string, cambios: Partial<PerfilAdmin>) =>
     setFilas((prev) => prev.map((p) => (p.id === id ? { ...p, ...cambios } : p)));
@@ -93,6 +98,23 @@ export function GestorUsuarios({ perfiles, emails, adminId }: GestorUsuariosProp
       aplicar(perfil.id, { es_peluquero: !valor });
       setError(resultado.error ?? "No se pudo guardar.");
     }
+  };
+
+  const eliminarCuenta = async (perfil: PerfilAdmin) => {
+    setError("");
+    setAviso("");
+    setOcupado(perfil.id);
+
+    const resultado = await eliminarCuentaAction(perfil.id);
+    setOcupado(null);
+    setConfirmandoBorrado(null);
+
+    if (!resultado.success) {
+      setError(resultado.error ?? "No se pudo eliminar la cuenta.");
+      return;
+    }
+    setFilas((prev) => prev.filter((p) => p.id !== perfil.id));
+    setAviso(`La cuenta de ${nombreCompleto(perfil)} fue eliminada. Sus citas quedan en el historial, sin datos personales.`);
   };
 
   const guardarDatos = async (perfil: PerfilAdmin, datos: DatosEditables) => {
@@ -275,6 +297,48 @@ export function GestorUsuarios({ perfiles, emails, adminId }: GestorUsuariosProp
                   onCancelar={() => setEditando(null)}
                   onGuardar={(datos) => guardarDatos(perfil, datos)}
                 />
+              )}
+
+              {/* Eliminar cuenta — solo para cuentas ajenas y no-admin. Las
+                  admin primero se degradan: así el borrado nunca esquiva la
+                  protección del último admin. */}
+              {!esYo && perfil.rol !== "admin" && (
+                <div className="mt-3 border-t border-ink/10 pt-3">
+                  {confirmandoBorrado === perfil.id ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-xs font-semibold text-[#7a1030]">
+                        Se borra la cuenta y sus perros guardados. Sus citas
+                        quedan en el historial sin datos personales. Esto no se
+                        puede deshacer.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => eliminarCuenta(perfil)}
+                        disabled={bloqueado}
+                        className="rounded-full bg-[#7a1030] px-4 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Sí, eliminar a {nombreCompleto(perfil)}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmandoBorrado(null)}
+                        disabled={bloqueado}
+                        className="rounded-full bg-white px-4 py-2 text-xs font-bold text-ink-soft"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmandoBorrado(perfil.id)}
+                      disabled={bloqueado}
+                      className="text-xs font-bold text-[#7a1030] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Eliminar esta cuenta…
+                    </button>
+                  )}
+                </div>
               )}
             </li>
           );
