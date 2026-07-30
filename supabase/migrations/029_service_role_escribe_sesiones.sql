@@ -1,0 +1,43 @@
+-- ============================================================
+-- 029 — El servidor puede escribir en `sesiones`
+-- ============================================================
+-- Continuación de la 028, y de la misma cacería.
+--
+-- Con el GRANT de SELECT, confirmar una cita dejó de dar "Cita no
+-- encontrada"… pero el estado seguía sin cambiar. El UPDATE se ejecutaba sin
+-- error y no tocaba ninguna fila.
+--
+-- La razón es una sutileza de Postgres: para MODIFICAR una fila primero hay
+-- que ENCONTRARLA, y esa búsqueda usa las políticas de LECTURA. La migración
+-- 027 le quitó al rol 'trabajador' la lectura de `sesiones` —a propósito,
+-- para que el peluquero no vea el contacto del cliente—, así que su
+-- `UPDATE ... WHERE id = X` no encuentra nada que actualizar. La política
+-- `trabajador_actualiza_sesiones` es correcta; nunca llega a evaluarse.
+--
+-- Las salidas eran tres:
+--
+--   a) Devolverle la lectura al peluquero  → deshace la 027 entera. No.
+--   b) Una función SECURITY DEFINER por cada operación → más ajustado, pero
+--      son dos operaciones (estado y notas) y cada cambio futuro obliga a
+--      tocar SQL además del código.
+--   c) Que la escritura pase por el servidor, como ya pasa la lectura.
+--
+-- Se eligió (c). El control no desaparece, cambia de lugar: la acción del
+-- servidor verifica el rol del equipo y valida la transición de estado ANTES
+-- de escribir, y esa credencial solo existe en el servidor — nunca viaja al
+-- navegador del peluquero.
+--
+-- Nota sobre la 028: ahí se dijo que dar UPDATE sería "ampliar el alcance sin
+-- necesidad". La necesidad quedó demostrada: sin esto, el peluquero no puede
+-- mover ninguna cita.
+
+GRANT UPDATE ON public.sesiones TO service_role;
+
+-- Sigue sin darse INSERT ni DELETE. Crear citas es del formulario público
+-- (política `solicitud_publica_pendiente`) y borrar no lo hace nadie: las
+-- citas se cancelan cambiando el estado, que es lo que cubre este UPDATE.
+
+-- Verificación post-aplicación (correr a mano):
+-- SELECT grantee, privilege_type FROM information_schema.role_table_grants
+--  WHERE table_name = 'sesiones' AND grantee = 'service_role' ORDER BY 2;
+--   -> dos filas: SELECT y UPDATE
