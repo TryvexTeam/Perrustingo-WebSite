@@ -46,8 +46,18 @@ export async function guardarTarifasAction(tarifas: Tarifas): Promise<ResultadoA
     return { success: false, error: "Valores fuera de rango." };
   }
 
+  /* `.select()` en cada UPDATE para saber si tocó una fila de verdad. Bajo
+     RLS —o si la fila del tamaño no existe— un UPDATE sin efecto no falla:
+     devuelve éxito con 0 filas, y el panel diría "guardado" sobre precios
+     que siguen iguales. Es el mismo defecto que ya mordió en citas (30-jul);
+     el resto del panel ya verifica así y estas acciones se habían quedado
+     atrás — justamente las que deciden cuánto paga un cliente. */
   const actualizacionesBase = tamanos.map((tamano) =>
-    supabase.from("tarifas").update({ precio: tarifas.base[tamano] }).eq("tamano", tamano)
+    supabase
+      .from("tarifas")
+      .update({ precio: tarifas.base[tamano] })
+      .eq("tamano", tamano)
+      .select("tamano")
   );
   const actualizacionExtras = supabase
     .from("tarifas_extras")
@@ -56,11 +66,15 @@ export async function guardarTarifasAction(tarifas: Tarifas): Promise<ResultadoA
       precio_accesorio: tarifas.accesorio,
       updated_at: new Date().toISOString(),
     })
-    .eq("singleton", true);
+    .eq("singleton", true)
+    .select("singleton");
 
   const resultados = await Promise.all([...actualizacionesBase, actualizacionExtras]);
   const fallo = resultados.find((r) => r.error);
   if (fallo) return { success: false, error: "No se pudo guardar." };
+  if (resultados.some((r) => !r.data || r.data.length === 0)) {
+    return { success: false, error: "Algún precio no se guardó (permisos o fila faltante)." };
+  }
 
   revalidatePath("/dashboard/tarifas");
   revalidatePath("/");
@@ -216,6 +230,9 @@ export async function guardarAjustesPrecioAction(
   });
   if (!valido) return { success: false, error: "Valores fuera de rango." };
 
+  /* Mismo criterio que `guardarTarifasAction`: verificar el efecto, no la
+     llamada. Una clave que no existe en la tabla haría un UPDATE de 0 filas
+     que "termina bien" — y el recargo que el admin cree vigente no existiría. */
   const actualizaciones = filas.map((f) =>
     supabase
       .from("ajustes_precio")
@@ -229,11 +246,19 @@ export async function guardarAjustesPrecioAction(
       })
       .eq("categoria", f.categoria)
       .eq("clave", f.clave)
+      .select("clave")
   );
 
   const resultados = await Promise.all(actualizaciones);
   const fallo = resultados.find((r) => r.error);
   if (fallo) return { success: false, error: "No se pudo guardar." };
+  const sinEfecto = resultados.findIndex((r) => !r.data || r.data.length === 0);
+  if (sinEfecto >= 0) {
+    return {
+      success: false,
+      error: `No se guardó "${filas[sinEfecto].etiqueta.trim()}" (fila faltante o permisos).`,
+    };
+  }
 
   revalidatePath("/dashboard/tarifas");
   revalidatePath("/reserva");
