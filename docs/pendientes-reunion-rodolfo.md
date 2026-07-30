@@ -176,26 +176,23 @@ WhatsApp Business API del punto 3 — con su costo por conversación.
 
 ---
 
-## 9. ¿El cliente puede cancelar su cita desde la cuenta?
+## 9. Cancelación de citas por el cliente
 
-**Estado:** pendiente de decisión de Rodolfo. Técnicamente simple; la regla
-es lo que falta.
+**Estado:** ✅ **Resuelto con solicitud por WhatsApp (30-jul, idea del señor
+Adley).** Queda una pregunta opcional para Rodolfo.
 
-**Contexto.** La cuenta del cliente ya muestra su próxima cita (30-jul),
-pero para cancelarla tiene que escribir por WhatsApp. Dar el botón de
-cancelar es poco trabajo — lo que no es trivial es la regla de negocio:
+En "Mi cuenta", junto a la próxima cita, el cliente tiene el botón
+"¿Necesitas cancelar o cambiar la hora? Avísanos por WhatsApp" — abre el
+chat del salón con el mensaje ya escrito (quién es, qué perrito, qué día y
+hora). **El cliente solicita; el equipo decide y cancela en el panel.** Así
+nadie se auto-cancela cinco minutos antes y la agenda nunca queda a merced
+de un clic. El cupo se libera cuando el equipo cancela.
 
-- **¿Hasta cuándo se puede cancelar?** Un cliente cancelando a las 9:55 una
-  cita de las 10:00 le rompe la agenda al salón. Opciones típicas: hasta 24
-  horas antes, hasta la noche anterior, o sin límite.
-- **¿Qué pasa con el cupo?** Al cancelar, el bloque se libera y otro cliente
-  puede tomarlo — eso es lo bueno. Lo malo es el abuso: reservar y cancelar
-  repetido. El tope de citas activas por teléfono (migración 017) ya acota
-  algo de esto.
-
-**Propuesta para Rodolfo:** botón "Cancelar cita" visible solo hasta X horas
-antes (él define X). Más cerca de la hora, el botón se cambia por el enlace
-de WhatsApp: "Para cancelar a última hora, escríbenos".
+**Pregunta opcional para Rodolfo:** ¿más adelante querrá cancelación
+automática (el cliente cancela solo, sin pasar por él)? Solo tendría
+sentido con una regla de anticipación — "cancelable hasta X horas antes" —
+que él defina. Con el volumen actual, la solicitud por WhatsApp
+probablemente alcanza y sobra.
 
 ---
 
