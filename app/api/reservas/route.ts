@@ -210,21 +210,54 @@ export async function POST(request: NextRequest) {
      El porcentaje se toma SIEMPRE de la tabla, nunca del navegador — si el
      admin cambió el descuento después de que el formulario lo validó, vale
      el vigente. La consulta pasa por RLS, que solo muestra cupones activos:
-     un cupón desactivado desaparece por el mismo camino. */
+     un cupón desactivado desaparece por el mismo camino.
+
+     OJO con un matiz que ya mordió (30-jul): el formulario junta cupón y
+     oferta en el MISMO campo. Cuando el descuento viene de una oferta —la
+     bienvenida, por ejemplo— manda el marcador "PRIMERA_CITA", que no es un
+     cupón y no está en la tabla. La primera versión de esta validación lo
+     rechazaba, y con eso ninguna reserva con descuento de bienvenida podía
+     completarse. Por eso el segundo camino: si el código no es un cupón pero
+     la reserva trae oferta, se verifica que ESA oferta exista y esté activa,
+     y el porcentaje se toma de la tabla de ofertas. */
   let cuponVerificado: { codigo: string; pct: number } | null = null;
   if (cupon) {
+    const codigo = cupon.codigo.toUpperCase();
     const { data: filaCupon } = await supabase
       .from("cupones")
       .select("codigo, descuento_pct")
-      .eq("codigo", cupon.codigo.toUpperCase())
+      .eq("codigo", codigo)
       .maybeSingle();
-    if (!filaCupon) {
+
+    if (filaCupon) {
+      cuponVerificado = { codigo: filaCupon.codigo, pct: filaCupon.descuento_pct };
+    } else if (ofertaId) {
+      const { data: filaOferta } = await supabase
+        .from("ofertas")
+        .select("id, tipo, pct")
+        .eq("id", ofertaId)
+        .eq("activa", true)
+        .maybeSingle();
+      if (!filaOferta) {
+        return NextResponse.json(
+          { success: false, error: "Ese descuento ya no está vigente." },
+          { status: 400 }
+        );
+      }
+      cuponVerificado = {
+        codigo,
+        /* Si la oferta es porcentual, manda la tabla. Si es de monto fijo,
+           el pct del navegador se guarda solo como referencia de lo que se
+           le mostró — el precio real se confirma en la puerta, como
+           siempre. */
+        pct: filaOferta.tipo === "pct" ? Math.abs(filaOferta.pct) : cupon.pct,
+      };
+    } else {
       return NextResponse.json(
         { success: false, error: "Ese cupón no existe o ya no está activo." },
         { status: 400 }
       );
     }
-    cuponVerificado = { codigo: filaCupon.codigo, pct: filaCupon.descuento_pct };
   }
 
   /* Puerta de disponibilidad (PRP-001 Fase 5). El formulario ya no ofrece
