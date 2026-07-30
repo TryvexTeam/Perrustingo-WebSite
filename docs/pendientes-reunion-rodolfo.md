@@ -176,6 +176,73 @@ WhatsApp Business API del punto 3 — con su costo por conversación.
 
 ---
 
+# Mejoras detectadas el 30-jul (por priorizar)
+
+Observadas usando el sitio como cliente y como admin. No son fallas — el
+sistema funciona — pero son fricciones reales que vale la pena priorizar.
+
+## I. Reservar de nuevo con un perrito ya guardado
+
+**Hoy:** el cliente con cuenta ve sus perros en "Mi cuenta", pero al reservar
+otra vez tiene que escribir TODOS los datos de nuevo — la lista es solo
+decorativa. Y peor: verificado en el código, **cada reserva crea una ficha de
+perro nueva** en vez de reutilizar la existente, así que el mismo perrito se
+duplica en la base con cada cita.
+
+**Propuesta:** en el formulario de reserva, si la persona está logueada y
+tiene perros guardados, ofrecer "¿Es para uno de tus perros?" con la ficha
+precargada (editable por si cambió el peso o el pelo). Beneficio doble:
+reservar toma la mitad de tiempo (fidelización) y el historial del perrito
+queda unido en una sola ficha en vez de repartido en duplicados.
+
+**Esfuerzo:** medio. Toca el formulario (que es grande) y el endpoint de
+reservas (reutilizar `perro_id` en vez de insertar).
+
+## II. El admin no puede eliminar una cuenta
+
+**Hoy:** en Panel → Usuarios el admin puede cambiar el rol de una persona y
+editar sus datos, pero **no existe ningún botón de eliminar**. Si un
+trabajador deja el equipo, lo único posible es bajarlo a "cliente" — la
+cuenta y sus datos quedan en la base para siempre.
+
+**Importante para la conversación:** bajar a "cliente" ya le quita TODO el
+acceso al panel — el ex-trabajador no puede ver nada del negocio. La
+eliminación de verdad es otra cosa: borrar la cuenta y sus datos personales.
+
+**Decisiones que requiere (no es solo un botón):**
+- ¿Qué pasa con el historial? Las citas que esa persona atendió, las fotos
+  que subió y las notas que escribió referencian su cuenta. ¿Se conservan
+  anónimas o se borran?
+- Borrar la cuenta de acceso (auth) requiere la credencial de servicio y una
+  confirmación fuerte en la interfaz — un borrado por error no se deshace.
+- Protecciones mínimas: no poder eliminarse a sí mismo, no poder eliminar al
+  último admin (la base ya protege esto último para el rol).
+
+**Esfuerzo:** medio. **Recomendación:** definir primero la política de
+historial con Rodolfo; el botón sin esa decisión puede borrar de más o de
+menos.
+
+## III. No se pueden borrar citas del registro (ni las de prueba)
+
+**Hoy:** las citas solo cambian de estado — cancelada sigue apareciendo en
+"Todas las citas" para siempre. Es una decisión deliberada del diseño (el
+historial no se pierde), pero deja un problema práctico: **las citas de
+prueba que hizo el equipo quedan mezcladas con las reales** y no hay forma
+de limpiarlas desde el panel.
+
+**Dos necesidades distintas que conviene no confundir:**
+
+| Necesidad | Solución propuesta |
+|---|---|
+| Limpiar las pruebas de hoy | Una pasada única por SQL (borrando también sus fotos asociadas). Se puede hacer apenas se decida cuáles son |
+| Borrar citas a futuro | Botón "eliminar" solo para admin, solo sobre citas canceladas o de prueba, con confirmación fuerte. Igual que con las cuentas: definir primero qué pasa con las fotos y notas asociadas |
+
+**Alternativa a considerar:** en vez de borrar, un filtro que oculte las
+canceladas viejas del listado — conserva el historial y limpia la vista. Más
+barato y sin riesgo de borrar de más.
+
+---
+
 # Deuda técnica interna
 
 No son preguntas para Rodolfo — son trabajo del equipo. Quedan acá para que
