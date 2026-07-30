@@ -204,6 +204,29 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  /* El cupón se revalida acá aunque el formulario ya lo hizo: este POST es
+     público, y sin esta consulta cualquiera podía inventarse un código con
+     hasta 50% de descuento y quedaba guardado en la cita como si fuera real.
+     El porcentaje se toma SIEMPRE de la tabla, nunca del navegador — si el
+     admin cambió el descuento después de que el formulario lo validó, vale
+     el vigente. La consulta pasa por RLS, que solo muestra cupones activos:
+     un cupón desactivado desaparece por el mismo camino. */
+  let cuponVerificado: { codigo: string; pct: number } | null = null;
+  if (cupon) {
+    const { data: filaCupon } = await supabase
+      .from("cupones")
+      .select("codigo, descuento_pct")
+      .eq("codigo", cupon.codigo.toUpperCase())
+      .maybeSingle();
+    if (!filaCupon) {
+      return NextResponse.json(
+        { success: false, error: "Ese cupón no existe o ya no está activo." },
+        { status: 400 }
+      );
+    }
+    cuponVerificado = { codigo: filaCupon.codigo, pct: filaCupon.descuento_pct };
+  }
+
   /* Puerta de disponibilidad (PRP-001 Fase 5). El formulario ya no ofrece
      horarios imposibles, pero esto es un POST público: quien mande el
      cuerpo a mano se salta la UI entera. La decisión se toma con el MISMO
@@ -301,8 +324,8 @@ export async function POST(request: NextRequest) {
       contacto_comuna: contacto.comuna || null,
       oferta_id: ofertaId,
       detalle_form: perro.detalle,
-      cupon_codigo: cupon?.codigo ?? null,
-      descuento_pct: cupon?.pct ?? 0,
+      cupon_codigo: cuponVerificado?.codigo ?? null,
+      descuento_pct: cuponVerificado?.pct ?? 0,
     };
 
     let sesionId: string | null = null;
