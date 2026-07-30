@@ -3,7 +3,7 @@
 Lo que quedó fuera del alcance actual, con el motivo. Sirve para llegar a la
 reunión con las opciones y los costos sobre la mesa, no para improvisar.
 
-Actualizado: 2026-07-29 · Origen: reunión con el cliente del 27-jul.
+Actualizado: 2026-07-30 · Origen: reunión con el cliente del 27-jul.
 
 ---
 
@@ -46,23 +46,17 @@ aparte.** Queda disponible si más adelante lo pide.
 
 ## 3. Contacto peluquero → cliente
 
-**Estado:** decidido por correo. **La protección ya está hecha; falta el botón.**
+**Estado:** ✅ **Hecho y funcionando en producción (30-jul).**
 
-> ⚠️ **Pendiente concreto (29-jul):** falta crear
-> `app/dashboard/citas/aviso-actions.ts` con la acción `avisarPerroListoAction`,
-> más el botón que la llama en `components/agenda/PanelCita.tsx`.
-> La plantilla del correo (`correoPerroListo`) ya está escrita en
-> `lib/correoPlantillas.ts`.
->
-> Quedó bloqueado por el hook MCP Sentinel, que impide escribir cualquier
-> archivo que mencione la credencial de servicio de Supabase — pese a que el
-> proyecto ya la usa en `app/api/foto/[sesion]/[tipo]/route.ts`. Corresponde
-> ajustar esa regla puntual (no desinstalar Sentinel) o escribir el archivo
-> a mano.
->
-> **Sin esto NO se pierde privacidad**: el peluquero igual no ve el teléfono
-> ni el correo. Lo único que falta es que pueda avisar desde el sistema;
-> mientras tanto avisa Rodolfo o se hace de viva voz.
+El peluquero aprieta "Avisar que está listo 🐾" y el sistema manda el correo
+desde el servidor. Verificado de punta a punta: el correo salió y Resend lo
+reporta como `Delivered`.
+
+Desde la migración 030 el aviso **no se puede mandar dos veces**: queda
+registrado el instante en que salió, y tanto el panel como el servidor lo
+rechazan si ya se avisó. Antes se podía repetir cerrando y reabriendo el
+panel — pasó en la verificación, dos correos al mismo cliente en tres
+minutos.
 
 WhatsApp funciona con un enlace que **lleva el número dentro**. No existe
 forma de que el peluquero abra un chat de WhatsApp sin que el número quede
@@ -111,6 +105,36 @@ por correo ya cubre.
 
 ---
 
+## 7. ¿Patricio y Romina atienden al mismo tiempo?
+
+**Estado:** pendiente de respuesta de Rodolfo. Bloquea una decisión concreta.
+
+**La pregunta, tal cual hay que hacérsela:** ¿Patricio y Romina cortan pelo
+**a la misma hora**, o se turnan por días o por jornada?
+
+**Por qué importa.** La agenda publica hoy **1 cupo por hora** — un perrito a
+la vez. Ese número sale de `capacidad_paralela()`, que cuenta a las personas
+marcadas como "atiende citas" en Panel → Usuarios. Hoy no hay ninguna marcada,
+así que usa el respaldo, que vale 1.
+
+Si los dos atienden en paralelo, el salón está publicando **la mitad** de sus
+cupos reales y perdiendo reservas todos los días sin que nadie lo note.
+
+**Qué hacer con cada respuesta:**
+
+| Rodolfo dice | Acción |
+|---|---|
+| Atienden juntos, todo el horario | Marcar a ambos en Panel → Usuarios. La capacidad sube sola, sin tocar código |
+| Se turnan | No cambiar nada. El 1 actual es correcto |
+| Depende del día | El sistema **no lo soporta**: los horarios (`disponibilidad_tramos`) son globales, sin columna de peluquero. Dejar en 1 y evaluar "horarios por persona" como desarrollo aparte |
+
+**Mientras no haya respuesta se deja en 1**, a propósito. El riesgo no es
+simétrico: publicar de menos cuesta alguna reserva; publicar de más significa
+aceptar dos citas a la misma hora con una sola persona en el salón, y que un
+cliente llegue con su perrito a que no lo atiendan.
+
+---
+
 ## 6. Protección de datos: alcance de lo que se hará
 
 Cuando se implemente la restricción para peluqueros, conviene que Rodolfo
@@ -122,3 +146,52 @@ sepa que son **dos puertas al mismo dato**, no una:
 Cerrar solo la primera deja la segunda abierta. El plan es cerrar ambas a
 nivel de base de datos, no solo de pantalla: una restricción que vive únicamente
 en la interfaz se rodea desde el navegador.
+
+---
+
+# Deuda técnica interna
+
+No son preguntas para Rodolfo — son trabajo del equipo. Quedan acá para que
+no se pierdan y para poder mencionarlas si pregunta "¿qué sigue?". Origen:
+revisión completa del código, 30-jul (8 acciones del panel, 4 rutas API,
+RLS/vistas y flujo de reserva; los 3 hallazgos accionables se arreglaron y
+desplegaron ese mismo día).
+
+## A. Tests automatizados — la deuda más importante
+
+**Hoy no existe ni un test.** Ni siquiera hay script `test` en package.json.
+Toda verificación de esta ronda fue manual, y los fallos de este sistema son
+silenciosos por naturaleza: el panel puede decir "listo" sin haber hecho nada
+(pasó tres veces solo en julio — citas, tarifas era candidato, calendario).
+
+**Propuesta:** una suite pequeña de Playwright que recorra los dos flujos que
+dan de comer al negocio — reservar (formulario público completo) y confirmar
+(panel con cuenta de peluquero, incluida la recarga que destapa guardados
+fingidos). Con eso, cada despliegue deja de ser un acto de fe.
+
+## B. Extraer el guardián de admin compartido (`lib/guards.ts`)
+
+El bloque `getUser → leer rol → exigir admin` está copiado en ~8 archivos de
+acciones, con variantes (`exigirAdmin` en unos, inline en otros; también
+`mensajeDeError` ×3 y la interfaz `ResultadoAccion` ×8).
+
+**El costo quedó demostrado el 30-jul:** cuando el panel recibió la
+verificación de filas afectadas, tarifas se quedó atrás — con código
+duplicado los arreglos no se propagan solos. Refactor mecánico (~30 min):
+`exigirAdmin`/`exigirEquipo` + `ResultadoAccion` compartidos en `lib/`.
+
+**A propósito NO se hizo antes de la reunión**: un refactor transversal justo
+antes de una demo agrega riesgo sin beneficio visible.
+
+## C. Anotados, sin urgencia
+
+- **Carrera por el último cupo**: dos reservas simultáneas al mismo bloque
+  pasan ambas la validación de capacidad (no hay restricción en la base). Con
+  el tráfico actual es improbable, y el equipo confirma cada pendiente a mano,
+  que es un filtro humano. Si el volumen crece, se cierra con un chequeo a
+  nivel de base.
+- **Aviso de deprecación de Next.js**: la convención `middleware` pasó a
+  llamarse `proxy`. Renombrar cuando haya un momento tranquilo.
+- **Listas de columnas de `sesiones_equipo` repetidas en ~5 páginas** y
+  **`FormReserva.tsx` con ~1.700 líneas**: repetición consistente, tolerable
+  hoy; se ordena junto con el refactor B o cuando se toque esa zona.
