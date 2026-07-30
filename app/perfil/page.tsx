@@ -6,6 +6,10 @@ import { supabaseConfigurado } from "@/lib/citas";
 import { SiteMenu } from "@/components/layout/SiteMenu";
 import { Footer } from "@/components/layout/Footer";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { MisDatos } from "@/components/perfil/MisDatos";
+import { MisPerros, type PerroPerfil } from "@/components/perfil/MisPerros";
+import { ESTADO_LABEL, type EstadoCita } from "@/lib/citas";
+import { TZ_NEGOCIO } from "@/lib/agenda";
 
 export const metadata: Metadata = {
   title: "Mi perfil — Perrustingo",
@@ -44,15 +48,18 @@ export default async function PerfilPage() {
 
   const { data: perfil } = await supabase
     .from("perfiles")
-    .select("nombre, telefono, rol")
+    .select("nombre, apellido, telefono, comuna, rol")
     .eq("id", user.id)
     .single();
 
+  /* La ficha completa: desde el 30-jul el cliente la edita desde acá, y la
+     reserva la reutiliza. Más recientes primero — si hay duplicados
+     históricos, el de arriba es el que tiene los datos al día. */
   const { data: perros } = await supabase
     .from("perros")
-    .select("id, nombre, raza, peso_kg")
+    .select("id, nombre, raza, peso_kg, contextura, tipo_pelo, temperamento, alergias")
     .eq("cliente_id", user.id)
-    .order("created_at");
+    .order("created_at", { ascending: false });
 
   const { data: sesiones } = await supabase
     .from("sesiones")
@@ -60,6 +67,24 @@ export default async function PerfilPage() {
     .eq("cliente_id", user.id)
     .order("fecha_cita", { ascending: false })
     .limit(5);
+
+  /* La razón número uno para entrar a la cuenta: ¿cuándo me toca? Se
+     responde arriba de todo, sin buscar en la lista. */
+  const { data: proximas } = await supabase
+    .from("sesiones")
+    .select("id, estado, fecha_cita, servicio, perros(nombre)")
+    .eq("cliente_id", user.id)
+    .in("estado", ["pendiente", "confirmada", "en_proceso"])
+    .gte("fecha_cita", new Date().toISOString())
+    .order("fecha_cita", { ascending: true })
+    .limit(1);
+  const proxima = proximas?.[0] ?? null;
+  const proximaPerro = (() => {
+    if (!proxima) return null;
+    const raw = proxima.perros as unknown;
+    const fila = Array.isArray(raw) ? (raw[0] as { nombre: string } | undefined) : (raw as { nombre: string } | null);
+    return fila?.nombre ?? null;
+  })();
 
   return (
     <>
@@ -79,45 +104,59 @@ export default async function PerfilPage() {
             <LogoutButton />
           </div>
 
-          {/* Mis perros */}
+          {/* Próxima cita — la pregunta que trae a la gente a esta página */}
+          {proxima && proxima.fecha_cita && (
+            <div className="mb-6 rounded-3xl bg-[#d5efe2] p-6 shadow-sm">
+              <h2 className="font-display text-lg font-extrabold text-teal-ink">
+                Tu próxima cita 🐾
+              </h2>
+              <p className="mt-2 text-sm font-semibold text-teal-ink">
+                {new Date(proxima.fecha_cita).toLocaleDateString("es-CL", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  timeZone: TZ_NEGOCIO,
+                })}
+                {" a las "}
+                {new Date(proxima.fecha_cita).toLocaleTimeString("es-CL", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                  timeZone: TZ_NEGOCIO,
+                })}
+                {proximaPerro ? ` — ${proximaPerro}` : ""}
+                {proxima.servicio ? `, ${proxima.servicio.toLowerCase()}` : ""}
+              </p>
+              <p className="mt-1 text-xs font-bold text-teal-dark">
+                Estado: {ESTADO_LABEL[proxima.estado as EstadoCita] ?? proxima.estado}
+                {proxima.estado === "pendiente" &&
+                  " — te confirmamos por correo apenas el equipo la revise"}
+              </p>
+            </div>
+          )}
+
+          {/* Mis datos */}
+          <div className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
+            <h2 className="mb-4 font-display text-lg font-extrabold text-ink">
+              Mis datos
+            </h2>
+            <MisDatos
+              email={user.email ?? ""}
+              inicial={{
+                nombre: perfil?.nombre ?? "",
+                apellido: perfil?.apellido ?? "",
+                telefono: perfil?.telefono ?? "",
+                comuna: perfil?.comuna ?? "",
+              }}
+            />
+          </div>
+
+          {/* Mis perros — editables desde el 30-jul */}
           <div className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
             <h2 className="mb-4 font-display text-lg font-extrabold text-ink">
               Mis perros
             </h2>
-            {!perros || perros.length === 0 ? (
-              <p className="text-sm text-ink-soft">
-                Aún no tienes perros guardados.{" "}
-                <a href="/reserva" className="font-semibold text-teal-dark underline underline-offset-2">
-                  Agenda tu primera cita →
-                </a>
-              </p>
-            ) : (
-              /* Cada perro lleva directo al formulario de reserva, donde su
-                 ficha aparece precargada para tocar y confirmar (30-jul).
-                 Antes esta lista era puro adorno — se veían los perros pero
-                 no se podía hacer nada con ellos, que fue justamente el
-                 reclamo. */
-              <div className="space-y-2">
-                {perros.map((p) => (
-                  <a
-                    key={p.id}
-                    href="/reserva"
-                    className="flex items-center gap-3 rounded-2xl border border-zinc-100 px-4 py-3 transition-colors hover:border-teal/40 hover:bg-sky/20"
-                  >
-                    <span className="text-2xl">🐶</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-ink">{p.nombre}</p>
-                      <p className="text-xs text-ink-soft">
-                        {p.raza} · {p.peso_kg} kg
-                      </p>
-                    </div>
-                    <span className="text-xs font-bold text-teal-dark">
-                      Agendar cita →
-                    </span>
-                  </a>
-                ))}
-              </div>
-            )}
+            <MisPerros perros={(perros ?? []) as PerroPerfil[]} />
           </div>
 
           {/* Historial */}
