@@ -28,6 +28,7 @@ import {
   faltaEnPaso,
   capitalizarNombre,
   capitalizarFrase,
+  RAZAS,
 } from "@/lib/reserva";
 import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
@@ -50,6 +51,50 @@ import { SelectorHorario } from "@/components/reserva/SelectorHorario";
 import { BreedAvatar } from "@/components/ui/BreedAvatar";
 
 const WHATSAPP_BASE = `https://wa.me/${WHATSAPP_NUMBER}?text=`;
+
+/* ── Perritos guardados (pedido del señor Adley, 30-jul) ────────
+   Quien ya reservó antes tiene la ficha de su perro en la base; obligarlo a
+   escribirla de nuevo era la queja, y de paso cada reserva creaba una ficha
+   duplicada. Con esto el cliente toca a su perro, la ficha se precarga, y
+   el servidor REUTILIZA la existente en vez de duplicar. */
+
+interface PerroGuardado {
+  id: string;
+  nombre: string;
+  raza: string | null;
+  peso_kg: number | null;
+  contextura: string | null;
+  tipo_pelo: string | null;
+  temperamento: string | null;
+  alergias: string | null;
+}
+
+/** La ficha guardada, traducida a los campos del formulario. Cada valor se
+    valida contra las opciones vigentes: una ficha vieja con un dato que ya
+    no existe deja el campo vacío en vez de romper el paso. */
+function perroAFormData(p: PerroGuardado): Partial<FormData> {
+  const razaConocida = Boolean(p.raza && (RAZAS as readonly string[]).includes(p.raza));
+  const contexturas = ["delgado", "normal", "robusto"] as const;
+  const temperamentos = ["se_deja", "no_se_deja", "complicado", "no_lo_se"] as const;
+  return {
+    nombrePerro: p.nombre,
+    raza: p.raza ? (razaConocida ? p.raza : "Otro") : "",
+    razaOtro: p.raza && !razaConocida ? p.raza : "",
+    pesoKg: p.peso_kg != null ? String(p.peso_kg) : "",
+    contextura: (contexturas as readonly string[]).includes(p.contextura ?? "")
+      ? (p.contextura as FormData["contextura"])
+      : "",
+    tipoPelo:
+      p.tipo_pelo && p.tipo_pelo in PELO_LABELS ? (p.tipo_pelo as FormData["tipoPelo"]) : "",
+    temperamentoGeneral: (temperamentos as readonly string[]).includes(p.temperamento ?? "")
+      ? (p.temperamento as FormData["temperamentoGeneral"])
+      : "",
+    tieneAlergia: p.alergias ? "si" : "",
+    cualAlergia: p.alergias && p.alergias !== "sí" ? p.alergias : "",
+    /* Ya nos conoce: no es su primera peluquería con nosotros. */
+    esPrimeraVez: "no",
+  };
+}
 
 /* Cuánto se espera a que el servidor confirme la reserva antes de abrir
    WhatsApp igual. Seis segundos: suficiente para una respuesta normal
@@ -404,6 +449,10 @@ export function FormReserva({
   const [fotos, setFotos] = useState<FotosPerro[]>([
     { actual: null, referencia: null, sinPerroCerca: false },
   ]);
+  /* Perritos guardados de la cuenta y qué ficha existente ocupa cada slot
+     del formulario (null = perrito nuevo, se crea al reservar). */
+  const [misPerros, setMisPerros] = useState<PerroGuardado[]>([]);
+  const [perroIds, setPerroIds] = useState<(string | null)[]>([null]);
   const [fechaDeseada, setFechaDeseada] = useState(
     /^\d{4}-\d{2}-\d{2}$/.test(initialFecha) ? initialFecha : ""
   );
@@ -436,6 +485,35 @@ export function FormReserva({
       cancelado = true;
     };
   }, []);
+
+  /* Los perros guardados de quien reserva. RLS ya limita la consulta a los
+     propios; el `tieneCuenta` evita el viaje inútil del visitante anónimo.
+     Se deduplican por nombre —la versión anterior del sistema creaba una
+     ficha por reserva, así que "Filu" puede existir cinco veces— quedándose
+     con la más reciente, que es la que tiene los datos al día. */
+  useEffect(() => {
+    if (!tieneCuenta) return;
+    let cancelado = false;
+    createClient()
+      .from("perros")
+      .select("id, nombre, raza, peso_kg, contextura, tipo_pelo, temperamento, alergias")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (cancelado || !data) return;
+        const vistos = new Set<string>();
+        const unicos: PerroGuardado[] = [];
+        for (const p of data as PerroGuardado[]) {
+          const clave = p.nombre.trim().toLowerCase();
+          if (!clave || vistos.has(clave)) continue;
+          vistos.add(clave);
+          unicos.push(p);
+        }
+        setMisPerros(unicos.slice(0, 6));
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [tieneCuenta]);
 
   const tarifas = useTarifas();
   const ajustes = useAjustesPorTamano();
@@ -591,10 +669,65 @@ export function FormReserva({
       while (next.length < n) next.push({ actual: null, referencia: null, sinPerroCerca: false });
       return next.slice(0, Math.max(n, 1));
     });
+    /* Mismo resize que `perros`: cada slot recuerda qué ficha guardada lo
+       llenó. Sin esto, achicar y volver a agrandar desalinearía los ids y
+       la reserva actualizaría la ficha del perro equivocado. */
+    setPerroIds((prev) => {
+      const next = [...prev];
+      while (next.length < n) next.push(null);
+      return next.slice(0, Math.max(n, 1));
+    });
     if (autoTimer.current) clearTimeout(autoTimer.current);
     autoTimer.current = setTimeout(() => setFase("perro"), AUTO_ADVANCE_MS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* Tocar un perrito guardado lo incluye (o lo saca) de la reserva. La
+     selección arma los primeros slots del formulario con la ficha
+     precargada; los botones 1/2/3 siguen sirviendo para sumar un perrito
+     nuevo además de los guardados. */
+  const alternarPerroGuardado = useCallback(
+    (elegido: PerroGuardado) => {
+      if (autoTimer.current) clearTimeout(autoTimer.current);
+      const yaIds = perroIds.filter((id): id is string => id !== null);
+      const ids = yaIds.includes(elegido.id)
+        ? yaIds.filter((id) => id !== elegido.id)
+        : [...yaIds, elegido.id];
+      if (ids.length > MAX_PERROS) return;
+
+      const seleccion = ids
+        .map((id) => misPerros.find((m) => m.id === id))
+        .filter((m): m is PerroGuardado => Boolean(m));
+      const n = Math.max(1, seleccion.length);
+
+      setCantidad(n);
+      setPerros(() => {
+        const next = seleccion.map((pg) => ({
+          ...FORM_INITIAL,
+          ...contactoData,
+          ...perroAFormData(pg),
+        }));
+        while (next.length < n) next.push({ ...FORM_INITIAL, ...contactoData });
+        return next;
+      });
+      setPerroIds(() => {
+        const next: (string | null)[] = seleccion.map((pg) => pg.id);
+        while (next.length < n) next.push(null);
+        return next;
+      });
+      setFotos(() => {
+        const next: FotosPerro[] = seleccion.map(() => ({
+          actual: null,
+          referencia: null,
+          sinPerroCerca: false,
+        }));
+        while (next.length < n) next.push({ actual: null, referencia: null, sinPerroCerca: false });
+        return next;
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [perroIds, misPerros]
+  );
 
   // ── Cálculos por perrito ────────────────────────────────────────────────
   /* Descuento global: cupón u oferta, NUNCA los dos (PRP-003 F3).
@@ -818,6 +951,9 @@ export function FormReserva({
             esManual,
             fotoActualRuta,
             fotoReferenciaRuta,
+            /* La ficha guardada que este slot reutiliza: el servidor la
+               ACTUALIZA en vez de crear un duplicado. */
+            perroId: perroIds[i] ?? null,
             ficha: {
               nombre: p.nombrePerro,
               raza: p.raza === "Otro" ? p.razaOtro || "Otro" : p.raza,
@@ -976,6 +1112,10 @@ export function FormReserva({
     perros,
     cantidad,
     fotos,
+    /* `perroIds` va acá por la MISMA razón que cuenta el comentario de
+       arriba: sin él, el callback capturaría la selección vieja y la
+       reserva crearía un duplicado en vez de reutilizar la ficha. */
+    perroIds,
     estimadoDe,
     tieneCuenta,
     datosContacto,
@@ -1094,6 +1234,50 @@ export function FormReserva({
         )}
 
         <div className="mt-6">
+          {fase === "cuantos" && misPerros.length > 0 && (
+            <div className="mb-6">
+              <p className="text-sm font-bold text-ink">
+                ¿Viene alguno de tus perros guardados? Tócalo y su ficha queda
+                lista — solo revisas y confirmas.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {misPerros.map((pg) => {
+                  const elegido = perroIds.includes(pg.id);
+                  return (
+                    <button
+                      key={pg.id}
+                      type="button"
+                      onClick={() => alternarPerroGuardado(pg)}
+                      aria-pressed={elegido}
+                      className={`rounded-full border-2 px-4 py-2 text-sm font-bold transition-colors ${
+                        elegido
+                          ? "border-teal bg-sky/40 text-teal-ink"
+                          : "border-ink/10 bg-white text-ink hover:border-teal/30"
+                      }`}
+                    >
+                      🐶 {pg.nombre}
+                      {pg.raza ? ` · ${pg.raza}` : ""}
+                      {elegido ? " ✓" : ""}
+                    </button>
+                  );
+                })}
+              </div>
+              {perroIds.some((id) => id !== null) && (
+                <button
+                  type="button"
+                  onClick={() => setFase("perro")}
+                  className="mt-3 rounded-full bg-teal px-6 py-2.5 text-sm font-extrabold text-white transition-transform active:scale-95"
+                >
+                  Continuar con {perroIds.filter((id) => id !== null).length === 1 ? "1 perrito" : `${perroIds.filter((id) => id !== null).length} perritos`} →
+                </button>
+              )}
+              <p className="mt-3 text-xs text-ink-soft">
+                ¿Viene también uno nuevo? Elige el total acá abajo — los
+                guardados se conservan.
+              </p>
+            </div>
+          )}
+
           {fase === "cuantos" && (
             <div className="grid grid-cols-3 gap-3">
               {[1, 2, 3].map((n) => (
