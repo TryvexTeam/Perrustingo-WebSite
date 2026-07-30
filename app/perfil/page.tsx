@@ -10,6 +10,7 @@ import { MisDatos } from "@/components/perfil/MisDatos";
 import { MisPerros, type PerroPerfil } from "@/components/perfil/MisPerros";
 import { ESTADO_LABEL, type EstadoCita } from "@/lib/citas";
 import { TZ_NEGOCIO } from "@/lib/agenda";
+import { WHATSAPP_NUMBER, hayWhatsAppConfigurado } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Mi perfil — Perrustingo",
@@ -132,6 +133,24 @@ export default async function PerfilPage() {
                 {proxima.estado === "pendiente" &&
                   " — te confirmamos por correo apenas el equipo la revise"}
               </p>
+              {/* Cancelar es una SOLICITUD, no un botón que borra (idea del
+                  señor Adley, 30-jul): el mensaje llega pre-armado al
+                  WhatsApp del salón y el equipo decide — así nadie se
+                  auto-cancela cinco minutos antes y la agenda no queda a
+                  merced de un clic. El cupo se libera cuando el equipo
+                  cancela en el panel. */}
+              {hayWhatsAppConfigurado() && (
+                <a
+                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                    `Hola Perrustingo, soy ${perfil?.nombre ?? ""}. Necesito cancelar o cambiar la hora de la cita${proximaPerro ? ` de ${proximaPerro}` : ""} del ${new Date(proxima.fecha_cita).toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", timeZone: TZ_NEGOCIO })} a las ${new Date(proxima.fecha_cita).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: TZ_NEGOCIO })}.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-block rounded-full border-2 border-teal/40 px-4 py-2 text-xs font-bold text-teal-dark transition-colors hover:border-teal"
+                >
+                  ¿Necesitas cancelar o cambiar la hora? Avísanos por WhatsApp →
+                </a>
+              )}
             </div>
           )}
 
