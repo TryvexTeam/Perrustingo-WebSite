@@ -176,6 +176,29 @@ WhatsApp Business API del punto 3 — con su costo por conversación.
 
 ---
 
+## 9. ¿El cliente puede cancelar su cita desde la cuenta?
+
+**Estado:** pendiente de decisión de Rodolfo. Técnicamente simple; la regla
+es lo que falta.
+
+**Contexto.** La cuenta del cliente ya muestra su próxima cita (30-jul),
+pero para cancelarla tiene que escribir por WhatsApp. Dar el botón de
+cancelar es poco trabajo — lo que no es trivial es la regla de negocio:
+
+- **¿Hasta cuándo se puede cancelar?** Un cliente cancelando a las 9:55 una
+  cita de las 10:00 le rompe la agenda al salón. Opciones típicas: hasta 24
+  horas antes, hasta la noche anterior, o sin límite.
+- **¿Qué pasa con el cupo?** Al cancelar, el bloque se libera y otro cliente
+  puede tomarlo — eso es lo bueno. Lo malo es el abuso: reservar y cancelar
+  repetido. El tope de citas activas por teléfono (migración 017) ya acota
+  algo de esto.
+
+**Propuesta para Rodolfo:** botón "Cancelar cita" visible solo hasta X horas
+antes (él define X). Más cerca de la hora, el botón se cambia por el enlace
+de WhatsApp: "Para cancelar a última hora, escríbenos".
+
+---
+
 # Mejoras detectadas el 30-jul (por priorizar)
 
 Observadas usando el sitio como cliente y como admin. No son fallas — el
@@ -183,63 +206,37 @@ sistema funciona — pero son fricciones reales que vale la pena priorizar.
 
 ## I. Reservar de nuevo con un perrito ya guardado
 
-**Hoy:** el cliente con cuenta ve sus perros en "Mi cuenta", pero al reservar
-otra vez tiene que escribir TODOS los datos de nuevo — la lista es solo
-decorativa. Y peor: verificado en el código, **cada reserva crea una ficha de
-perro nueva** en vez de reutilizar la existente, así que el mismo perrito se
-duplica en la base con cada cita.
+**Estado:** ✅ **Hecho y en producción (30-jul, PR #37 y #39).**
 
-**Propuesta:** en el formulario de reserva, si la persona está logueada y
-tiene perros guardados, ofrecer "¿Es para uno de tus perros?" con la ficha
-precargada (editable por si cambió el peso o el pelo). Beneficio doble:
-reservar toma la mitad de tiempo (fidelización) y el historial del perrito
-queda unido en una sola ficha en vez de repartido en duplicados.
-
-**Esfuerzo:** medio. Toca el formulario (que es grande) y el endpoint de
-reservas (reutilizar `perro_id` en vez de insertar).
+El formulario de reserva muestra los perros guardados de la cuenta
+(deduplicados) y tocar uno precarga la ficha completa; el servidor
+REUTILIZA la ficha en vez de duplicarla. Además, desde "Mi cuenta" el
+cliente edita la ficha de cada perro, elimina los que ya no están, agrega
+nuevos, corrige sus propios datos de contacto (el teléfono que el salón usa
+para confirmar), y ve su próxima cita destacada arriba de todo.
 
 ## II. El admin no puede eliminar una cuenta
 
-**Hoy:** en Panel → Usuarios el admin puede cambiar el rol de una persona y
-editar sus datos, pero **no existe ningún botón de eliminar**. Si un
-trabajador deja el equipo, lo único posible es bajarlo a "cliente" — la
-cuenta y sus datos quedan en la base para siempre.
+**Estado:** ✅ **Hecho y en producción (30-jul, PR #37).**
 
-**Importante para la conversación:** bajar a "cliente" ya le quita TODO el
-acceso al panel — el ex-trabajador no puede ver nada del negocio. La
-eliminación de verdad es otra cosa: borrar la cuenta y sus datos personales.
-
-**Decisiones que requiere (no es solo un botón):**
-- ¿Qué pasa con el historial? Las citas que esa persona atendió, las fotos
-  que subió y las notas que escribió referencian su cuenta. ¿Se conservan
-  anónimas o se borran?
-- Borrar la cuenta de acceso (auth) requiere la credencial de servicio y una
-  confirmación fuerte en la interfaz — un borrado por error no se deshace.
-- Protecciones mínimas: no poder eliminarse a sí mismo, no poder eliminar al
-  último admin (la base ya protege esto último para el rol).
-
-**Esfuerzo:** medio. **Recomendación:** definir primero la política de
-historial con Rodolfo; el botón sin esa decisión puede borrar de más o de
-menos.
+En Panel → Usuarios, cada cuenta ajena no-admin tiene "Eliminar esta
+cuenta…" con confirmación en dos pasos. Borra la cuenta de acceso, el
+perfil y sus perros; **las citas que atendió quedan en el historial, sin
+datos personales** (la base lo resuelve con SET NULL). Nadie puede
+eliminarse a sí mismo, y a un admin hay que bajarle el rol primero — así el
+borrado nunca esquiva la protección del último admin.
 
 ## III. No se pueden borrar citas del registro (ni las de prueba)
 
-**Hoy:** las citas solo cambian de estado — cancelada sigue apareciendo en
-"Todas las citas" para siempre. Es una decisión deliberada del diseño (el
-historial no se pierde), pero deja un problema práctico: **las citas de
-prueba que hizo el equipo quedan mezcladas con las reales** y no hay forma
-de limpiarlas desde el panel.
+**Estado:** ✅ **Hecho y en producción (30-jul, PR #37).**
 
-**Dos necesidades distintas que conviene no confundir:**
-
-| Necesidad | Solución propuesta |
-|---|---|
-| Limpiar las pruebas de hoy | Una pasada única por SQL (borrando también sus fotos asociadas). Se puede hacer apenas se decida cuáles son |
-| Borrar citas a futuro | Botón "eliminar" solo para admin, solo sobre citas canceladas o de prueba, con confirmación fuerte. Igual que con las cuentas: definir primero qué pasa con las fotos y notas asociadas |
-
-**Alternativa a considerar:** en vez de borrar, un filtro que oculte las
-canceladas viejas del listado — conserva el historial y limpia la vista. Más
-barato y sin riesgo de borrar de más.
+En Panel → Citas, el botón "Borrar citas…" (solo admin) activa selección
+múltiple **solo sobre canceladas y completadas** — una pendiente o
+confirmada es una promesa activa con un cliente y hay que cancelarla
+primero, mirándola. Doble confirmación; el borrado arrastra las fotos de
+Storage y el evento del calendario. La cita de prueba "Aaxads" ya se borró
+con este flujo como verificación; el resto de las pruebas las puede limpiar
+el equipo desde el panel cuando quiera.
 
 ---
 
