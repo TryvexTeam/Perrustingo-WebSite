@@ -48,3 +48,7 @@ next-env.d.ts
 
 # Imagenes intermedias de generacion
 generated_imgs/
+
+# Playwright (suite de humo, 30-jul)
+/test-results/
+/playwright-report/

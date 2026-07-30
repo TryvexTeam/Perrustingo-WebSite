@@ -245,17 +245,20 @@ revisión completa del código, 30-jul (8 acciones del panel, 4 rutas API,
 RLS/vistas y flujo de reserva; los 3 hallazgos accionables se arreglaron y
 desplegaron ese mismo día).
 
-## A. Tests automatizados — la deuda más importante
+## A. Tests automatizados
 
-**Hoy no existe ni un test.** Ni siquiera hay script `test` en package.json.
-Toda verificación de esta ronda fue manual, y los fallos de este sistema son
-silenciosos por naturaleza: el panel puede decir "listo" sin haber hecho nada
-(pasó tres veces solo en julio — citas, tarifas era candidato, calendario).
+**Estado:** ✅ **Primera suite hecha (30-jul).** `npm run test:e2e` — 9 tests
+de humo con Playwright: la portada con sus textos clave, el formulario de
+reserva abre (recorriendo la invitación a crear cuenta, como un visitante
+real), la agenda carga, panel/perfil/respaldo rechazan sin sesión, y las
+puertas del endpoint público rechazan cupones inventados, ofertas
+inexistentes y bots — todo sin escribir nada en la base.
 
-**Propuesta:** una suite pequeña de Playwright que recorra los dos flujos que
-dan de comer al negocio — reservar (formulario público completo) y confirmar
-(panel con cuenta de peluquero, incluida la recarga que destapa guardados
-fingidos). Con eso, cada despliegue deja de ser un acto de fe.
+**Lo que falta y por qué** (documentado en `tests/e2e/README.md`): el flujo
+completo con sesión — reservar de verdad y confirmar desde el panel — crea
+datos y manda correos reales, porque el desarrollo apunta a la base de
+producción. El paso siguiente es un entorno de pruebas con base propia;
+recién ahí esos flujos se automatizan.
 
 ## B. Extraer el guardián de admin compartido (`lib/guards.ts`)
 
@@ -273,13 +276,14 @@ antes de una demo agrega riesgo sin beneficio visible.
 
 ## C. Anotados, sin urgencia
 
-- **Carrera por el último cupo**: dos reservas simultáneas al mismo bloque
-  pasan ambas la validación de capacidad (no hay restricción en la base). Con
-  el tráfico actual es improbable, y el equipo confirma cada pendiente a mano,
-  que es un filtro humano. Si el volumen crece, se cierra con un chequeo a
-  nivel de base.
-- **Aviso de deprecación de Next.js**: la convención `middleware` pasó a
-  llamarse `proxy`. Renombrar cuando haya un momento tranquilo.
+- **Carrera por el último cupo**: ✅ **cerrada (30-jul, migración 031)** —
+  trigger en la base con advisory lock: dos reservas simultáneas por el
+  mismo bloque se serializan y la segunda rechaza con "Ese horario acaba de
+  llenarse" si ya no hay cupo. ⚠️ **La 031 hay que aplicarla en el SQL
+  Editor de Supabase.**
+- **Aviso de deprecación de Next.js**: ✅ **hecho (30-jul)** —
+  `middleware.ts` renombrado a `proxy.ts` según la convención de Next 16;
+  el aviso de cada arranque desapareció. Mismo comportamiento.
 - **Listas de columnas de `sesiones_equipo` repetidas en ~5 páginas** y
   **`FormReserva.tsx` con ~1.700 líneas**: repetición consistente, tolerable
   hoy; se ordena junto con el refactor B o cuando se toque esa zona.
