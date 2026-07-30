@@ -72,7 +72,7 @@ export function Servicios() {
             Nuestros servicios
           </p>
           <h2 className="mt-2 text-center font-display text-3xl font-extrabold tracking-tight md:text-4xl">
-            Todo lo que tu perro o perra necesita
+            Todo lo que tu mascota necesita
           </h2>
         </Reveal>
         <Reveal className="mt-9">
