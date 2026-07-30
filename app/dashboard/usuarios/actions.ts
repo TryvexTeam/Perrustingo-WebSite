@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { crearClienteServicio } from "@/lib/supabase/servicio";
 import { esRol, validarDatos, type DatosEditables, type Rol } from "@/lib/usuarios";
 
 interface ResultadoAccion {
@@ -112,6 +113,63 @@ export async function cambiarRolAction(perfilId: string, rol: string): Promise<R
   }
   if (!data || data.length === 0) {
     return { success: false, error: "No se modificó ningún perfil (permisos)." };
+  }
+
+  revalidatePath("/dashboard/usuarios");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+/** Elimina una cuenta por completo (pedido del señor Adley, 30-jul).
+
+    Qué borra y qué conserva — decidido por las reglas que la base YA trae:
+    · La cuenta de acceso y el perfil se borran (perfiles → auth CASCADE).
+    · Sus perros se borran (perros.cliente_id CASCADE).
+    · Sus CITAS quedan: `sesiones.cliente_id` es ON DELETE SET NULL, así que
+      el historial del negocio sobrevive anónimo. Borrar la facturación de
+      meses porque alguien dejó el equipo sería castigar al negocio.
+
+    Dos candados además del rol:
+    · Nadie se elimina a sí mismo — quedarse fuera del panel de un clic.
+    · Una cuenta admin no se elimina directo: primero se le baja el rol.
+      Así un admin apurado no puede saltarse el trigger `protege_ultimo_admin`
+      por la vía del borrado. */
+export async function eliminarCuentaAction(perfilId: string): Promise<ResultadoAccion> {
+  const sesion = await exigirAdmin();
+  if ("error" in sesion) return { success: false, error: sesion.error };
+
+  if (perfilId === sesion.adminId) {
+    return { success: false, error: "No puede eliminar su propia cuenta." };
+  }
+
+  const { data: objetivo } = await sesion.supabase
+    .from("perfiles")
+    .select("rol")
+    .eq("id", perfilId)
+    .single();
+  if (!objetivo) return { success: false, error: "Esa cuenta no existe." };
+  if (objetivo.rol === "admin") {
+    return {
+      success: false,
+      error: "No se puede eliminar una cuenta admin. Primero cámbiele el rol.",
+    };
+  }
+
+  /* Borrar del sistema de acceso exige la credencial de servicio: el borrado
+     en `auth.users` no lo puede hacer ninguna sesión de usuario, ni la del
+     admin. El CASCADE se encarga del resto. */
+  const servicio = crearClienteServicio();
+  if (!servicio) {
+    return {
+      success: false,
+      error: "El servidor no tiene la credencial para borrar cuentas. Avise al equipo técnico.",
+    };
+  }
+
+  const { error } = await servicio.auth.admin.deleteUser(perfilId);
+  if (error) {
+    console.error("[eliminarCuenta] fallo", { perfilId, mensaje: error.message });
+    return { success: false, error: "No se pudo eliminar la cuenta." };
   }
 
   revalidatePath("/dashboard/usuarios");

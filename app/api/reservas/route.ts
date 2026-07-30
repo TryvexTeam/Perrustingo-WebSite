@@ -39,6 +39,10 @@ const perroSchema = z.object({
   detalle: z.record(z.string(), z.string()),
   precioEstimado: z.number().int().min(0).max(500000).nullable(),
   esManual: z.boolean().optional().default(false),
+  /* Ficha guardada que la reserva reutiliza (30-jul). Solo un uuid: la
+     pertenencia se verifica abajo contra la sesión — un id ajeno no
+     actualiza nada. */
+  perroId: z.string().uuid().nullable().optional().default(null),
   /* Desde PRP-002 F4 el bucket es privado y lo que viaja es la RUTA del
      objeto, no una URL. Se valida la forma: `<uid>/<archivo>`, sin saltos
      de carpeta ni protocolos — es un dato que llega por la red y termina
@@ -313,9 +317,36 @@ export async function POST(request: NextRequest) {
 
   for (const [i, perro] of perros.entries()) {
     /* Ficha del perrito (solo logueado; el registro es obligatorio en el
-       flujo nuevo, pero la API tolera anónimo por compatibilidad). */
+       flujo nuevo, pero la API tolera anónimo por compatibilidad).
+
+       Si la reserva trae `perroId`, se ACTUALIZA esa ficha en vez de crear
+       otra — antes cada reserva insertaba una nueva y el mismo perrito se
+       duplicaba en la base con cada visita. El doble filtro (`id` +
+       `cliente_id = user.id`) hace que un id ajeno simplemente no toque
+       ninguna fila: en ese caso se cae al INSERT de siempre, que crea la
+       ficha propia. RLS (`cliente_ve_sus_perros`) refuerza lo mismo. */
     let perroId: string | null = null;
-    if (user && perro.ficha?.nombre) {
+    if (user && perro.perroId && perro.ficha?.nombre) {
+      const { data: mia } = await supabase
+        .from("perros")
+        .update({
+          nombre: perro.ficha.nombre,
+          raza: perro.ficha.raza,
+          peso_kg: perro.ficha.pesoKg,
+          contextura: perro.ficha.contextura,
+          tipo_pelo: perro.ficha.tipoPelo,
+          temperamento: perro.ficha.temperamento,
+          alergias: perro.ficha.alergias,
+          /* La foto solo se pisa si esta reserva trae una nueva. */
+          ...(perro.fotoActualRuta ? { foto_url: perro.fotoActualRuta } : {}),
+        })
+        .eq("id", perro.perroId)
+        .eq("cliente_id", user.id)
+        .select("id")
+        .maybeSingle();
+      perroId = mia?.id ?? null;
+    }
+    if (!perroId && user && perro.ficha?.nombre) {
       const { data: fila } = await supabase
         .from("perros")
         .insert({

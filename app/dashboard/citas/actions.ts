@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { crearClienteServicio } from "@/lib/supabase/servicio";
 import { offsetNegocio } from "@/lib/agenda";
 import { eliminarEventoCita, upsertEventoCita } from "@/lib/google/calendar";
+import { BUCKET_FOTOS, rutaDeFoto } from "@/lib/fotosComun";
 import type { EstadoCita } from "@/lib/citas";
 
 const TRANSICIONES_EQUIPO: Record<string, EstadoCita[]> = {
@@ -230,4 +231,118 @@ export async function guardarNotasEquipo(
 
   revalidatePath("/dashboard/citas");
   return { success: true };
+}
+
+/* ── Borrado de citas (pedido del señor Adley, 30-jul) ──────────
+
+   Hasta hoy las citas nunca se borraban — solo cambiaban de estado. Eso
+   protege el historial, pero dejó las citas de prueba del equipo mezcladas
+   con las reales, sin forma de limpiarlas desde el panel. */
+
+interface ResultadoBorrado {
+  success: boolean;
+  /** Cuántas se borraron de verdad (no cuántas se pidieron). */
+  eliminadas: number;
+  error?: string;
+}
+
+const MAXIMO_BORRADO_POR_TANDA = 50;
+
+/** Borra citas definitivamente. Solo admin, y SOLO canceladas o completadas:
+    una pendiente o confirmada es una promesa activa con un cliente — para
+    borrarla primero hay que cancelarla, mirándola, una por una. Ese paso
+    extra es el candado contra borrar una solicitud real por accidente. */
+export async function eliminarCitasEnBloque(citaIds: string[]): Promise<ResultadoBorrado> {
+  if (citaIds.length === 0) {
+    return { success: false, eliminadas: 0, error: "No seleccionó ninguna cita." };
+  }
+  if (citaIds.length > MAXIMO_BORRADO_POR_TANDA) {
+    return {
+      success: false,
+      eliminadas: 0,
+      error: `Son demasiadas de una vez (máximo ${MAXIMO_BORRADO_POR_TANDA}). Hágalo por tandas.`,
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, eliminadas: 0, error: "Sesión expirada." };
+
+  /* Solo admin, ni siquiera trabajador: borrar es un grado más que cancelar,
+     y la política `admin_maneja_sesiones` (FOR ALL) es la que respalda este
+     DELETE en la base. */
+  const { data: perfil } = await supabase
+    .from("perfiles")
+    .select("rol")
+    .eq("id", user.id)
+    .single();
+  if (perfil?.rol !== "admin") {
+    return { success: false, eliminadas: 0, error: "Solo un administrador puede borrar citas." };
+  }
+
+  /* Las rutas de las fotos se leen ANTES de borrar: el CASCADE va a
+     llevarse las filas de `fotos_sesion`, y sin esta lectura previa los
+     archivos quedarían huérfanos en Storage para siempre. Se usa el cliente
+     de servicio porque es quien puede tocar el bucket privado. */
+  const servicio = crearClienteServicio();
+  let fotosPorCita: { sesion_id: string; ruta: string | null; url: string | null }[] = [];
+  if (servicio) {
+    const { data } = await servicio
+      .from("fotos_sesion")
+      .select("sesion_id, ruta, url")
+      .in("sesion_id", citaIds);
+    fotosPorCita = data ?? [];
+  }
+
+  const { data: borradas, error } = await supabase
+    .from("sesiones")
+    .delete()
+    .in("id", citaIds)
+    .in("estado", ["cancelada", "completada"])
+    .select("id");
+
+  if (error) {
+    return { success: false, eliminadas: 0, error: "No se pudo borrar." };
+  }
+
+  const eliminadas = borradas?.length ?? 0;
+  const idsBorrados = new Set((borradas ?? []).map((f) => f.id));
+
+  /* Limpieza que NUNCA bloquea: las filas ya no existen, así que un fallo
+     acá se registra y se sigue — igual que el espejo del calendario. */
+  if (servicio) {
+    const rutas = fotosPorCita
+      .filter((f) => idsBorrados.has(f.sesion_id))
+      .map((f) => rutaDeFoto(f))
+      .filter((r): r is string => Boolean(r));
+    if (rutas.length > 0) {
+      const { error: errorStorage } = await servicio.storage.from(BUCKET_FOTOS).remove(rutas);
+      if (errorStorage) {
+        console.warn("[eliminarCitas] fotos sin borrar en Storage:", errorStorage.message);
+      }
+    }
+  }
+  for (const fila of borradas ?? []) {
+    try {
+      await eliminarEventoCita(fila.id);
+    } catch (e) {
+      console.warn("[google-calendar] no se pudo borrar el evento:", e);
+    }
+  }
+
+  revalidatePath("/dashboard/citas");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/hoy");
+  revalidatePath("/agenda");
+
+  if (eliminadas < citaIds.length) {
+    return {
+      success: true,
+      eliminadas,
+      error: `Se borraron ${eliminadas} de ${citaIds.length}. Las otras siguen activas (pendiente o confirmada): cancélelas primero.`,
+    };
+  }
+  return { success: true, eliminadas };
 }

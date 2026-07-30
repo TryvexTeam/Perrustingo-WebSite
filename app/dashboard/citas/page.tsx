@@ -103,7 +103,7 @@ export default async function CitasPage({ searchParams }: CitasPageProps) {
             </p>
           </div>
 
-          <ListaCitas citas={citas} citaInicial={citaPedida} />
+          <ListaCitas citas={citas} citaInicial={citaPedida} esAdmin={perfil.rol === "admin"} />
         </div>
       </main>
       <Footer />
