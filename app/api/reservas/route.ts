@@ -17,6 +17,7 @@ import {
 } from "@/lib/rateLimit";
 import { evaluarReserva } from "@/lib/disponibilidad";
 import { formatRangoCLP } from "@/lib/reserva";
+import { cotizar, leerConfigCotizacion, type EntradaCotizacion } from "@/lib/cotizacion";
 import { WHATSAPP_NUMBER, hayWhatsAppConfigurado } from "@/lib/site";
 import { enviarCorreo, correoConfigurado, CORREO_EQUIPO } from "@/lib/correo";
 import {
@@ -40,9 +41,34 @@ import {
    (columnas contacto_* / cupon_*), reintenta con el set mínimo de columnas
    de schema.sql para no perder la solicitud. */
 
+/* Lo que el servidor necesita para RECALCULAR el precio.
+   Antes no existía y por eso `precioEstimado` era palabra santa: llegaba un
+   entero cualquiera entre 0 y 500.000 y se guardaba tal cual en `precio_base`.
+   Un POST a mano con `precioEstimado: 0` quedaba grabado en cero.
+
+   Es opcional para no romper a un cliente viejo que todavía no lo mande: en ese
+   caso se cotiza con el peso que venga en `detalle`, se cobra el precio base y
+   queda anotado en la ficha. Degradar, no romper. */
+const cotizacionSchema = z.object({
+  pesoKg: z.number().min(0).max(200),
+  alturaCm: z.number().min(0).max(300).nullable().optional().default(null),
+  contextura: z.string().trim().max(20).optional().default(""),
+  tipoPelo: z.string().trim().max(40).optional().default(""),
+  temperamentoGeneral: z.string().trim().max(40).optional().default(""),
+  raza: z.string().trim().max(60).optional().default(""),
+  edadMeses: z.number().int().min(0).max(600).optional().default(0),
+  zonasSensibles: z.number().int().min(0).max(8).optional().default(0),
+  /* El servicio viaja igual por compatibilidad de forma, pero NO se usa: el
+     que manda es el del nivel superior, que ya está validado. */
+  servicio: z.string().trim().max(80).optional().default(""),
+});
+
 const perroSchema = z.object({
   detalle: z.record(z.string(), z.string()),
+  /** Lo que se le MOSTRÓ al cliente. Ya no decide el precio: solo sirve para
+      detectar un desacuerdo con lo que calcula el servidor y dejar rastro. */
   precioEstimado: z.number().int().min(0).max(500000).nullable(),
+  cotizacion: cotizacionSchema.nullable().optional().default(null),
   esManual: z.boolean().optional().default(false),
   /* Ficha guardada que la reserva reutiliza (30-jul). Solo un uuid: la
      pertenencia se verifica abajo contra la sesión — un id ajeno no
@@ -241,6 +267,19 @@ export async function POST(request: NextRequest) {
      que la cita quedó insertada: sumar el uso antes sería descontarle un canje
      a alguien cuya reserva quizá nunca se creó. */
   let cuponCanjeado: Cupon | null = null;
+
+  /* El número de visita lo piden dos cosas: las condiciones del cupón y la
+     elección de la oferta vigente. Se consulta UNA vez y se recuerda — antes
+     vivía dentro del `if (cupon)` y el camino de ofertas habría tenido que
+     repetir la consulta. */
+  let visitasCache: number | null = null;
+  const visitasPrevias = async (): Promise<number> => {
+    if (visitasCache === null) {
+      visitasCache = await contarVisitasPrevias(supabase, contacto.email, contacto.telefono);
+    }
+    return visitasCache;
+  };
+
   if (cupon) {
     const codigo = cupon.codigo.trim().toUpperCase();
     const filaCupon = await obtenerCupon(supabase, codigo);
@@ -248,15 +287,10 @@ export async function POST(request: NextRequest) {
     if (filaCupon) {
       /* El número de visita cuenta ESTA incluida: quien no tiene citas
          completadas previas viene por primera vez. */
-      const visitasPrevias = await contarVisitasPrevias(
-        supabase,
-        contacto.email,
-        contacto.telefono
-      );
       const veredicto = evaluarCupon(filaCupon, {
         fechaCita: fechaDeseada,
         hoy: hoyEnSantiago(),
-        numeroVisita: visitasPrevias + 1,
+        numeroVisita: (await visitasPrevias()) + 1,
         tieneCuenta: Boolean(user),
         servicioSlug: servicio,
       });
@@ -355,8 +389,64 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  /* ── Con qué se cobra ───────────────────────────────────────────────────
+     La configuración de precios se lee UNA vez para toda la reserva: son
+     tramos, tarifas, alturas, servicios y agregados, y traerlos por perrito
+     multiplicaría las consultas sin cambiar el resultado. */
+  const configCotizacion = await leerConfigCotizacion(supabase);
+
+  /* ── El recargo que arrastra el cliente, reclamado de una vez ───────────
+     `consumir_penalizacion` (migración 037) marca la fila como consumida en
+     la MISMA sentencia que la elige, con `for update skip locked`: dos
+     reservas simultáneas del mismo cliente no pueden llevarse la misma
+     penalización. Leer primero y escribir después —que es lo natural— dejaría
+     esa ventana abierta.
+
+     Se reclama ANTES de insertar porque el recargo tiene que entrar en el
+     precio que se guarda. Si al final no queda ninguna cita, se devuelve con
+     `liberar_penalizacion`: cobrar un recargo por una reserva que no existe
+     sería quedarse con plata ajena por un error nuestro.
+
+     Va con el cliente de servicio porque la función se le revocó a anon y a
+     authenticated: un cliente cualquiera no puede consumir su propia deuda. */
+  const clienteServicio = crearClienteServicio();
+  let penalizacionId: string | null = null;
+  let recargoPendientePct = 0;
+
+  if (clienteServicio) {
+    const { data: reclamada, error: errPenal } = await clienteServicio.rpc(
+      "consumir_penalizacion",
+      { p_email: contacto.email, p_telefono: contacto.telefono }
+    );
+    if (errPenal) {
+      /* No se voltea la reserva por esto. Perder un recargo es recuperable
+         —queda pendiente para la próxima—; rechazar la cita no lo es. Pero
+         queda escrito: un fallo silencioso acá se ve igual que "no debía
+         nada", y son cosas muy distintas. */
+      console.warn("[reservas] no se pudo reclamar la penalización:", errPenal.message);
+    } else {
+      const r = (reclamada ?? {}) as { id?: string | null; pct?: number | string };
+      const n = Number(r.pct ?? 0);
+      if (r.id && Number.isFinite(n) && n > 0) {
+        penalizacionId = r.id;
+        recargoPendientePct = n;
+      }
+    }
+  } else {
+    console.warn(
+      "[reservas] sin SUPABASE_SERVICE_ROLE_KEY: la penalización pendiente no se pudo reclamar."
+    );
+  }
+
   const ids: string[] = [];
   let parcial = false;
+
+  /* El descuento ya se resolvió arriba —cupón u oferta, nunca los dos— y
+     viene con el porcentaje que dijo el SERVIDOR. Acá solo se le da la forma
+     de ajuste, con el signo negativo que usa el dominio para lo que resta. */
+  const descuentoGlobal = cuponVerificado
+    ? { etiqueta: `Cupón ${cuponVerificado.codigo}`, pct: -Math.abs(cuponVerificado.pct) }
+    : null;
 
   for (const [i, perro] of perros.entries()) {
     /* Ficha del perrito (solo logueado; el registro es obligatorio en el
@@ -417,6 +507,43 @@ export async function POST(request: NextRequest) {
        de antemano no hace falta leer nada de vuelta. */
     const sesionIdGenerado = crypto.randomUUID();
 
+    /* ── El precio lo decide el servidor ────────────────────────────────
+       `precioEstimado` es lo que se le MOSTRÓ al cliente, y hasta hoy era
+       también lo que se guardaba: un POST a mano con `precioEstimado: 0`
+       quedaba grabado en cero. Ahora se recalcula con la misma función que
+       usa el formulario (`cotizar`), pero con la configuración leída de la
+       base — el navegador ya no decide cuánto vale nada.
+
+       Si el cliente no mandó los datos de cotización (versión vieja del
+       formulario), no se puede recalcular y se cae al estimado. Degradar,
+       no romper: perder la reserva sería peor que guardar un número
+       peor. */
+    const entrada: EntradaCotizacion | null = perro.cotizacion
+      ? { ...perro.cotizacion, servicio }
+      : null;
+    const estimadoServidor = entrada
+      ? cotizar(entrada, configCotizacion, {
+          descuentoGlobal,
+          recargoPenalizacionPct: recargoPendientePct,
+        })
+      : null;
+    const precioCobrado = estimadoServidor?.total ?? perro.precioEstimado;
+
+    /* Un desacuerdo entre las dos cifras no voltea la reserva —el precio
+       final lo confirma el equipo en la puerta—, pero NUNCA pasa callado:
+       que el cliente vea un número y se guarde otro sin dejar rastro es
+       peor que cualquiera de los dos números. Si esto aparece seguido, es
+       que los dos lados se desincronizaron y hay que mirarlo. */
+    if (
+      estimadoServidor &&
+      typeof perro.precioEstimado === "number" &&
+      estimadoServidor.total !== perro.precioEstimado
+    ) {
+      console.warn(
+        `[reservas] el precio del servidor (${estimadoServidor.total}) no coincide con el que vio el cliente (${perro.precioEstimado}) en el perrito ${i + 1}. Manda el del servidor.`
+      );
+    }
+
     const filaCompleta: FilaSesion = {
       id: sesionIdGenerado,
       estado: "pendiente",
@@ -424,7 +551,7 @@ export async function POST(request: NextRequest) {
       perro_id: perroId,
       fecha_cita: inicio ?? `${fechaDeseada}T00:00:00${offsetNegocio(fechaDeseada)}`,
       servicio,
-      precio_base: perro.precioEstimado,
+      precio_base: precioCobrado,
       contacto_nombre: contacto.nombre,
       contacto_email: contacto.email,
       contacto_telefono: contacto.telefono,
@@ -461,7 +588,7 @@ export async function POST(request: NextRequest) {
           perro_id: perroId,
           fecha_cita: inicio ?? `${fechaDeseada}T00:00:00${offsetNegocio(fechaDeseada)}`,
           servicio,
-          precio_base: perro.precioEstimado,
+          precio_base: precioCobrado,
           notas_cliente: `${contacto.nombre} · ${contacto.telefono} · ${contacto.email}`,
         });
       sesionId = error2 ? null : sesionIdGenerado;
@@ -551,23 +678,48 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  /* ── Recargo que arrastra el cliente ───────────────────────────────────
-     `penalizacion_pendiente` (migración 035) responde sí/no sin exponer la
-     tabla de contactos. Acá NO se cobra nada: se informa, para que la
-     persona sepa al reservar que su próxima cita trae recargo y el equipo lo
-     confirme en la puerta. Cobrar automáticamente sería decidir por ellos. */
-  let recargoPendientePct = 0;
-  if (ids.length > 0) {
-    const { data: pendiente, error: errPenal } = await supabase.rpc("penalizacion_pendiente", {
-      p_email: contacto.email,
-      p_telefono: contacto.telefono,
-    });
-    if (errPenal) {
-      console.warn("[reservas] no se pudo leer la penalización pendiente:", errPenal.message);
+  /* ── Cerrar el trato con la penalización ───────────────────────────────
+     Se reclamó al principio para poder cobrarla en el precio. Ahora se
+     decide su destino:
+
+     · Si quedó al menos una cita, se la deja apuntando a ella
+       (`consumida_en_sesion_id`). Sin ese vínculo la penalización dice
+       "consumida" y nadie puede reconstruir en qué cita se cobró — que es
+       exactamente lo que un cliente pregunta cuando reclama.
+     · Si NO quedó ninguna cita, se libera. Quedarse con el recargo de una
+       reserva que nunca existió sería cobrar por nada.
+
+     Ninguna de las dos cosas voltea la respuesta: la cita ya está creada y
+     el cliente no tiene por qué perderla por nuestra contabilidad. Pero un
+     fallo acá se anota como reserva parcial, para que el equipo lo vea. */
+  if (penalizacionId && clienteServicio) {
+    if (ids.length > 0) {
+      const { data: vinculada, error: errVinc } = await clienteServicio.rpc(
+        "vincular_penalizacion",
+        { p_id: penalizacionId, p_sesion_id: ids[0] }
+      );
+      if (errVinc || vinculada !== true) {
+        console.warn(
+          `[reservas] la penalización ${penalizacionId} se cobró pero no quedó vinculada a la cita ${ids[0]}.`,
+          errVinc?.message ?? ""
+        );
+        parcial = true;
+      }
     } else {
-      // `numeric` llega como string desde PostgREST: convertir, no asumir.
-      const n = Number(pendiente ?? 0);
-      recargoPendientePct = Number.isFinite(n) && n > 0 ? n : 0;
+      const { error: errLib } = await clienteServicio.rpc("liberar_penalizacion", {
+        p_id: penalizacionId,
+      });
+      if (errLib) {
+        /* Es el peor caso de los tres: el cliente quedó con una penalización
+           marcada como consumida sin ninguna cita detrás, así que la próxima
+           vez NO se le cobrará lo que debía. Se registra con el id para poder
+           repararlo a mano. */
+        console.error(
+          `[reservas] la penalización ${penalizacionId} quedó consumida sin cita y no se pudo liberar:`,
+          errLib.message
+        );
+      }
+      recargoPendientePct = 0;
     }
   }
 

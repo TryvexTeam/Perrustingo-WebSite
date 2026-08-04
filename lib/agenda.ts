@@ -204,6 +204,46 @@ export function filaACitaSemana(
   };
 }
 
+/* ── Quién ve qué agenda ──────────────────────────────────────
+ *
+ * Decisión del 4-ago: cada trabajador ve su propio calendario completo y NO el
+ * del colega; solo el admin ve todo el local. El filtro de verdad vive en la
+ * base (la vista `sesiones_equipo` recorta las filas del trabajador desde la
+ * migración 038), así que esto es la preferencia del ADMIN, que sí tiene
+ * derecho a las dos vistas y necesita poder alternar.
+ *
+ * Viaja en la URL —igual que el rango de fechas de /dashboard/analiticas— para
+ * que sobreviva a una recarga y para que la vista sea compartible por enlace.
+ * Un estado en React se perdería en cada F5. */
+export type FiltroAgenda = "todo" | "mias";
+
+export const FILTRO_AGENDA_DEFECTO: FiltroAgenda = "todo";
+
+/** Lee `?ver=` sin confiar en él: cualquier valor raro cae al defecto. */
+export function resolverFiltroAgenda(valor: string | undefined): FiltroAgenda {
+  return valor === "mias" ? "mias" : FILTRO_AGENDA_DEFECTO;
+}
+
+/** Fila de `sesiones_equipo` con el dueño de la cita (migración 038).
+ *  Se extiende acá y no en lib/citas.ts para no chocar con el trabajo en
+ *  paralelo sobre la asignación de peluquero. */
+export interface SesionEquipoConDueno extends SesionEquipo {
+  /** `null` = cita sin asignar. */
+  peluquero_id: string | null;
+}
+
+/** ¿Esta cita entra en "solo lo mío"?
+ *
+ * Las citas SIN asignar entran siempre. Hoy ninguna cita tiene peluquero —la
+ * columna acaba de nacer— así que esconderlas dejaría a todo el equipo con la
+ * agenda en blanco y la conclusión falsa de que no hay trabajo. Además una
+ * cita sin dueño es trabajo de todos hasta que el admin la reparta: es
+ * exactamente el criterio que ya usa la policy de `bloqueos` (034) para los
+ * bloqueos del local. */
+export function esMiCita(peluqueroId: string | null | undefined, miId: string): boolean {
+  return !peluqueroId || peluqueroId === miId;
+}
+
 /** CITAS_DEMO ancladas a la semana actual, como CitaSemana. */
 export function demoComoCitasSemana(hoy: Date): CitaSemana[] {
   const lunes = lunesDe(hoy);
