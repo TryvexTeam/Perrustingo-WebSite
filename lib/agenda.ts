@@ -26,8 +26,18 @@ export const COLORES_CITA = {
 export const HORA_APERTURA = 9;
 export const HORA_CIERRE = 19;
 
-/** Días atendidos: lunes (0) a sábado (5) */
-export const DIAS_SEMANA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"] as const;
+/* La semana completa, de lunes a domingo.
+ *
+ * Antes esto llegaba hasta el sábado y era la forma en que el domingo quedaba
+ * cerrado: no por una decisión de horario que alguien pudiera cambiar desde el
+ * panel, sino porque la columna no existía en el código. Ahora el domingo es
+ * un día como cualquier otro y si se atiende o no lo dice su horario en
+ * Disponibilidad — un día sin tramos activos simplemente no ofrece cupos.
+ *
+ * El índice de este arreglo es "días desde el lunes" (0 = lunes), que NO es lo
+ * mismo que `Date.getDay()` (0 = domingo). La conversión vive en
+ * `diaSemanaDe` y en `indiceEnSemana`; no mezclarlas. */
+export const DIAS_SEMANA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"] as const;
 
 export const CITAS_DEMO: CitaAgenda[] = [
   { id: "c1", titulo: "Luna", perro: "Poodle Toy", servicio: "Baño + corte de pelo", diaSemana: 0, horaInicio: 10, duracionHoras: 1.5, color: "corte" },

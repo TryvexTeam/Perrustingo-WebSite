@@ -272,16 +272,26 @@ function FotoPicker({
   );
 }
 
-/* Mini-calendario — domingos y días pasados deshabilitados. */
+/* Mini-calendario — se apagan los días pasados, los anteriores al lead time y
+   los que no tienen horario de atención.
+   Antes el domingo se apagaba con un `getDay() === 0` escrito acá: el local
+   cerraba los domingos por código y no por su horario, así que abrirlos
+   exigía un despliegue. Ahora la regla la manda `diasAtendidos`, que sale de
+   los tramos configurados en el panel. */
 function MiniCalendario({
   value,
   onChange,
   minima,
+  diasAtendidos,
 }: {
   value: string;
   onChange: (v: string) => void;
   /** Primera fecha reservable (YYYY-MM-DD) según el lead time del local. */
   minima: string;
+  /** Días con horario (0=domingo … 6=sábado). Vacío = todavía no se sabe, y
+      entonces no se apaga ninguno: bloquear un día que sí se atiende es peor
+      que dejar que el selector de hora diga que no quedan cupos. */
+  diasAtendidos: number[];
 }) {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
@@ -331,11 +341,11 @@ function MiniCalendario({
         ))}
         {celdas.map((dia, i) => {
           if (!dia) return <span key={i} />;
-          const esDomingo = dia.getDay() === 0;
+          const sinAtencion = diasAtendidos.length > 0 && !diasAtendidos.includes(dia.getDay());
           const esPasado = dia < hoy;
           // Lead time: los días anteriores al mínimo no se pueden pedir.
           const muyPronto = iso(dia) < minima;
-          const deshabilitado = esDomingo || esPasado || muyPronto;
+          const deshabilitado = sinAtencion || esPasado || muyPronto;
           const seleccionado = value === iso(dia);
           return (
             <button
@@ -544,6 +554,26 @@ export function FormReserva({
   const tarifas = useTarifas();
   const tramos = useTramos();
   const tramosAltura = useTramosAltura();
+
+  /* Qué días tienen horario, para apagar en el calendario los que no. Arranca
+     vacío y con eso el calendario no apaga ninguno: hasta saberlo, dejar
+     elegir un día de más es mejor que tapar uno que sí se atiende — el
+     selector de hora avisa igual si no quedan cupos. */
+  const [diasAtendidos, setDiasAtendidos] = useState<number[]>([]);
+  useEffect(() => {
+    let cancelado = false;
+    obtenerDisponibilidad(createClient())
+      .then(({ tramos: franjas }) => {
+        if (cancelado) return;
+        setDiasAtendidos([...new Set(franjas.filter((t) => t.activo).map((t) => t.diaSemana))]);
+      })
+      .catch(() => {
+        /* Sin datos se queda vacío, que es el modo permisivo de arriba. */
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
   const ajustes = useAjustesPorTamano();
   // Los descuentos globales (cupón, primera cita) NO son por tamaño: se
   // muestran una sola vez para toda la reserva, que puede tener perritos
@@ -1799,6 +1829,7 @@ export function FormReserva({
                     setInicioElegido(null);
                   }}
                   minima={fechaMinima}
+                  diasAtendidos={diasAtendidos}
                 />
                 <SelectorHorario
                   fecha={fechaDeseada}

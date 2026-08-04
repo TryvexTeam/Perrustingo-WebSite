@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { diaSemanaDe } from "@/lib/disponibilidad";
 
 interface ResultadoAccion {
   success: boolean;
@@ -204,11 +205,35 @@ export async function guardarDisponibilidadAction(
 }
 
 /* ── Fechas bloqueadas (migración 026) ──────────────────────────
-   Se editan de a una y no en bloque como los tramos: bloquear un día es una
-   decisión puntual ("el 12 me tomo la tarde"), y un guardado masivo haría
-   que un error de tipeo borrara vacaciones ya cargadas. */
+   Se bloquean de a una o por rango, pero NUNCA con un guardado masivo que
+   reemplace la tabla: acá todo es aditivo. Esa era la razón original de
+   editarlas de a una —un guardado en bloque haría que un error de tipeo
+   borrara vacaciones ya cargadas— y sigue en pie. Bloquear un rango agrega
+   fechas; para quitar una hay que liberarla, que es una acción aparte. */
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
+
+/* Tope del rango. Un trimestre cubre de sobra unas vacaciones, y ataja el
+   error de tipeo que importa: equivocarse en el año ("2027" en vez de 2026")
+   generaría cientos de filas de una sola vez. */
+const MAX_DIAS_RANGO = 92;
+
+/** Las fechas YYYY-MM-DD de un rango, inclusive en ambos extremos.
+    Se camina en UTC a propósito: sumar días sobre una fecha local se rompe
+    en el cambio de hora, y en Chile eso pasa dos veces al año. */
+function fechasDelRango(desde: string, hasta: string): string[] {
+  const [a1, m1, d1] = desde.split("-").map(Number);
+  const [a2, m2, d2] = hasta.split("-").map(Number);
+  const fin = Date.UTC(a2, m2 - 1, d2);
+  const fechas: string[] = [];
+  for (let t = Date.UTC(a1, m1 - 1, d1); t <= fin; t += 86_400_000) {
+    const d = new Date(t);
+    const mes = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const dia = String(d.getUTCDate()).padStart(2, "0");
+    fechas.push(`${d.getUTCFullYear()}-${mes}-${dia}`);
+  }
+  return fechas;
+}
 
 /** Bloquea una fecha, o actualiza el texto si ya estaba bloqueada. */
 export async function bloquearFechaAction(
@@ -257,6 +282,108 @@ export async function bloquearFechaAction(
   revalidatePath("/dashboard/disponibilidad");
   revalidatePath("/reserva");
   return { success: true };
+}
+
+/** Lo que devuelve el bloqueo por rango: cuántos días quedaron tomados y
+    cuántos se saltaron por ser días sin atención. */
+export interface ResultadoRango extends ResultadoAccion {
+  bloqueadas?: number;
+  omitidas?: number;
+}
+
+/**
+ * Bloquea todas las fechas de un rango de una sola vez, con el mismo mensaje
+ * y la misma nota.
+ *
+ * Es ADITIVO: hace upsert de las fechas del rango y no toca ninguna otra. Un
+ * día que ya estaba bloqueado se actualiza con el texto nuevo; los que
+ * quedaron fuera del rango siguen igual. Nada de esto borra vacaciones ya
+ * cargadas, que era el riesgo por el que esta sección se editaba de a un día.
+ */
+export async function bloquearRangoAction(rango: {
+  desde: string;
+  hasta: string;
+  mensaje: string;
+  notaInterna: string;
+  /** Días de la semana (0=domingo … 6=sábado) en que el local atiende. Los
+      demás se omiten: bloquear un día que ya no tiene horario no cambia nada
+      para el cliente y llena la lista de fechas inútiles. */
+  diasAtendidos: number[];
+}): Promise<ResultadoRango> {
+  const sesion = await exigirAdmin();
+  if ("error" in sesion) return { success: false, error: sesion.error };
+
+  if (!FECHA.test(rango.desde) || !FECHA.test(rango.hasta)) {
+    return { success: false, error: "Fecha inválida." };
+  }
+  if (rango.hasta < rango.desde) {
+    return { success: false, error: "La fecha de término va antes que la de inicio." };
+  }
+
+  const mensaje = rango.mensaje.trim();
+  if (mensaje.length > 200) {
+    return { success: false, error: "El mensaje no puede pasar de 200 caracteres." };
+  }
+  const nota = rango.notaInterna.trim();
+  if (nota.length > 200) {
+    return { success: false, error: "La nota no puede pasar de 200 caracteres." };
+  }
+
+  const todas = fechasDelRango(rango.desde, rango.hasta);
+  if (todas.length > MAX_DIAS_RANGO) {
+    return {
+      success: false,
+      error: `El rango tiene ${todas.length} días y el máximo es ${MAX_DIAS_RANGO}. Revise las fechas — si de verdad son tantos, hágalo en dos tandas.`,
+    };
+  }
+
+  /* Se filtra por día de la semana con la lista que manda la pantalla, que
+     sale de los tramos vigentes. Si llegara vacía se bloquea todo el rango:
+     omitir días por una lista que no se pudo leer sería peor que dejar
+     alguna fecha de más. */
+  const atendidos = new Set(rango.diasAtendidos);
+  const aBloquear =
+    atendidos.size === 0
+      ? todas
+      : todas.filter((f) => atendidos.has(diaSemanaDe(f)));
+
+  if (aBloquear.length === 0) {
+    return {
+      success: false,
+      error: "En ese rango no hay ningún día de atención, así que no hay nada que bloquear.",
+    };
+  }
+
+  const { error } = await sesion.supabase.from("disponibilidad_excepciones").upsert(
+    aBloquear.map((fecha) => ({
+      fecha,
+      // Vacío se guarda como NULL para que la función de la base caiga en el
+      // texto general, igual que en el bloqueo de a una.
+      mensaje: mensaje || null,
+      nota_interna: nota || null,
+    })),
+    { onConflict: "fecha" }
+  );
+
+  if (error) {
+    return {
+      success: false,
+      error:
+        error.code === "42P01"
+          ? "Falta aplicar la migración 026 en la base de datos."
+          : error.code === "42501"
+            ? "La base de datos rechazó el cambio (permisos)."
+            : "No se pudieron bloquear las fechas.",
+    };
+  }
+
+  revalidatePath("/dashboard/disponibilidad");
+  revalidatePath("/reserva");
+  return {
+    success: true,
+    bloqueadas: aBloquear.length,
+    omitidas: todas.length - aBloquear.length,
+  };
 }
 
 /** Vuelve a abrir una fecha. */

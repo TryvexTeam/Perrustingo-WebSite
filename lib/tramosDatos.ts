@@ -59,7 +59,17 @@ export async function obtenerTramos(
   }));
 }
 
-/** Hook: tramos vigentes, reactivo a guardados del panel (misma pestaña u otra). */
+/**
+ * Hook: los tramos vigentes.
+ *
+ * El evento refresca solo ESTA pestaña —`CustomEvent` no cruza a otras—, así
+ * que sirve para que el panel se vea al día mientras el admin edita. Un
+ * cliente con el formulario abierto en su teléfono sigue cotizando con los
+ * tramos que cargó al entrar hasta que recargue. Es aceptable (un precio
+ * cambia cada varios meses), pero decir lo contrario en un comentario, como
+ * decía antes, es lo que hace que alguien dé por hecho una sincronización
+ * que no existe.
+ */
 export function useTramos(): Tramo[] {
   const [tramos, setTramos] = useState<Tramo[]>([...TRAMOS_INICIALES]);
 
