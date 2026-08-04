@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   NOTA_PRECIOS,
   FORM_INITIAL,
@@ -361,15 +361,32 @@ function MiniCalendario({
 
 type PasoId =
   | "cuantos" | "nombre" | "raza" | "edad" | "primera" | "peso" | "tamano"
-  | "contextura" | "pelo" | "salud" | "temperamento" | "zonas" | "fotos" | "cita";
+  | "contextura" | "pelo" | "salud" | "temperamento" | "zonas" | "fotos"
+  | "precio" | "cita";
 
-/** Pasos que se repiten por perrito, en orden. */
+/** Pasos que se repiten por perrito, en orden.
+ *
+ * EL PRECIO VA AL FINAL, y es a propósito (4-ago). Antes aparecía en el paso
+ * del peso y quedaba fijo en pantalla, subiendo con cada respuesta: el pelaje
+ * lo movía, el temperamento también, cada zona sensible otra vez. Dos
+ * problemas con eso, y el segundo es el grave:
+ *
+ * 1. Un número que crece siete veces frente al cliente se lee como letra
+ *    chica, no como transparencia — aunque cada recargo sea legítimo.
+ * 2. Contaminaba las respuestas. Cuando alguien ve que marcar "no se deja
+ *    tocar las patitas" le sube el precio en el acto, aprende a no marcarlo.
+ *    Y esas respuestas no son un trámite de cobro: son lo que el equipo
+ *    necesita para preparar la sesión y no lastimar al perro.
+ *
+ * Así que durante el cuestionario no se muestra ninguna cifra que se mueva, y
+ * el precio aparece una sola vez, completo y ya estable, al cerrar el perfil.
+ */
 const PASOS_PERRO: { id: PasoId; pregunta: string; hint?: string }[] = [
   { id: "nombre", pregunta: "¿Cómo se llama tu perro o perra?" },
   { id: "raza", pregunta: "¿Qué raza es?" },
   { id: "edad", pregunta: "¿Qué edad tiene?", hint: "Aproximada está bien" },
   { id: "primera", pregunta: "¿Es su primera peluquería? ✨", hint: "En Perrustingo las primeras visitas son especiales: presentamos todo con calma para que crezca sin miedo" },
-  { id: "peso", pregunta: "¿Cuánto pesa?", hint: "Con el peso calculamos el precio al instante" },
+  { id: "peso", pregunta: "¿Cuánto pesa?", hint: "Es lo que más pesa en el precio — nunca mejor dicho" },
   { id: "tamano", pregunta: "¿Cómo describirías su tamaño?", hint: "Opcional — toca el que más se parezca" },
   { id: "contextura", pregunta: "¿Y su contextura?" },
   { id: "pelo", pregunta: "¿Cómo es su pelito?" },
@@ -377,6 +394,7 @@ const PASOS_PERRO: { id: PasoId; pregunta: string; hint?: string }[] = [
   { id: "temperamento", pregunta: "¿Cómo se porta en la peluquería?" },
   { id: "zonas", pregunta: "¿Con qué NO se deja tocar?", hint: "Marca todas las que apliquen — o ninguna" },
   { id: "fotos", pregunta: "Una fotito 📸", hint: "Así el equipo llega preparado y tu descuento queda validado" },
+  { id: "precio", pregunta: "Esto es lo que costaría", hint: "Ya con todo lo que nos contaste" },
 ];
 
 const ZONAS: { key: keyof FormData; label: string; emoji: string }[] = [
@@ -832,6 +850,16 @@ export function FormReserva({
   );
 
   const actual = estimadoDe(data);
+
+  /* El piso de la tarifa, para mostrarlo durante el cuestionario sin que
+     dependa de ninguna respuesta. Sale del tramo más barato que haya
+     configurado el dueño; si la tabla no cargó todavía, no se muestra nada
+     antes que inventar una cifra. */
+  const precioDesde = useMemo(() => {
+    const precios = tramos.map((t) => t.precio).filter((p) => p > 0);
+    return precios.length > 0 ? Math.min(...precios) : null;
+  }, [tramos]);
+
   const peso = parseFloat(data.pesoKg);
   const pesoValido = !isNaN(peso) && peso > 0.4 && peso <= 120;
   const pesoInvalido = data.pesoKg !== "" && !pesoValido;
@@ -1203,40 +1231,21 @@ export function FormReserva({
         </div>
       )}
 
-      {/* Estimado en vivo del perrito activo */}
-      {actual.estimado && fase === "perro" && step > 0 && (
-        <div
-          aria-live="polite"
-          className="sticky top-20 z-30 mb-5 rounded-2xl bg-teal-ink px-5 py-3.5 text-white shadow-lg"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-xs font-bold uppercase tracking-wide opacity-80">
-              💰 Estimado {cantidad > 1 ? `· ${data.nombrePerro || `perrito ${dogIdx + 1}`}` : "en vivo"}
-            </span>
-            <span className="font-display text-xl font-extrabold">
-              {formatRangoCLP(actual.estimado.total)}
-            </span>
-          </div>
-          {actual.estimado.ajustes.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold">
-                Base {formatCLP(actual.estimado.base)}
-              </span>
-              {actual.estimado.ajustes.map((a) => (
-                <span
-                  key={a.etiqueta}
-                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold text-teal-ink ${
-                    (a.monto ?? a.pct) < 0 ? "bg-[#b8e4cd]" : "bg-orange/90"
-                  }`}
-                >
-                  {textoDeAjuste(a)} {a.etiqueta}
-                </span>
-              ))}
-            </div>
-          )}
-          <p className="mt-1.5 text-[11px] leading-snug opacity-70">
-            Referencial — el valor final se confirma en la puerta.
-          </p>
+      {/* Referencia de precio durante el cuestionario.
+          Antes acá vivía una barra fija con el estimado, que se actualizaba
+          con cada respuesta. Ahora solo se muestra el piso de la tarifa: una
+          cifra que NO se mueve. Ancla igual —nadie llega al final sin idea de
+          cuánto cuesta— pero no reacciona a lo que el cliente responde, así
+          que no hay nada que aprender a esconder. El número real, con su
+          desglose, llega en el paso "precio" al cerrar el perfil. */}
+      {fase === "perro" && paso?.id !== "precio" && precioDesde !== null && (
+        <div className="mb-5 flex items-center gap-2 rounded-2xl border border-ink/10 bg-white/70 px-4 py-2.5 text-sm text-ink-soft">
+          <span aria-hidden="true">💰</span>
+          <span>
+            Los baños parten en <strong className="text-ink">{formatCLP(precioDesde)}</strong>. Al
+            final del perfil te mostramos el valor de {data.nombrePerro || "tu perrito"} con el
+            detalle.
+          </span>
         </div>
       )}
 
@@ -1470,16 +1479,18 @@ export function FormReserva({
                   </span>
                 </div>
               )}
+              {/* Confirma el tamaño detectado, sin cifra: el precio de este
+                  perrito se muestra completo al cerrar el perfil. Poner acá un
+                  número que después sube con el pelaje y el temperamento es
+                  justo lo que hacía sentir que el precio se inflaba. */}
               {actual.estimado && tamanoAuto && !pesoInvalido && (
                 <div className="rise-in flex items-center gap-4 rounded-2xl bg-[#d8f0e3] px-5 py-4 text-sm font-semibold text-teal-ink">
                   <BreedAvatar src={TAMANO_IMAGEN[tamanoAuto]} nombre={TAMANO_LABELS[tamanoAuto]} size="lg" />
                   <span>
                     ✅ <strong>{TAMANO_LABELS[tamanoAuto]}</strong>
-                    <span className="block">
-                      Precio estimado:{" "}
-                      <strong>{formatRangoCLP(actual.estimado.total)}</strong>
+                    <span className="mt-1 block text-xs font-normal opacity-80">
+                      Con esto ya podemos calcular su valor — te lo mostramos al terminar.
                     </span>
-                    <span className="mt-1 block text-xs font-normal opacity-80">{NOTA_PRECIOS}</span>
                   </span>
                 </div>
               )}
@@ -1675,6 +1686,90 @@ export function FormReserva({
                 <p className="text-xs font-semibold text-ink-soft">
                   Sube la foto o marca la casilla de arriba si no lo tienes
                   cerca{tieneCuenta ? " (la foto valida tu descuento de bienvenida)" : ""}.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ── Precio del perrito ──────────────────────────────────────
+              Único lugar del cuestionario donde aparece una cifra. Llega
+              recién acá porque acá ya es estable: ninguna respuesta
+              posterior la mueve. Con el desglose completo, que en este
+              momento educa en vez de alarmar — nada más va a cambiar. */}
+          {fase === "perro" && paso!.id === "precio" && (
+            <div className="space-y-5">
+              {actual.estimado ? (
+                <>
+                  <div className="rise-in rounded-3xl bg-teal-ink px-6 py-5 text-white">
+                    <p className="text-xs font-bold uppercase tracking-wide opacity-75">
+                      {data.nombrePerro || "Tu perrito"}
+                    </p>
+                    <p className="mt-1 font-display text-4xl font-extrabold">
+                      {formatRangoCLP(actual.estimado.total)}
+                    </p>
+                    <p className="mt-2 text-xs leading-snug opacity-75">{NOTA_PRECIOS}</p>
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-ink-soft">
+                      Cómo se compone
+                    </p>
+                    <dl className="overflow-hidden rounded-2xl border border-ink/10">
+                      <div className="flex items-center justify-between gap-4 bg-cream/60 px-4 py-3">
+                        <dt className="text-sm font-bold text-ink">
+                          Baño y peluquería
+                          {pesoValido && (
+                            <span className="block text-xs font-normal text-ink-soft">
+                              {data.pesoKg.replace(".", ",")} kg
+                            </span>
+                          )}
+                        </dt>
+                        <dd className="text-sm font-extrabold tabular-nums text-ink">
+                          {formatCLP(actual.estimado.base)}
+                        </dd>
+                      </div>
+                      {/* Cada ajuste con su motivo escrito. Un recargo que el
+                          cliente entiende deja de sentirse arbitrario. */}
+                      {actual.estimado.ajustes.map((a) => {
+                        const esDescuento = (a.monto ?? a.pct) < 0;
+                        return (
+                          <div
+                            key={a.etiqueta}
+                            className="flex items-center justify-between gap-4 border-t border-ink/10 px-4 py-2.5"
+                          >
+                            <dt className="text-sm text-ink">{a.etiqueta}</dt>
+                            <dd
+                              className={`text-sm font-bold tabular-nums ${
+                                esDescuento ? "text-teal-dark" : "text-ink-soft"
+                              }`}
+                            >
+                              {textoDeAjuste(a)}
+                            </dd>
+                          </div>
+                        );
+                      })}
+                      <div className="flex items-center justify-between gap-4 border-t-2 border-ink/15 bg-white px-4 py-3">
+                        <dt className="text-sm font-extrabold text-ink">Total</dt>
+                        <dd className="font-display text-lg font-extrabold tabular-nums text-ink">
+                          {formatRangoCLP(actual.estimado.total)}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  {actual.esManual && (
+                    <p className="rounded-2xl bg-[#fde4c8] px-4 py-3 text-sm font-semibold text-[#a34d00]">
+                      El tamaño que elegiste y el peso no coinciden, así que este valor lo
+                      revisamos contigo antes de confirmar.
+                    </p>
+                  )}
+                </>
+              ) : (
+                /* Sin peso válido no hay precio que mostrar, y decirlo es
+                   mejor que dejar la pantalla en blanco. */
+                <p className="rounded-2xl bg-[#fde4c8] px-4 py-3 text-sm font-semibold text-[#a34d00]">
+                  Nos falta el peso de {data.nombrePerro || "tu perrito"} para calcular el valor.
+                  Vuelve atrás y complétalo.
                 </p>
               )}
             </div>
@@ -2048,8 +2143,10 @@ export function FormReserva({
               bloqueaAvance ? "opacity-50" : ""
             }`}
           >
-            {fase === "perro" && step === totalPasosPerro - 1 && dogIdx < cantidad - 1
-              ? `Siguiente perrito →`
+            {fase === "perro" && step === totalPasosPerro - 1
+              ? dogIdx < cantidad - 1
+                ? "Siguiente perrito →"
+                : "Elegir día y hora →"
               : "Siguiente →"}
           </button>
         )}
