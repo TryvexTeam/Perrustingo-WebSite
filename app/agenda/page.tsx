@@ -4,8 +4,15 @@ import { CalendarioSemanal } from "@/components/agenda/CalendarioSemanal";
 import { Footer } from "@/components/layout/Footer";
 import { SiteMenu } from "@/components/layout/SiteMenu";
 import { createClient } from "@/lib/supabase/server";
-import { filaACitaSemana, tieneHoraAsignada, type CitaSemana } from "@/lib/agenda";
-import { supabaseConfigurado, type BloqueOcupado, type SesionEquipo } from "@/lib/citas";
+import {
+  filaACitaSemana,
+  resolverFiltroAgenda,
+  tieneHoraAsignada,
+  type CitaSemana,
+  type FiltroAgenda,
+  type SesionEquipoConDueno,
+} from "@/lib/agenda";
+import { supabaseConfigurado, type BloqueOcupado } from "@/lib/citas";
 
 export const metadata: Metadata = {
   title: "Agenda — Perrustingo",
@@ -18,12 +25,13 @@ export const dynamic = "force-dynamic";
 interface DatosAgenda {
   user: { id: string } | null;
   esEquipo: boolean;
+  esAdmin: boolean;
   citas?: CitaSemana[];
   pendientesSinHora?: CitaSemana[];
 }
 
-async function cargarAgenda(): Promise<DatosAgenda> {
-  if (!supabaseConfigurado()) return { user: null, esEquipo: false };
+async function cargarAgenda(filtro: FiltroAgenda): Promise<DatosAgenda> {
+  if (!supabaseConfigurado()) return { user: null, esEquipo: false, esAdmin: false };
 
   try {
     const supabase = await createClient();
@@ -32,6 +40,7 @@ async function cargarAgenda(): Promise<DatosAgenda> {
     } = await supabase.auth.getUser();
 
     let esEquipo = false;
+    let esAdmin = false;
     if (user) {
       const { data: perfil } = await supabase
         .from("perfiles")
@@ -39,19 +48,32 @@ async function cargarAgenda(): Promise<DatosAgenda> {
         .eq("id", user.id)
         .single();
       esEquipo = Boolean(perfil && ["admin", "trabajador"].includes(perfil.rol));
+      esAdmin = perfil?.rol === "admin";
     }
 
-    if (esEquipo) {
-      const { data } = await supabase
+    if (esEquipo && user) {
+      /* El recorte por persona lo hace la vista (migración 038): un trabajador
+         solo recibe sus citas y las sin asignar, aunque llame a PostgREST
+         directo. Este filtro de acá es la preferencia del admin —el único que
+         recibe todo— para mirar solo lo suyo. Va en la CONSULTA y no en el
+         render: filtrar al pintar significa que los datos del colega igual
+         viajaron por la red. */
+      let consulta = supabase
         .from("sesiones_equipo")
         .select(
-          "id, estado, fecha_cita, fecha_fin, servicio, precio_base, precio_final, contacto_nombre, contacto_email, contacto_telefono, detalle_form, notas_cliente, notas_equipo, perro_id, aviso_listo_en"
+          "id, estado, fecha_cita, fecha_fin, servicio, precio_base, precio_final, contacto_nombre, contacto_email, contacto_telefono, detalle_form, notas_cliente, notas_equipo, perro_id, aviso_listo_en, peluquero_id"
         )
         .in("estado", ["pendiente", "confirmada", "en_proceso"])
-        .not("fecha_cita", "is", null)
-        .order("fecha_cita");
+        .not("fecha_cita", "is", null);
 
-      const filas = (data ?? []) as SesionEquipo[];
+      if (filtro === "mias") {
+        // Las sin asignar entran siempre: ver `esMiCita` en lib/agenda.ts.
+        consulta = consulta.or(`peluquero_id.eq.${user.id},peluquero_id.is.null`);
+      }
+
+      const { data } = await consulta.order("fecha_cita");
+
+      const filas = (data ?? []) as SesionEquipoConDueno[];
       const citas: CitaSemana[] = [];
       const pendientesSinHora: CitaSemana[] = [];
 
@@ -67,7 +89,7 @@ async function cargarAgenda(): Promise<DatosAgenda> {
           citas.push(cita);
         }
       }
-      return { user, esEquipo, citas, pendientesSinHora };
+      return { user, esEquipo, esAdmin, citas, pendientesSinHora };
     }
 
     // Vista pública/cliente: solo bloques ocupados, sin datos personales
@@ -81,14 +103,21 @@ async function cargarAgenda(): Promise<DatosAgenda> {
       .map((b) => filaACitaSemana(b, { titulo: "Reservado" }))
       .filter((c): c is CitaSemana => c !== null);
 
-    return { user, esEquipo, citas };
+    return { user, esEquipo, esAdmin, citas };
   } catch {
-    return { user: null, esEquipo: false };
+    return { user: null, esEquipo: false, esAdmin: false };
   }
 }
 
-export default async function AgendaPage() {
-  const { user, esEquipo, citas, pendientesSinHora } = await cargarAgenda();
+/* En Next 16 los searchParams llegan como Promesa. */
+interface AgendaPageProps {
+  searchParams: Promise<{ ver?: string }>;
+}
+
+export default async function AgendaPage({ searchParams }: AgendaPageProps) {
+  const { ver } = await searchParams;
+  const filtro = resolverFiltroAgenda(ver);
+  const { user, esEquipo, esAdmin, citas, pendientesSinHora } = await cargarAgenda(filtro);
 
   return (
     <>
@@ -102,6 +131,12 @@ export default async function AgendaPage() {
             <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
               {esEquipo ? "Gestiona las citas de la semana" : "Encuentra la hora perfecta"}
             </h1>
+            {esEquipo && !esAdmin && (
+              <p className="mt-1 text-sm text-ink-soft">
+                Estás viendo tu agenda: tus citas y las que todavía no tienen
+                peluquero asignado.
+              </p>
+            )}
           </div>
 
           {!user && !citas && (
@@ -121,6 +156,8 @@ export default async function AgendaPage() {
             citas={citas}
             pendientesSinHora={pendientesSinHora}
             modoEquipo={esEquipo}
+            filtro={filtro}
+            puedeVerTodo={esAdmin}
           />
         </div>
       </main>
