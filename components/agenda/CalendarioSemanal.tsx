@@ -12,6 +12,7 @@ import {
   formatearHora,
   lunesDe,
   type CitaSemana,
+  type FiltroAgenda,
 } from "@/lib/agenda";
 import { PanelCita } from "./PanelCita";
 
@@ -27,6 +28,10 @@ interface CalendarioSemanalProps {
   pendientesSinHora?: CitaSemana[];
   /** Vista del equipo: citas clicables con panel de gestión. */
   modoEquipo?: boolean;
+  /** Qué agenda se está mirando. Viaja en `?ver=` para sobrevivir a la recarga. */
+  filtro?: FiltroAgenda;
+  /** Solo el admin recibe todas las citas, así que solo él ve el interruptor. */
+  puedeVerTodo?: boolean;
 }
 
 const ALTO_HORA = 56; // px por hora
@@ -101,6 +106,8 @@ export function CalendarioSemanal({
   citas,
   pendientesSinHora = [],
   modoEquipo = false,
+  filtro = "todo",
+  puedeVerTodo = false,
 }: CalendarioSemanalProps) {
   const router = useRouter();
   const hoy = useMemo(() => new Date(), []);
@@ -306,10 +313,45 @@ export function CalendarioSemanal({
           <h2 className="font-display text-xl font-extrabold tracking-tight text-ink md:text-2xl">
             {MESES[lunes.getMonth()]} {lunes.getFullYear()}
           </h2>
+          {/* Interruptor de agenda (solo admin). Cambia la URL en vez de un
+              estado de React: así la preferencia sobrevive a la recarga y el
+              recorte se rehace en la CONSULTA del servidor, no al pintar. */}
+          {modoEquipo && puedeVerTodo && (
+            <div
+              className="ml-auto flex items-center gap-1 rounded-full border-2 border-ink/10 p-1"
+              role="group"
+              aria-label="Qué agenda mostrar"
+            >
+              {(
+                [
+                  { valor: "todo", etiqueta: "Todo el local" },
+                  { valor: "mias", etiqueta: "Solo lo mío" },
+                ] as const
+              ).map(({ valor, etiqueta }) => (
+                <button
+                  key={valor}
+                  type="button"
+                  aria-pressed={filtro === valor}
+                  onClick={() =>
+                    router.push(valor === "todo" ? "/agenda" : `/agenda?ver=${valor}`)
+                  }
+                  className={`rounded-full px-3 py-1 text-sm font-bold transition-colors ${
+                    filtro === valor
+                      ? "bg-teal text-white"
+                      : "text-ink-soft hover:bg-ink/5 hover:text-ink"
+                  }`}
+                >
+                  {etiqueta}
+                </button>
+              ))}
+            </div>
+          )}
           <button
             type="button"
             onClick={() => router.push("/reserva")}
-            className="ml-auto rounded-full bg-teal px-5 py-2 font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color] hover:bg-teal-dark lg:hidden"
+            className={`rounded-full bg-teal px-5 py-2 font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color] hover:bg-teal-dark lg:hidden ${
+              modoEquipo && puedeVerTodo ? "" : "ml-auto"
+            }`}
           >
             + Reservar
           </button>

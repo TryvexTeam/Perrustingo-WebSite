@@ -529,6 +529,377 @@ export async function resolverRecargoAction(
   };
 }
 
+/* ── Cierre de la cita: lo que se cobró y quién la atiende ─────────────────
+
+   DOS AGUJEROS QUE ESTA SECCIÓN TAPA.
+
+   1) `precio_final` se leía en el dashboard, en las analíticas, en la jornada
+      y en el perfil del cliente — y NO SE ESCRIBÍA EN NINGUNA PARTE. Los
+      ingresos se estaban calculando sobre `precio_base`, que es el estimado
+      que armó el navegador antes de ver al perro. Faltaba el lugar donde el
+      equipo anota lo que de verdad entró por la puerta.
+
+   2) `sesiones.peluquero_id` existe desde la migración 035 y nadie la
+      escribía: ninguna cita tenía dueño. El admin asigna (decidido por el
+      dueño el 4-ago); el trabajador ve a quién le tocó y no lo cambia.
+
+   EL SISTEMA PROPONE, LA PERSONA DECIDE — misma regla que el recargo por
+   atraso. Acá se sugiere `estimado + recargo aceptado`, pero el monto que se
+   guarda es siempre el que alguien escribió y confirmó. Nada se fija solo.
+
+   El estimado NO se pisa: `precio_base` queda intacto. Son dos datos
+   distintos —lo que se prometió y lo que se cobró— y la diferencia entre los
+   dos es justamente lo que el dueño quiere poder mirar.
+
+   Todo esto viaja por server action y no como prop del panel porque la vista
+   `sesiones_equipo` (migración 030) tiene lista fija de columnas y no incluye
+   `peluquero_id`: desde el navegador del equipo ese campo no existe. Mismo
+   camino que ya toma el estado del atraso. */
+
+/** Un peluquero al que se le puede asignar una cita. */
+export interface PeluqueroAsignable {
+  id: string;
+  nombre: string;
+}
+
+/** Lo que el panel necesita para cerrar la cita: plata y responsable. */
+export interface EstadoCierre {
+  /** `precio_base`: lo que se estimó al reservar. Nunca se sobrescribe. */
+  precioEstimado: number | null;
+  /** `precio_final`: lo que de verdad se cobró. NULL = todavía sin registrar. */
+  precioCobrado: number | null;
+  /** Lo que el sistema SUGIERE (estimado + recargo aceptado). No se guarda
+      solo: es un número para que alguien lo mire y lo confirme o lo cambie. */
+  sugerido: number | null;
+  /** Recargo por atraso ya aceptado; 0 si se perdonó o no hubo. */
+  recargoCobrado: number;
+  peluqueroId: string | null;
+  peluqueroNombre: string | null;
+  /** Solo el admin asigna (decisión del dueño, 4-ago). */
+  puedeAsignar: boolean;
+  /** Vacía para quien no puede asignar: no se manda lo que no se usa. */
+  peluqueros: PeluqueroAsignable[];
+}
+
+interface ResultadoCierre extends ResultadoAccion {
+  estado?: EstadoCierre;
+}
+
+/* Tope de cordura para el monto cobrado. No es una regla de negocio: es el
+   ataja-dedos del que escribe 380000 donde iba 38000 y lo manda a las
+   analíticas de ingresos del mes. */
+const MAXIMO_COBRADO = 2_000_000;
+
+/** Mismo guard de equipo que `exigirEquipo`, pero además devuelve el rol:
+    registrar el cobro lo hace cualquiera del equipo —es quien está en el
+    mesón— y asignar la cita solo el admin. Sin el rol acá arriba habría que
+    volver a preguntarlo abajo. */
+async function exigirEquipoConRol(): Promise<
+  { supabase: Awaited<ReturnType<typeof createClient>>; rol: string } | { error: string }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesión expirada." };
+
+  const { data: perfil } = await supabase
+    .from("perfiles")
+    .select("rol")
+    .eq("id", user.id)
+    .single();
+  if (!perfil || !["admin", "trabajador"].includes(perfil.rol)) {
+    return { error: "Sin permisos." };
+  }
+  return { supabase, rol: perfil.rol as string };
+}
+
+/** Traduce el error de Postgres. El 42501 se nombra con todas sus letras:
+    en este proyecto una policy sobre una tabla sin GRANT ya se disfrazó tres
+    veces de "no se pudo guardar" y costó horas cada vez. */
+function explicarFalloEscritura(code: string | undefined, porDefecto: string): string {
+  if (code === "42501") {
+    return "La base de datos rechazó el cambio por permisos (42501): falta el GRANT sobre `sesiones`. Avise al equipo técnico.";
+  }
+  if (code === "42703") {
+    return "Falta aplicar la migración 035 en la base de datos.";
+  }
+  if (code === "23503") {
+    return "Esa persona ya no existe en el sistema. Actualice la página.";
+  }
+  return porDefecto;
+}
+
+/** Nombre presentable de un perfil, con el mismo criterio que el resto del panel. */
+function nombreDePerfil(fila: { nombre: string | null; apellido: string | null }): string {
+  return [fila.nombre, fila.apellido].filter(Boolean).join(" ").trim() || "Sin nombre";
+}
+
+/* DOS CLIENTES, A PROPÓSITO, Y NO ES UN DESCUIDO.
+
+   · `sesiones` se lee con el cliente de SERVICIO, igual que el resto de este
+     archivo: desde la migración 027 el rol 'trabajador' no puede leer la
+     tabla con su propia sesión, y su UPDATE tampoco encuentra la fila.
+     `service_role` tiene el GRANT desde la 028/029.
+
+   · `perfiles` se lee con la sesión de QUIEN MIRA, no con la de servicio.
+     `perfiles` nunca recibió GRANT para `service_role` (schema.sql lo otorgó
+     a anon/authenticated, y la 008 lo repitió solo para authenticated): con
+     el cliente de servicio esta lectura moriría con 42501 y la lista de
+     peluqueros llegaría vacía sin decir por qué. Con la sesión funciona y
+     además el recorte lo pone la base: la policy `admin_ve_todos_perfiles`
+     deja al admin ver a todos, y `perfil_lee_propio` deja al trabajador ver
+     el suyo — que es el único que puede tener asignado, porque la vista de
+     la 038 solo le muestra sus citas y las sin asignar. */
+type ClienteSupabase =
+  | NonNullable<ReturnType<typeof crearClienteServicio>>
+  | Awaited<ReturnType<typeof createClient>>;
+
+async function leerCierre(
+  lectorSesiones: ClienteSupabase,
+  lectorPerfiles: Awaited<ReturnType<typeof createClient>>,
+  citaId: string,
+  puedeAsignar: boolean
+): Promise<ResultadoCierre> {
+  const { data: cita, error } = await lectorSesiones
+    .from("sesiones")
+    .select("precio_base, precio_final, peluquero_id, recargo_atraso, recargo_aceptado")
+    .eq("id", citaId)
+    .single();
+
+  if (error || !cita) {
+    if (error?.code === "42703") {
+      return { success: false, error: "Falta aplicar la migración 035 en la base de datos." };
+    }
+    return { success: false, error: "Cita no encontrada." };
+  }
+
+  /* La lista solo se arma para quien puede usarla. Al trabajador se le manda
+     vacía: no es un secreto, pero mandar opciones que no puede elegir invita
+     a dibujar un selector que después la base rechaza. */
+  let peluqueros: PeluqueroAsignable[] = [];
+  if (puedeAsignar) {
+    const { data: filas, error: errorLista } = await lectorPerfiles
+      .from("perfiles")
+      .select("id, nombre, apellido")
+      .eq("es_peluquero", true)
+      .order("nombre");
+    /* Un fallo acá NO se traga: sin lista, el admin ve un selector vacío y
+       concluye que no hay peluqueros marcados, que es exactamente la
+       conclusión falsa que un 42501 mudo produce. */
+    if (errorLista) {
+      return {
+        success: false,
+        error: explicarFalloEscritura(
+          errorLista.code,
+          "No se pudo leer la lista de peluqueros."
+        ),
+      };
+    }
+    peluqueros = (filas ?? []).map((p) => ({
+      id: p.id as string,
+      nombre: nombreDePerfil(p),
+    }));
+  }
+
+  let peluqueroNombre: string | null = null;
+  if (cita.peluquero_id) {
+    const yaEnLista = peluqueros.find((p) => p.id === cita.peluquero_id);
+    if (yaEnLista) {
+      peluqueroNombre = yaEnLista.nombre;
+    } else {
+      /* Puede no estar en la lista: o quien mira es trabajador (lista vacía),
+         o al asignado le quitaron la marca de peluquero después. En los dos
+         casos el nombre sigue siendo el dato que importa mostrar.
+         Si la policy no deja leer ese perfil, queda en null y el panel dice
+         "Sin asignar por nombre" — no se inventa uno. */
+      const { data: fila } = await lectorPerfiles
+        .from("perfiles")
+        .select("nombre, apellido")
+        .eq("id", cita.peluquero_id)
+        .single();
+      peluqueroNombre = fila ? nombreDePerfil(fila) : null;
+    }
+  }
+
+  const recargoCobrado = cita.recargo_aceptado === true ? (cita.recargo_atraso ?? 0) : 0;
+  const estimado = cita.precio_base ?? null;
+
+  return {
+    success: true,
+    estado: {
+      precioEstimado: estimado,
+      precioCobrado: cita.precio_final ?? null,
+      sugerido: estimado === null ? null : estimado + recargoCobrado,
+      recargoCobrado,
+      peluqueroId: cita.peluquero_id ?? null,
+      peluqueroNombre,
+      puedeAsignar,
+      peluqueros,
+    },
+  };
+}
+
+/** Lee el cierre de una cita: precios, recargo aceptado y quién la atiende. */
+export async function estadoCierreAction(citaId: string): Promise<ResultadoCierre> {
+  const sesion = await exigirEquipoConRol();
+  if ("error" in sesion) return { success: false, error: sesion.error };
+
+  const lector = crearClienteServicio() ?? sesion.supabase;
+  return leerCierre(lector, sesion.supabase, citaId, sesion.rol === "admin");
+}
+
+/**
+ * Registra lo que de verdad se cobró.
+ *
+ * Escribe `precio_final` y NO toca `precio_base`: el estimado que se le
+ * mostró al cliente al reservar tiene que seguir ahí para poder comparar.
+ *
+ * El monto llega escrito por una persona. Acá no se calcula ninguno: la
+ * sugerencia se arma para mirarla, no para guardarla sola.
+ *
+ * Lo puede hacer cualquiera del equipo — quien cobra en la puerta es quien
+ * está atendiendo, no necesariamente el admin.
+ */
+export async function registrarPrecioCobradoAction(
+  citaId: string,
+  monto: number
+): Promise<ResultadoCierre> {
+  const sesion = await exigirEquipoConRol();
+  if ("error" in sesion) return { success: false, error: sesion.error };
+
+  if (!Number.isFinite(monto) || !Number.isInteger(monto)) {
+    return { success: false, error: "El monto tiene que ser un número entero de pesos, sin decimales." };
+  }
+  if (monto < 0) {
+    return { success: false, error: "El monto no puede ser negativo." };
+  }
+  if (monto > MAXIMO_COBRADO) {
+    return {
+      success: false,
+      error: `${monto.toLocaleString("es-CL")} parece un error de tipeo (el máximo es ${MAXIMO_COBRADO.toLocaleString("es-CL")}). Revise la cifra.`,
+    };
+  }
+
+  const escritor = crearClienteServicio() ?? sesion.supabase;
+
+  const { data: tocadas, error } = await escritor
+    .from("sesiones")
+    .update({ precio_final: monto, updated_at: new Date().toISOString() })
+    .eq("id", citaId)
+    /* `.select()` y contar filas, no confiar en la ausencia de error: con RLS
+       un UPDATE que no encuentra la fila termina "bien" sobre cero filas y
+       prometería un cobro que no quedó escrito. */
+    .select("id");
+
+  if (error) {
+    return {
+      success: false,
+      error: explicarFalloEscritura(error.code, "No se pudo guardar el monto cobrado."),
+    };
+  }
+  if (!tocadas || tocadas.length === 0) {
+    console.error("[registrarPrecioCobrado] el UPDATE no toco ninguna fila", {
+      citaId,
+      rol: sesion.rol,
+      conClienteDeServicio: Boolean(crearClienteServicio()),
+    });
+    return {
+      success: false,
+      error: "La base de datos rechazó el cambio y no se guardó nada. Avise al equipo técnico.",
+    };
+  }
+
+  /* Estas cuatro pantallas leen `precio_final`; sin revalidar seguirían
+     mostrando el ingreso viejo hasta el próximo refresco. */
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/citas");
+  revalidatePath("/dashboard/hoy");
+  revalidatePath("/perfil");
+
+  return leerCierre(escritor, sesion.supabase, citaId, sesion.rol === "admin");
+}
+
+/**
+ * Asigna la cita a un peluquero, o la deja sin asignar con `null`.
+ *
+ * SOLO ADMIN, con el mismo criterio exacto que `exigirAdmin` en
+ * `app/dashboard/disponibilidad/actions.ts`: `perfil.rol !== 'admin'` → sin
+ * permisos. Un trabajador ve a quién le tocó; repartir el día es del admin
+ * (decidido por el dueño el 4-ago).
+ */
+export async function asignarPeluqueroAction(
+  citaId: string,
+  peluqueroId: string | null
+): Promise<ResultadoCierre> {
+  const sesion = await exigirEquipoConRol();
+  if ("error" in sesion) return { success: false, error: sesion.error };
+  if (sesion.rol !== "admin") {
+    return { success: false, error: "Solo un administrador puede asignar la cita." };
+  }
+
+  const escritor = crearClienteServicio() ?? sesion.supabase;
+
+  /* Se comprueba que sea peluquero ANTES de escribir. La FK solo garantiza
+     que el perfil existe: sin esta comprobación se podría asignar una cita a
+     un cliente cualquiera y la agenda de la persona quedaría con trabajo que
+     no le corresponde. */
+  if (peluqueroId) {
+    /* Con la sesión del admin, no con la de servicio: `perfiles` no tiene
+       GRANT para `service_role` (ver la nota de `leerCierre`), y la policy
+       `admin_ve_todos_perfiles` ya le deja ver a todos. */
+    const { data: perfil, error: errorPerfil } = await sesion.supabase
+      .from("perfiles")
+      .select("id, es_peluquero")
+      .eq("id", peluqueroId)
+      .single();
+    if (errorPerfil || !perfil) {
+      return {
+        success: false,
+        error:
+          errorPerfil?.code === "42501"
+            ? "La base de datos rechazó la lectura de perfiles por permisos (42501). Avise al equipo técnico."
+            : "No se encontró a esa persona. Actualice la página.",
+      };
+    }
+    if (!perfil.es_peluquero) {
+      return {
+        success: false,
+        error: "Esa persona no está marcada como peluquero. Márquela en Usuarios y vuelva a intentarlo.",
+      };
+    }
+  }
+
+  const { data: tocadas, error } = await escritor
+    .from("sesiones")
+    .update({ peluquero_id: peluqueroId, updated_at: new Date().toISOString() })
+    .eq("id", citaId)
+    .select("id");
+
+  if (error) {
+    return {
+      success: false,
+      error: explicarFalloEscritura(error.code, "No se pudo asignar la cita."),
+    };
+  }
+  if (!tocadas || tocadas.length === 0) {
+    console.error("[asignarPeluquero] el UPDATE no toco ninguna fila", {
+      citaId,
+      conClienteDeServicio: Boolean(crearClienteServicio()),
+    });
+    return {
+      success: false,
+      error: "La base de datos rechazó el cambio y no se guardó nada. Avise al equipo técnico.",
+    };
+  }
+
+  revalidatePath("/dashboard/citas");
+  revalidatePath("/dashboard/hoy");
+  revalidatePath("/agenda");
+
+  return leerCierre(escritor, sesion.supabase, citaId, true);
+}
+
 /* ── Borrado de citas (pedido del señor Adley, 30-jul) ──────────
 
    Hasta hoy las citas nunca se borraban — solo cambiaban de estado. Eso

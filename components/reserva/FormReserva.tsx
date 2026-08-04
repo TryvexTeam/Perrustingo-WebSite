@@ -9,9 +9,7 @@ import {
   TAMANO_LABELS,
   TamanoKey,
   TipoPelo,
-  EDAD_CACHORRO_MESES,
   buildWhatsAppMessageMulti,
-  calcularEstimado,
   construirDetalle,
   detectarTamanoPorPeso,
   formatCLP,
@@ -19,7 +17,6 @@ import {
   conEnlaceFicha,
   conEnlacesFoto,
   type FotoEnMensaje,
-  montoDeAjuste,
   textoDeAjuste,
   hayConflicto,
   type AjustePrecio,
@@ -33,11 +30,17 @@ import {
 import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
 import { useTramos } from "@/lib/tramosDatos";
-import { precioDe } from "@/lib/tramos";
 import { useTramosAltura } from "@/lib/tramosAlturaDatos";
-import { ajusteDeAltura } from "@/lib/tramosAltura";
-import { ajusteDeServicio, useServiciosPrecio } from "@/lib/serviciosPrecio";
+import { useServiciosPrecio } from "@/lib/serviciosPrecio";
 import { useAjustesPorTamano } from "@/lib/ajustesPrecio";
+import {
+  baseDeComparacion,
+  cotizar,
+  elegirDescuentoGlobal,
+  entradaDeFormulario,
+  type ConfigCotizacion,
+  type EntradaCotizacion,
+} from "@/lib/cotizacion";
 import { fotoValida, subirFotoReserva } from "@/lib/fotos";
 import { WHATSAPP_NUMBER, hayWhatsAppConfigurado } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
@@ -817,12 +820,25 @@ export function FormReserva({
      Acumularlos puede dejar el precio bajo el costo, así que gana el mayor.
      La oferta sale de la tabla `ofertas` — el mismo dato que ve el cliente
      en la invitación, así que lo prometido es lo que se cobra. */
+  /* La configuración con la que se cobra, en un solo objeto: es EXACTAMENTE lo
+     que recibe `cotizar`, y lo mismo que el servidor lee de la base para
+     recalcular. Que sea un único valor con forma propia no es cosmético — es lo
+     que hace que las dos orillas usen la misma función sin poder desviarse. */
+  const configPrecio: ConfigCotizacion = useMemo(
+    () => ({
+      tarifasBase: tarifas.base,
+      tramos,
+      tramosAltura,
+      servicios: serviciosPrecio,
+      ajustes: { general: ajustes.general, porTamano: ajustes.porTamano },
+    }),
+    [tarifas, tramos, tramosAltura, serviciosPrecio, ajustes]
+  );
+
   /* Se compara contra el mismo precio que se va a cobrar (el del tramo), no
      contra el de la tabla vieja: si difieren, un porcentaje de descuento se
      calcularía sobre una base que el cliente nunca ve. */
-  const pesoParaComparar = parseFloat(data.pesoKg) || 10;
-  const baseParaComparar =
-    precioDe(tramos, pesoParaComparar) ?? tarifas.base[detectarTamanoPorPeso(pesoParaComparar)];
+  const baseParaComparar = baseDeComparacion(configPrecio, parseFloat(data.pesoKg));
   const ofertaVigente = mejorOferta(
     ofertas,
     { conCuenta: tieneCuenta, visitasPrevias },
@@ -836,14 +852,13 @@ export function FormReserva({
     ? { etiqueta: cupon.etiqueta, pct: -Math.abs(cupon.pct) }
     : null;
 
-  const descuentoGlobal: AjustePrecio | null =
-    descuentoDeCupon && descuentoDeOferta
-      ? // Ambos disponibles: gana el que más descuenta sobre esta base.
-        Math.abs(montoDeAjuste(descuentoDeCupon, baseParaComparar)) >=
-        Math.abs(montoDeAjuste(descuentoDeOferta, baseParaComparar))
-        ? descuentoDeCupon
-        : descuentoDeOferta
-      : (descuentoDeCupon ?? descuentoDeOferta);
+  // Ambos disponibles: gana el que más descuenta sobre esta base. La elección
+  // vive en `lib/cotizacion.ts` para que el servidor resuelva el empate igual.
+  const descuentoGlobal: AjustePrecio | null = elegirDescuentoGlobal(
+    descuentoDeCupon,
+    descuentoDeOferta,
+    baseParaComparar
+  );
 
   const estimadoDe = useCallback(
     (d: FormData): { estimado: EstimadoVivo | null; esManual: boolean } => {
@@ -854,69 +869,21 @@ export function FormReserva({
       );
       if (!pesoOk) return { estimado: null, esManual };
 
-      const edadMeses = (parseInt(d.edadAnios) || 0) * 12 + (parseInt(d.edadMeses) || 0);
-      const razaJoven =
-        edadMeses > 0 && edadMeses <= EDAD_CACHORRO_MESES
-          ? CATALOGO_RAZAS.find((r) => r.nombre === d.raza) ?? null
-          : null;
-      const tamanoAuto = detectarTamanoPorPeso(peso);
-      const baseCachorro =
-        razaJoven && razaJoven.tamano !== tamanoAuto ? tarifas.base[razaJoven.tamano] : null;
-
-      // Tamaño con el que se cobra: el de la raza adulta si es cachorro de
-      // raza conocida, si no el detectado por peso. Los agregados salen de
-      // ESE tamaño (migración 009) — heredan el general si no hay excepción.
-      const tamanoCobrado = razaJoven && razaJoven.tamano !== tamanoAuto ? razaJoven.tamano : tamanoAuto;
-      const cfg = ajustes.porTamano[tamanoCobrado] ?? ajustes.general;
-
-      const extra: AjustePrecio[] = [];
-      if (baseCachorro) extra.push(cfg.descuentoCachorro);
-      if (descuentoGlobal) extra.push(descuentoGlobal);
-
-      /* Ajuste por altura (migración 033). Se resuelve acá y no dentro de
-         `calcularEstimado` porque depende de los tramos que vienen de la base.
-         La altura es opcional en el formulario: si no la pusieron, o si el
-         tramo está en 0%, `ajusteDeAltura` devuelve null y no se cobra nada. */
-      const ajusteAltura = ajusteDeAltura(tramosAltura, parseFloat(d.alturaCmd));
-      if (ajusteAltura) extra.push(ajusteAltura);
-
-      /* Ajuste por servicio (migración 035). Hasta ahora el servicio elegido no
-         tocaba el precio: un spa completo y un solo-uñas del mismo perro
-         costaban igual. El servicio se elige una vez para toda la reserva, no
-         por perrito, así que llega de `servicio` y no de `d`. */
-      const ajusteServicio = ajusteDeServicio(serviciosPrecio, servicio);
-      if (ajusteServicio) extra.push(ajusteServicio);
-
-      return {
-        /* El precio base sale del TRAMO por peso (migración 026), no del tamaño.
-           Ése era el defecto que encontró el cliente probando la página: un
-           perrito de 8 kg caía en "Pequeño (6–10 kg)" y cobraba $20.000 cuando
-           corresponden $25.000–$30.000. Con cinco escalones, los bordes siempre
-           cobran de menos.
-
-           El orden de los `??` importa y no es casual:
-           1. `baseCachorro` manda cuando es cachorro de raza conocida — se cobra
-              por el tamaño que va a tener de adulto, no por lo que pesa hoy.
-           2. si no, el tramo que corresponde a su peso real.
-           3. si no hay tramos (base caída), la tabla por tamaño. Cobrar de menos
-              es mejor que no poder cotizar, pero nunca es la primera opción. */
-        estimado: calcularEstimado(
-          d,
-          baseCachorro ?? precioDe(tramos, peso) ?? tarifas.base[tamanoAuto],
-          extra,
-          cfg
-        ),
-        esManual,
-      };
+      /* Todo el armado del precio —base por tramo, cachorro de raza conocida,
+         descuento global, altura y servicio— vive en `lib/cotizacion.ts`.
+         Antes vivía justo acá, y ese era el problema: `/api/reservas` no tenía
+         cómo repetirlo, así que guardaba el número que mandaba el navegador sin
+         mirarlo. Ahora las dos orillas llaman a la MISMA función. */
+      return { estimado: cotizar(entradaDeFormulario(d, servicio), configPrecio, { descuentoGlobal }), esManual };
     },
-    /* `tramos` va en las dependencias o el estimado se queda con la tabla que
-       había al montar: el admin cambiaría un precio y el formulario seguiría
-       cotizando el viejo hasta recargar. Lo mismo para `tramosAltura` y
-       `serviciosPrecio`.
+    /* `configPrecio` ya arrastra tarifas, tramos, altura, servicios y ajustes:
+       sin él en las dependencias el estimado se quedaría con la tabla que había
+       al montar, y el admin cambiaría un precio mientras el formulario sigue
+       cotizando el viejo.
 
        Y `servicio` también: sin él, elegir otro servicio no recalcularía nada
        y el cliente vería el precio del anterior. */
-    [tarifas, tramos, tramosAltura, serviciosPrecio, servicio, ajustes, descuentoGlobal]
+    [configPrecio, servicio, descuentoGlobal]
   );
 
   const actual = estimadoDe(data);
@@ -1100,9 +1067,23 @@ export function FormReserva({
               ? subirFotoReserva(supabase, user?.id ?? null, f.referencia, i, "referencia")
               : null,
           ]);
+          /* Lo que el servidor necesita para RECALCULAR el precio por su
+             cuenta. No alcanzaba con `detalle`: ese snapshot está pensado para
+             que lo lea una persona (guarda "Crespo con motas", no
+             `crespo_motas`) y perdería la mitad de los ajustes por el camino.
+             `precioEstimado` sigue viajando, pero ya no manda: es lo que se le
+             mostró al cliente, y el servidor lo usa para detectar desacuerdos. */
+          /* Sin un peso utilizable no hay nada que recalcular, y un `NaN` se
+             serializa como `null` y hace fallar la validación entera: mejor
+             mandar `null` a propósito que un objeto roto por accidente. */
+          const entrada = entradaDeFormulario(p, servicio);
+          const cotizacion: EntradaCotizacion | null = Number.isFinite(entrada.pesoKg)
+            ? entrada
+            : null;
           return {
             detalle: construirDetalle(p),
             precioEstimado: estimado?.total ?? null,
+            cotizacion,
             esManual,
             fotoActualRuta,
             fotoReferenciaRuta,
