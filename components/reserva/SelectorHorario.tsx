@@ -13,6 +13,7 @@ import {
 } from "@/lib/disponibilidad";
 import {
   obtenerDisponibilidad,
+  obtenerBloqueosParciales,
   obtenerExcepciones,
   obtenerOcupacion,
 } from "@/lib/disponibilidadDatos";
@@ -57,9 +58,12 @@ export function SelectorHorario({ fecha, valor, onChange }: SelectorHorarioProps
         const offset = offsetNegocio(fecha);
         const desde = `${fecha}T00:00:00${offset}`;
         const hasta = `${fecha}T23:59:59${offset}`;
-        const [ocupacion, excepciones] = await Promise.all([
+        const [ocupacion, excepciones, bloqueos] = await Promise.all([
           obtenerOcupacion(supabase, desde, hasta),
           obtenerExcepciones(supabase, fecha, fecha),
+          // Horas cerradas y peluqueros fuera: sin esto, marcar el día libre
+          // de alguien no le quitaba ni un cupo al cliente.
+          obtenerBloqueosParciales(supabase, fecha, fecha),
         ]);
         if (cancelado) return;
         setCapacidad(capacidad);
@@ -77,7 +81,8 @@ export function SelectorHorario({ fecha, valor, onChange }: SelectorHorarioProps
             capacidad,
             ocupacion,
             new Date(),
-            excepciones
+            excepciones,
+            bloqueos
           )
         );
       } catch {

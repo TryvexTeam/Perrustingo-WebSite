@@ -4,6 +4,7 @@ import { SiteMenu } from "@/components/layout/SiteMenu";
 import { EditorTarifas } from "@/components/admin/EditorTarifas";
 import { EditorTramos } from "@/components/admin/EditorTramos";
 import { EditorTramosAltura } from "@/components/admin/EditorTramosAltura";
+import { EditorServiciosPrecio } from "@/components/admin/EditorServiciosPrecio";
 import { EditorAjustesPrecio } from "@/components/admin/EditorAjustesPrecio";
 
 export const metadata: Metadata = {
@@ -64,8 +65,8 @@ export default function TarifasPage() {
               Cómo se arma el precio
             </p>
             <p className="mt-2 text-sm leading-relaxed text-ink">
-              <strong>Precio del peso</strong> + los ajustes que correspondan (altura, pelaje,
-              temperamento, zonas sensibles, descuentos).
+              <strong>Precio del peso</strong> + los ajustes que correspondan (servicio, altura,
+              pelaje, temperamento, zonas sensibles, descuentos).
             </p>
             <p className="mt-2 text-sm leading-relaxed text-ink-soft">
               Los porcentajes <strong>se suman entre sí</strong> y se aplican una sola vez sobre el
@@ -85,6 +86,7 @@ export default function TarifasPage() {
           </Paso>
 
           <Paso numero="2" titulo="Qué ajusta ese precio">
+            <EditorServiciosPrecio />
             <EditorTramosAltura />
             <EditorAjustesPrecio />
           </Paso>

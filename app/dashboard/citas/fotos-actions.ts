@@ -15,9 +15,29 @@ interface Resultado {
   error?: string;
 }
 
-/* La migración 004 puso un CHECK sobre `tipo`. Inventar un valor nuevo acá
-   reventaría en producción con un error críptico. */
-const TIPO_DESPUES = "despues";
+/* Los tipos que acepta el CHECK de la tabla (migración 035). Inventar un valor
+   nuevo acá reventaría en producción con un error críptico, así que la lista
+   vive en un solo lugar y se valida antes de escribir. */
+export const TIPOS_FOTO = [
+  "antes",
+  "durante",
+  "despues",
+  "referencia",
+  "extra",
+  "comprobante",
+] as const;
+
+export type TipoFoto = (typeof TIPOS_FOTO)[number];
+
+/* El comprobante NO es una foto del perrito: lleva datos de pago. Se separa
+   para que la galería del cliente no lo muestre nunca por descuido. */
+export const TIPOS_VISIBLES_CLIENTE: readonly TipoFoto[] = [
+  "antes",
+  "durante",
+  "despues",
+  "referencia",
+  "extra",
+];
 
 /* `<uid>/<archivo>`: la ruta que produce lib/fotos.ts y la única forma que
    la policy de storage acepta. Se valida acá porque, aunque la genere
@@ -25,12 +45,25 @@ const TIPO_DESPUES = "despues";
    podría dejar la "evidencia" apuntando a otra carpeta. */
 const RUTA_VALIDA = /^[0-9a-f-]{36}\/[A-Za-z0-9._-]+$/;
 
+/**
+ * Registra una foto de la cita.
+ *
+ * `tipo` era fijo en "despues": el equipo no podía subir una foto del antes,
+ * un detalle a mitad de trabajo ni el comprobante de pago. Ahora se elige, y
+ * se valida contra la lista que acepta la base — un valor inventado moriría
+ * en el CHECK con un error que no dice nada.
+ */
 export async function registrarFotoResultado(
   citaId: string,
-  ruta: string
+  ruta: string,
+  tipo: TipoFoto = "despues"
 ): Promise<Resultado> {
   if (!RUTA_VALIDA.test(ruta)) {
     return { success: false, error: "La foto no quedó guardada correctamente." };
+  }
+
+  if (!TIPOS_FOTO.includes(tipo)) {
+    return { success: false, error: "Ese tipo de foto no existe." };
   }
 
   const supabase = await createClient();
@@ -55,7 +88,7 @@ export async function registrarFotoResultado(
     .from("fotos_sesion")
     .insert({
       sesion_id: citaId,
-      tipo: TIPO_DESPUES,
+      tipo,
       ruta,
       subida_por: user.id,
     })

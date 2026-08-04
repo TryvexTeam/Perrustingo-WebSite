@@ -7,6 +7,13 @@ import { offsetNegocio } from "@/lib/agenda";
 import { eliminarEventoCita, upsertEventoCita } from "@/lib/google/calendar";
 import { BUCKET_FOTOS, rutaDeFoto } from "@/lib/fotosComun";
 import type { EstadoCita } from "@/lib/citas";
+import {
+  explicarAtraso,
+  minutosDeAtraso,
+  obtenerPolitica,
+  recargoPorAtraso,
+  type PoliticaCitas,
+} from "@/lib/politica";
 
 const TRANSICIONES_EQUIPO: Record<string, EstadoCita[]> = {
   pendiente: ["confirmada", "cancelada"],
@@ -231,6 +238,295 @@ export async function guardarNotasEquipo(
 
   revalidatePath("/dashboard/citas");
   return { success: true };
+}
+
+/* ── Llegada del cliente y recargo por atraso (migración 035) ───────────────
+
+   POR QUÉ EXISTE ESTO: sin la hora de llegada real, los minutos de atraso no
+   salen de ninguna parte y el recargo es incalculable. La cita agendada dice a
+   qué hora se esperaba a alguien; solo el equipo sabe a qué hora apareció.
+
+   EL SISTEMA PROPONE, EL EQUIPO CONFIRMA (decidido por el dueño el 4-ago).
+   Marcar la llegada calcula el monto y lo deja en `recargo_aceptado = NULL`:
+   sin decidir. Cobrar y perdonar son dos acciones separadas y explícitas.
+   Nunca se cobra solo — hay que dejar margen para el cliente de siempre y para
+   el taco de verdad.
+
+   Todo lo que es plata sale de `lib/politica.ts`. Acá no se recalcula nada: si
+   la política está apagada, `recargoPorAtraso` devuelve 0 y ese cero se
+   respeta tal cual. */
+
+/** Estado del atraso de una cita, tal como se lo muestra el panel al equipo. */
+export interface EstadoAtraso {
+  /** ISO de la llegada real, o null si todavía nadie la marcó. */
+  llegadaEn: string | null;
+  /** Minutos de atraso, 0 si llegó puntual o antes. */
+  minutosAtraso: number;
+  /** Lo que el sistema PROPONE cobrar. 0 con la política apagada. */
+  recargo: number;
+  /** NULL = sin decidir · true = se cobra · false = se perdonó. */
+  aceptado: boolean | null;
+  /** La frase ya redactada por el dominio, para no armarla en dos lugares. */
+  explicacion: string;
+  /** Si la política está encendida. Apagada, el panel no ofrece cobrar nada. */
+  politicaActiva: boolean;
+}
+
+interface ResultadoAtraso extends ResultadoAccion {
+  estado?: EstadoAtraso;
+}
+
+/** Guard de equipo idéntico al de `cambiarEstadoCita`: admin o trabajador.
+    Quien atiende en el mesón es quien ve llegar al cliente. */
+async function exigirEquipo(): Promise<
+  { supabase: Awaited<ReturnType<typeof createClient>> } | { error: string }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesión expirada." };
+
+  const { data: perfil } = await supabase
+    .from("perfiles")
+    .select("rol")
+    .eq("id", user.id)
+    .single();
+  if (!perfil || !["admin", "trabajador"].includes(perfil.rol)) {
+    return { error: "Sin permisos." };
+  }
+  return { supabase };
+}
+
+/** Arma el estado a partir de la fila y la política vigente. */
+function estadoDesdeFila(
+  fila: {
+    fecha_cita: string | null;
+    llegada_en: string | null;
+    recargo_atraso: number | null;
+    recargo_aceptado: boolean | null;
+  },
+  politica: PoliticaCitas
+): EstadoAtraso {
+  const minutos =
+    fila.llegada_en && fila.fecha_cita
+      ? minutosDeAtraso(fila.fecha_cita, fila.llegada_en)
+      : 0;
+  return {
+    llegadaEn: fila.llegada_en,
+    minutosAtraso: minutos,
+    /* El monto guardado manda sobre el recalculado: es el que se le mostró a
+       la persona cuando se marcó la llegada. Cambiar la tasa después no puede
+       reescribir lo que ya se acordó en el mesón. */
+    recargo: fila.recargo_atraso ?? 0,
+    aceptado: fila.recargo_aceptado,
+    explicacion: fila.llegada_en
+      ? explicarAtraso(minutos, politica)
+      : "Todavía no se marca la llegada.",
+    politicaActiva: politica.activa,
+  };
+}
+
+/** Lee el estado del atraso de una cita.
+ *
+ *  Va por el servidor y no por el navegador porque la vista `sesiones_equipo`
+ *  (migración 030) tiene una lista fija de columnas y no incluye `llegada_en`
+ *  ni los recargos: desde el cliente esos campos no existen. */
+export async function estadoAtrasoAction(citaId: string): Promise<ResultadoAtraso> {
+  const sesion = await exigirEquipo();
+  if ("error" in sesion) return { success: false, error: sesion.error };
+
+  /* Mismo camino que `cambiarEstadoCita`: desde la migración 027 el rol
+     'trabajador' no puede leer `sesiones` con su propia sesión. */
+  const lector = crearClienteServicio() ?? sesion.supabase;
+
+  const { data: cita, error } = await lector
+    .from("sesiones")
+    .select("fecha_cita, llegada_en, recargo_atraso, recargo_aceptado")
+    .eq("id", citaId)
+    .single();
+
+  if (error || !cita) {
+    if (error?.code === "42703") {
+      return { success: false, error: "Falta aplicar la migración 035 en la base de datos." };
+    }
+    return { success: false, error: "Cita no encontrada." };
+  }
+
+  const politica = await obtenerPolitica(lector);
+  return { success: true, estado: estadoDesdeFila(cita, politica) };
+}
+
+/**
+ * Marca que el cliente llegó, ahora.
+ *
+ * Calcula los minutos de atraso contra la hora agendada y guarda el recargo
+ * PROPUESTO, dejando `recargo_aceptado` en NULL. No cobra: deja la decisión
+ * escrita para que alguien la tome mirando al cliente.
+ */
+export async function marcarLlegadaAction(citaId: string): Promise<ResultadoAtraso> {
+  const sesion = await exigirEquipo();
+  if ("error" in sesion) return { success: false, error: sesion.error };
+
+  const servicio = crearClienteServicio();
+  const lector = servicio ?? sesion.supabase;
+  const escritor = servicio ?? sesion.supabase;
+
+  const { data: cita, error: errorLectura } = await lector
+    .from("sesiones")
+    .select("fecha_cita, llegada_en, recargo_atraso, recargo_aceptado")
+    .eq("id", citaId)
+    .single();
+
+  if (errorLectura || !cita) {
+    if (errorLectura?.code === "42703") {
+      return { success: false, error: "Falta aplicar la migración 035 en la base de datos." };
+    }
+    console.error("[marcarLlegada] no se pudo leer la cita", {
+      citaId,
+      codigo: errorLectura?.code ?? null,
+      mensaje: errorLectura?.message ?? null,
+    });
+    return { success: false, error: "Cita no encontrada." };
+  }
+
+  /* La llegada se marca UNA vez. Volver a apretar el botón media hora después
+     correría la hora y subiría el recargo de alguien que ya está adentro. */
+  if (cita.llegada_en) {
+    const politica = await obtenerPolitica(lector);
+    return {
+      success: false,
+      error: "La llegada ya estaba marcada.",
+      estado: estadoDesdeFila(cita, politica),
+    };
+  }
+  if (!cita.fecha_cita) {
+    return {
+      success: false,
+      error: "La cita no tiene hora agendada, así que no hay contra qué medir el atraso.",
+    };
+  }
+
+  const politica = await obtenerPolitica(lector);
+  const llegada = new Date();
+  const minutos = minutosDeAtraso(cita.fecha_cita, llegada);
+  const recargo = recargoPorAtraso(minutos, politica);
+
+  const { data: tocadas, error } = await escritor
+    .from("sesiones")
+    .update({
+      llegada_en: llegada.toISOString(),
+      recargo_atraso: recargo,
+      // NULL a propósito: propuesto, sin decidir.
+      recargo_aceptado: null,
+      updated_at: llegada.toISOString(),
+    })
+    .eq("id", citaId)
+    .select("id");
+
+  if (error) return { success: false, error: "No se pudo marcar la llegada." };
+  if (!tocadas || tocadas.length === 0) {
+    console.error("[marcarLlegada] el UPDATE no toco ninguna fila", { citaId });
+    return {
+      success: false,
+      error: "La base de datos rechazó el cambio. Avise al equipo técnico.",
+    };
+  }
+
+  revalidatePath("/dashboard/citas");
+  revalidatePath("/dashboard/hoy");
+  return {
+    success: true,
+    estado: estadoDesdeFila(
+      {
+        fecha_cita: cita.fecha_cita,
+        llegada_en: llegada.toISOString(),
+        recargo_atraso: recargo,
+        recargo_aceptado: null,
+      },
+      politica
+    ),
+  };
+}
+
+/**
+ * Confirma o perdona el recargo propuesto.
+ *
+ * `cobrar = true` deja registrado que se cobra; `false`, que se perdonó. Las
+ * dos son decisiones válidas y las dos quedan escritas: un recargo perdonado
+ * en silencio se vuelve a discutir en la visita siguiente.
+ *
+ * Perdonar deja el monto en 0. Cobrar conserva el que se propuso — el que la
+ * persona vio en pantalla cuando decidió.
+ */
+export async function resolverRecargoAction(
+  citaId: string,
+  cobrar: boolean
+): Promise<ResultadoAtraso> {
+  const sesion = await exigirEquipo();
+  if ("error" in sesion) return { success: false, error: sesion.error };
+
+  const servicio = crearClienteServicio();
+  const lector = servicio ?? sesion.supabase;
+  const escritor = servicio ?? sesion.supabase;
+
+  const { data: cita, error: errorLectura } = await lector
+    .from("sesiones")
+    .select("fecha_cita, llegada_en, recargo_atraso, recargo_aceptado")
+    .eq("id", citaId)
+    .single();
+
+  if (errorLectura || !cita) {
+    if (errorLectura?.code === "42703") {
+      return { success: false, error: "Falta aplicar la migración 035 en la base de datos." };
+    }
+    return { success: false, error: "Cita no encontrada." };
+  }
+  if (!cita.llegada_en) {
+    return { success: false, error: "Primero marque la llegada del cliente." };
+  }
+
+  const politica = await obtenerPolitica(lector);
+
+  /* Con la política apagada no hay monto que cobrar: el dominio ya devuelve 0
+     y acá no se lo esquiva inventando uno. */
+  if (cobrar && !politica.activa) {
+    return {
+      success: false,
+      error: "La política está apagada: no hay recargo que cobrar.",
+    };
+  }
+
+  const recargo = cobrar ? (cita.recargo_atraso ?? 0) : 0;
+
+  const { data: tocadas, error } = await escritor
+    .from("sesiones")
+    .update({
+      recargo_aceptado: cobrar,
+      recargo_atraso: recargo,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", citaId)
+    .select("id");
+
+  if (error) return { success: false, error: "No se pudo guardar la decisión." };
+  if (!tocadas || tocadas.length === 0) {
+    console.error("[resolverRecargo] el UPDATE no toco ninguna fila", { citaId });
+    return {
+      success: false,
+      error: "La base de datos rechazó el cambio. Avise al equipo técnico.",
+    };
+  }
+
+  revalidatePath("/dashboard/citas");
+  revalidatePath("/dashboard/hoy");
+  return {
+    success: true,
+    estado: estadoDesdeFila(
+      { ...cita, recargo_atraso: recargo, recargo_aceptado: cobrar },
+      politica
+    ),
+  };
 }
 
 /* ── Borrado de citas (pedido del señor Adley, 30-jul) ──────────

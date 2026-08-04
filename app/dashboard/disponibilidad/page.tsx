@@ -63,17 +63,68 @@ export default async function DisponibilidadPage() {
      la lista con vacaciones del año pasado. Si la migración 026 aún no está
      aplicada, `error` viene con 42P01 y la sección se muestra vacía en vez
      de tumbar toda la página de disponibilidad. */
-  const { data: filasExcepciones } = await supabase
-    .from("disponibilidad_excepciones")
-    .select("fecha, mensaje, nota_interna")
-    .gte("fecha", hoyEnSantiago())
-    .order("fecha");
+  const desdeHoy = hoyEnSantiago();
 
-  const excepciones: ExcepcionEditable[] = (filasExcepciones ?? []).map((f) => ({
+  const [{ data: filasExcepciones }, { data: filasBloqueos }, { data: filasPeluqueros }] =
+    await Promise.all([
+      supabase
+        .from("disponibilidad_excepciones")
+        .select("fecha, mensaje, nota_interna")
+        .gte("fecha", desdeHoy)
+        .order("fecha"),
+      /* Los bloqueos nuevos (034/035), que sí llevan horas y dueño. Se leen
+         aparte y se juntan más abajo: la tabla vieja sigue viva para lo que ya
+         estaba cargado, y `excepciones_en_rango` lee de las dos. */
+      supabase
+        .from("bloqueos")
+        .select("id, fecha, hora_inicio, hora_fin, peluquero_id, mensaje, nota_interna")
+        .gte("fecha", desdeHoy)
+        .order("fecha"),
+      // Para poder tomarle el día a uno solo.
+      supabase
+        .from("perfiles")
+        .select("id, nombre, apellido")
+        .eq("es_peluquero", true)
+        .order("nombre"),
+    ]);
+
+  const peluqueros = (filasPeluqueros ?? []).map((p) => ({
+    id: p.id as string,
+    nombre: [p.nombre, p.apellido].filter(Boolean).join(" ").trim() || "Sin nombre",
+  }));
+  const nombreDe = new Map(peluqueros.map((p) => [p.id, p.nombre]));
+
+  const deBloqueos: ExcepcionEditable[] = (filasBloqueos ?? []).map((f) => ({
+    id: f.id as string,
     fecha: (f.fecha as string).slice(0, 10),
     mensaje: (f.mensaje as string | null) ?? "",
     notaInterna: (f.nota_interna as string | null) ?? "",
+    horaInicio: (f.hora_inicio as string | null) ?? undefined,
+    horaFin: (f.hora_fin as string | null) ?? undefined,
+    peluqueroId: (f.peluquero_id as string | null) ?? undefined,
+    peluqueroNombre: f.peluquero_id ? nombreDe.get(f.peluquero_id as string) : undefined,
   }));
+
+  /* Las de la tabla vieja que la 034 ya copió aparecerían dos veces. Se dejan
+     fuera comparando por fecha: las copiadas son día completo y de todo el
+     local, así que si ya hay un bloqueo así ese día, es la misma. */
+  const yaEnBloqueos = new Set(
+    deBloqueos.filter((b) => !b.horaInicio && !b.peluqueroId).map((b) => b.fecha)
+  );
+
+  const deLegado: ExcepcionEditable[] = (filasExcepciones ?? [])
+    .map((f) => ({
+      fecha: (f.fecha as string).slice(0, 10),
+      mensaje: (f.mensaje as string | null) ?? "",
+      notaInterna: (f.nota_interna as string | null) ?? "",
+    }))
+    .filter((e) => !yaEnBloqueos.has(e.fecha));
+
+  const excepciones: ExcepcionEditable[] = [...deBloqueos, ...deLegado].sort(
+    (a, b) =>
+      a.fecha.localeCompare(b.fecha) ||
+      (a.horaInicio ?? "").localeCompare(b.horaInicio ?? "")
+  );
 
   return (
     <>
@@ -108,6 +159,7 @@ export default async function DisponibilidadPage() {
               diasAtendidos={[
                 ...new Set(tramos.filter((t) => t.activo).map((t) => t.diaSemana)),
               ]}
+              peluqueros={peluqueros}
             />
           </div>
         </div>

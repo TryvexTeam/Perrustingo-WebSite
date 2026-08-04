@@ -1,0 +1,51 @@
+-- Permiso de escritura sobre `cupones` — el que faltaba desde la 004.
+--
+-- QUÉ ESTABA ROTO: la tabla tiene desde el 20-jul la policy
+-- `admin_maneja_cupones` (`FOR ALL USING (get_rol() = 'admin')`), que dice
+-- perfectamente quién puede administrarlos. Lo que nunca se escribió fue el
+-- privilegio: `cupones` solo tiene `GRANT SELECT`. Postgres revisa el
+-- privilegio de tabla ANTES que la policy, así que la policy jamás llega a
+-- evaluarse y todo INSERT/UPDATE del panel muere con `42501 permission
+-- denied`. Es exactamente el bug que en julio botaba al admin a /perfil, y es
+-- la cuarta vez que este proyecto tropieza con lo mismo: la 004 hasta lleva un
+-- comentario que dice "política sin grant = 42501" y aun así se le pasó esta
+-- tabla.
+--
+-- POR QUÉ AHORA: la 035 le agregó nueve columnas de condiciones a `cupones`
+-- (vigencia, tope de usos, anticipación, número de visita, servicio) y el panel
+-- `/dashboard/cupones` las expone. Sin este grant, esa pantalla se ve completa
+-- y no guarda nada.
+--
+-- POR QUÉ NO SE LE DA A `anon`: un visitante sin cuenta no administra cupones.
+-- Su único derecho es leer los activos para canjearlos, y eso ya lo tiene. El
+-- contador `usos` lo mueve la reserva con la clave de servicio, que se salta
+-- RLS por diseño — no necesita este grant.
+
+-- ── El privilegio que faltaba ───────────────────────────────────────────────
+-- Solo INSERT y UPDATE. DELETE queda deliberadamente fuera: borrar un cupón se
+-- llevaría su contador de usos y su configuración, y el panel resuelve el caso
+-- apagándolo (`activo = false`), que conserva el historial. Si algún día hace
+-- falta borrar de verdad, que sea una decisión explícita y no un privilegio
+-- que estaba ahí por si acaso.
+grant insert, update on public.cupones to authenticated;
+
+-- `service_role` escribe el contador de usos desde la ruta de reservas.
+grant select, insert, update on public.cupones to service_role;
+
+-- ── Verificación ────────────────────────────────────────────────────────────
+-- Que la policy exista NO prueba que se pueda escribir: eso es justamente lo
+-- que nos engañó cuatro veces. Lo que se mira acá es el privilegio real que
+-- quedó en el catálogo.
+--
+--   select grantee, privilege_type
+--     from information_schema.role_table_grants
+--    where table_name = 'cupones'
+--      and grantee in ('anon', 'authenticated', 'service_role')
+--    order by grantee, privilege_type;
+--
+-- Se espera: anon → SELECT. authenticated → INSERT, SELECT, UPDATE.
+-- service_role → INSERT, SELECT, UPDATE.
+--
+-- Y la prueba que de verdad vale, con la sesión de un admin en el panel:
+-- guardar un cupón y volver a leerlo. Si el UPDATE devuelve cero filas, el
+-- problema ya no es el grant sino la policy.

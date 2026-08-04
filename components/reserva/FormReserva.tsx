@@ -36,6 +36,7 @@ import { useTramos } from "@/lib/tramosDatos";
 import { precioDe } from "@/lib/tramos";
 import { useTramosAltura } from "@/lib/tramosAlturaDatos";
 import { ajusteDeAltura } from "@/lib/tramosAltura";
+import { ajusteDeServicio, useServiciosPrecio } from "@/lib/serviciosPrecio";
 import { useAjustesPorTamano } from "@/lib/ajustesPrecio";
 import { fotoValida, subirFotoReserva } from "@/lib/fotos";
 import { WHATSAPP_NUMBER, hayWhatsAppConfigurado } from "@/lib/site";
@@ -50,6 +51,7 @@ import {
 import { comoAjuste, mejorOferta, type Oferta } from "@/lib/ofertas";
 import { obtenerOfertasActivas } from "@/lib/ofertasDatos";
 import { hoyEnSantiago, primeraFechaReservable } from "@/lib/disponibilidad";
+import { obtenerPolitica, POLITICA_DEFAULT, type PoliticaCitas } from "@/lib/politica";
 import { obtenerDisponibilidad } from "@/lib/disponibilidadDatos";
 import { SelectorHorario } from "@/components/reserva/SelectorHorario";
 import { BreedAvatar } from "@/components/ui/BreedAvatar";
@@ -503,6 +505,10 @@ export function FormReserva({
   const [cuponInput, setCuponInput] = useState("");
   const [cupon, setCupon] = useState<CuponAplicado | null>(null);
   const [cuponError, setCuponError] = useState("");
+  /* Política de atrasos y cancelaciones. Arranca en la de fábrica, que viene
+     APAGADA: hasta que la base diga lo contrario no se le promete nada al
+     cliente. Ver el efecto en el paso de confirmación. */
+  const [politica, setPolitica] = useState<PoliticaCitas>(POLITICA_DEFAULT);
   const [enviando, setEnviando] = useState(false);
   const [solicitudEstado, setSolicitudEstado] = useState<"idle" | "registrada" | "error">("idle");
 
@@ -516,6 +522,24 @@ export function FormReserva({
       })
       .catch(() => {
         /* Sin config, queda el valor de hoy: el servidor igual valida. */
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  /* La política que se le muestra al cliente ANTES de reservar. Si la lectura
+     falla queda la de fábrica (apagada) y no se muestra nada: un recargo solo
+     es defendible si la persona lo leyó al reservar, así que ante duda no se
+     promete ninguna regla. */
+  useEffect(() => {
+    let cancelado = false;
+    obtenerPolitica(createClient())
+      .then((p) => {
+        if (!cancelado) setPolitica(p);
+      })
+      .catch(() => {
+        /* Queda POLITICA_DEFAULT: apagada, sin texto visible. */
       });
     return () => {
       cancelado = true;
@@ -554,6 +578,7 @@ export function FormReserva({
   const tarifas = useTarifas();
   const tramos = useTramos();
   const tramosAltura = useTramosAltura();
+  const serviciosPrecio = useServiciosPrecio();
 
   /* Qué días tienen horario, para apagar en el calendario los que no. Arranca
      vacío y con eso el calendario no apaga ninguno: hasta saberlo, dejar
@@ -855,6 +880,13 @@ export function FormReserva({
       const ajusteAltura = ajusteDeAltura(tramosAltura, parseFloat(d.alturaCmd));
       if (ajusteAltura) extra.push(ajusteAltura);
 
+      /* Ajuste por servicio (migración 035). Hasta ahora el servicio elegido no
+         tocaba el precio: un spa completo y un solo-uñas del mismo perro
+         costaban igual. El servicio se elige una vez para toda la reserva, no
+         por perrito, así que llega de `servicio` y no de `d`. */
+      const ajusteServicio = ajusteDeServicio(serviciosPrecio, servicio);
+      if (ajusteServicio) extra.push(ajusteServicio);
+
       return {
         /* El precio base sale del TRAMO por peso (migración 026), no del tamaño.
            Ése era el defecto que encontró el cliente probando la página: un
@@ -877,10 +909,14 @@ export function FormReserva({
         esManual,
       };
     },
-    // `tramos` va en las dependencias o el estimado se queda con la tabla que
-    // había al montar: el admin cambiaría un precio y el formulario seguiría
-    // cotizando el viejo hasta recargar. Lo mismo para `tramosAltura`.
-    [tarifas, tramos, tramosAltura, ajustes, descuentoGlobal]
+    /* `tramos` va en las dependencias o el estimado se queda con la tabla que
+       había al montar: el admin cambiaría un precio y el formulario seguiría
+       cotizando el viejo hasta recargar. Lo mismo para `tramosAltura` y
+       `serviciosPrecio`.
+
+       Y `servicio` también: sin él, elegir otro servicio no recalcularía nada
+       y el cliente vería el precio del anterior. */
+    [tarifas, tramos, tramosAltura, serviciosPrecio, servicio, ajustes, descuentoGlobal]
   );
 
   const actual = estimadoDe(data);
@@ -957,26 +993,45 @@ export function FormReserva({
     const codigo = cuponInput.trim().toUpperCase();
     if (!codigo) return;
     setCuponError("");
+    /* La validación se pide al servidor y no se hace acá con un `select`:
+       las condiciones del cupón (anticipación, número de visita, cuenta,
+       servicio) dependen de datos que el navegador no puede comprobar, y el
+       porcentaje tiene que salir del mismo motor que usará `/api/reservas`.
+       Si no, el cupón se veía aplicado en pantalla y era rechazado recién al
+       enviar, con la persona ya contando con su descuento. */
     try {
-      const supabase = createClient();
-      const { data: fila, error } = await supabase
-        .from("cupones")
-        .select("codigo, descripcion, descuento_pct")
-        .eq("codigo", codigo)
-        .maybeSingle();
-      if (error || !fila) {
-        setCuponError("Ese cupón no existe o ya no está activo.");
+      const r = await fetch("/api/cupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          codigo,
+          fechaCita: fechaDeseada || null,
+          servicio: servicio || null,
+          email: datosContacto.email,
+          telefono: datosContacto.telefono,
+        }),
+      });
+      const cuerpo: unknown = await r.json().catch(() => null);
+      const resp = cuerpo as
+        | { ok: true; cupon: CuponAplicado }
+        | { ok: false; mensaje?: string }
+        | null;
+
+      if (!resp) {
+        setCuponError("No pudimos validar el cupón. Intenta de nuevo.");
         return;
       }
-      setCupon({
-        codigo: fila.codigo,
-        pct: fila.descuento_pct,
-        etiqueta: fila.descripcion || `Cupón ${fila.codigo}`,
-      });
+      if (!resp.ok) {
+        // El mensaje del dominio explica QUÉ le falta; un genérico no se
+        // puede accionar.
+        setCuponError(resp.mensaje || "Ese cupón no se puede aplicar a esta reserva.");
+        return;
+      }
+      setCupon(resp.cupon);
     } catch {
       setCuponError("No pudimos validar el cupón. Intenta de nuevo.");
     }
-  }, [cuponInput]);
+  }, [cuponInput, fechaDeseada, servicio, datosContacto.email, datosContacto.telefono]);
 
   // ── Confirmar: sube fotos, registra en DB y abre WhatsApp ───────────────
   const confirmarReserva = useCallback(() => {
@@ -2040,6 +2095,26 @@ export function FormReserva({
                 )}
                 <p className="mt-2 text-xs leading-relaxed text-ink-soft">{NOTA_PRECIOS}</p>
               </div>
+
+              {/* ── Política de atrasos y cancelaciones ────────────────────
+                  Va ANTES del botón a propósito: cobrar un recargo por llegar
+                  tarde o por cancelar sobre la hora solo es defendible si la
+                  persona lo leyó al reservar. Con la política apagada no se
+                  muestra nada y no se promete nada — el interruptor lo enciende
+                  el dueño, no un descuido de configuración. */}
+              {politica.activa && politica.textoCliente && (
+                <div className="rounded-3xl border-2 border-ink/10 bg-white px-5 py-4">
+                  <p className="font-display text-sm font-extrabold text-ink">
+                    Antes de reservar
+                  </p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-ink-soft">
+                    {politica.textoCliente}
+                  </p>
+                  <p className="mt-2 text-xs font-semibold text-ink-soft">
+                    Al reservar aceptas estas condiciones.
+                  </p>
+                </div>
+              )}
 
               <button
                 type="button"

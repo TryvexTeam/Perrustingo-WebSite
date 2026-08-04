@@ -1,0 +1,391 @@
+===============================================================================
+  PERRUSTINGO — SQL PARA PEGAR EN SUPABASE
+  Migración 035. Generado el 2026-08-04.
+===============================================================================
+
+QUÉ HACE
+  Deja la base lista para: asignar citas a un peluquero, cobrar según el
+  servicio, subir fotos libres y comprobante de pago, registrar atrasos,
+  penalizar cancelaciones tardías y condicionar cupones.
+
+ANTES DE EMPEZAR
+  Ya deben estar aplicadas la 032, la 033 y la 034 (lo están desde el 4-ago).
+  Si no lo están, esto falla.
+
+ES SEGURO
+  Todo es ADITIVO: no borra ninguna columna ni ningún dato.
+  Y es NEUTRO: todo lo que cobra nace en 0 y la política de atrasos nace
+  APAGADA. Nada le cobra de más a nadie hasta que usted lo configure.
+
+CÓMO PEGARLO
+  El editor SQL de Supabase corre todo en UNA transacción y tiene tres mañas
+  ya conocidas: no admite varias funciones $$ en el mismo script, se atraganta
+  con un punto y coma dentro de las comillas de un `comment on`, y maltrata
+  los tokens de `format('%I')`.
+  Por eso va partido en 7 bloques.
+
+  → Pegue UN BLOQUE A LA VEZ, en orden.
+  → Copie desde la primera línea de SQL hasta el último ";" del bloque.
+  → NO copie los títulos ni estas notas: el editor los lee como SQL y falla.
+  → Espere el "Success" antes de pasar al siguiente.
+
+
+===============================================================================
+  BLOQUE 1 de 7 — Asignar citas a un peluquero
+===============================================================================
+
+alter table public.sesiones
+  add column if not exists peluquero_id uuid references public.perfiles(id) on delete set null;
+
+create index if not exists sesiones_peluquero_idx
+  on public.sesiones (peluquero_id, fecha_cita);
+
+
+===============================================================================
+  BLOQUE 2 de 7 — Precio por servicio
+===============================================================================
+
+create table if not exists public.servicios_precio (
+  slug       text primary key check (length(trim(slug)) > 0),
+  nombre     text not null check (length(trim(nombre)) > 0),
+  pct        numeric(5,2) not null default 0,
+  monto      integer not null default 0,
+  activo     boolean not null default true,
+  creado_en  timestamptz not null default now()
+);
+
+insert into public.servicios_precio (slug, nombre, pct, monto)
+values
+  ('bano-completo',    'Baño completo',        0, 0),
+  ('bano-y-corte',     'Baño y corte de pelo', 0, 0),
+  ('spa-completo',     'Spa completo',         0, 0),
+  ('solo-unas',        'Solo uñas',            0, 0),
+  ('retiro-y-entrega', 'Retiro y entrega',     0, 0)
+on conflict (slug) do nothing;
+
+grant usage on schema public to anon, authenticated, service_role;
+
+grant select on public.servicios_precio to anon, authenticated, service_role;
+
+grant insert, update, delete on public.servicios_precio to authenticated, service_role;
+
+alter table public.servicios_precio enable row level security;
+
+drop policy if exists servicios_precio_lectura on public.servicios_precio;
+
+drop policy if exists servicios_precio_escritura on public.servicios_precio;
+
+create policy servicios_precio_lectura on public.servicios_precio
+  for select using (true);
+
+create policy servicios_precio_escritura on public.servicios_precio
+  for all to authenticated
+  using (public.get_rol() = 'admin')
+  with check (public.get_rol() = 'admin');
+
+
+===============================================================================
+  BLOQUE 3 de 7 — Fotos libres y comprobante de pago
+===============================================================================
+
+alter table public.fotos_sesion drop constraint if exists fotos_sesion_tipo_check;
+
+alter table public.fotos_sesion
+  add constraint fotos_sesion_tipo_check
+  check (tipo in ('antes','durante','despues','referencia','extra','comprobante'));
+
+
+===============================================================================
+  BLOQUE 4 de 7 — Política de atrasos y cancelaciones
+
+  OJO: nace APAGADA (activa = false). No cobra nada hasta que usted la
+  encienda desde el panel, y no conviene encenderla hasta que el formulario
+  se la muestre al cliente antes de reservar.
+===============================================================================
+
+create table if not exists public.politica_citas (
+  singleton boolean primary key default true check (singleton),
+  activa boolean not null default false,
+  tolerancia_min      integer not null default 30 check (tolerancia_min >= 0),
+  recargo_atraso_hora integer not null default 5000 check (recargo_atraso_hora >= 0),
+  cancelacion_horas   integer not null default 24 check (cancelacion_horas >= 0),
+  cancelacion_pct     numeric(5,2) not null default 30 check (cancelacion_pct >= 0),
+  pierde_cupon        boolean not null default true,
+  texto_cliente text not null default
+    'Le esperamos hasta 30 minutos. Pasado ese tiempo se aplica un recargo proporcional ($5.000 por hora) y la entrega se corre. Puede cancelar gratis desde su correo hasta 24 horas antes; después, su próxima cita tendrá un recargo del 30% y se pierde el cupón usado.',
+  actualizado_en timestamptz not null default now()
+);
+
+insert into public.politica_citas (singleton) values (true)
+on conflict (singleton) do nothing;
+
+alter table public.sesiones
+  add column if not exists llegada_en timestamptz,
+  add column if not exists recargo_atraso integer not null default 0 check (recargo_atraso >= 0),
+  add column if not exists recargo_aceptado boolean;
+
+alter table public.sesiones
+  add column if not exists token_cancelacion uuid not null default gen_random_uuid(),
+  add column if not exists cancelada_en timestamptz;
+
+create unique index if not exists sesiones_token_cancelacion_idx
+  on public.sesiones (token_cancelacion);
+
+grant select on public.politica_citas to anon, authenticated, service_role;
+
+grant insert, update on public.politica_citas to authenticated, service_role;
+
+alter table public.politica_citas enable row level security;
+
+drop policy if exists politica_citas_lectura on public.politica_citas;
+
+drop policy if exists politica_citas_escritura on public.politica_citas;
+
+create policy politica_citas_lectura on public.politica_citas
+  for select using (true);
+
+create policy politica_citas_escritura on public.politica_citas
+  for all to authenticated
+  using (public.get_rol() = 'admin')
+  with check (public.get_rol() = 'admin');
+
+
+===============================================================================
+  BLOQUE 5 de 7 — Penalizaciones y condiciones de cupón
+===============================================================================
+
+create table if not exists public.penalizaciones (
+  id uuid primary key default gen_random_uuid(),
+  email    text not null check (length(trim(email)) > 0),
+  telefono text not null check (length(trim(telefono)) > 0),
+  pct      numeric(5,2) not null check (pct > 0),
+  motivo   text not null default 'cancelacion_tardia',
+  origen_sesion_id uuid references public.sesiones(id) on delete set null,
+  creada_en   timestamptz not null default now(),
+  consumida_en timestamptz,
+  consumida_en_sesion_id uuid references public.sesiones(id) on delete set null
+);
+
+create index if not exists penalizaciones_pendientes_idx
+  on public.penalizaciones (email, telefono) where consumida_en is null;
+
+grant select, insert, update on public.penalizaciones to authenticated, service_role;
+
+alter table public.penalizaciones enable row level security;
+
+drop policy if exists penalizaciones_equipo on public.penalizaciones;
+
+create policy penalizaciones_equipo on public.penalizaciones
+  for all to authenticated
+  using (public.get_rol() in ('admin','trabajador'))
+  with check (public.get_rol() in ('admin','trabajador'));
+
+alter table public.cupones
+  add column if not exists vigente_desde date,
+  add column if not exists vigente_hasta date,
+  add column if not exists max_usos integer check (max_usos is null or max_usos > 0),
+  add column if not exists usos integer not null default 0 check (usos >= 0),
+  add column if not exists dias_anticipacion_min integer check (dias_anticipacion_min is null or dias_anticipacion_min >= 0),
+  add column if not exists desde_visita integer check (desde_visita is null or desde_visita >= 1),
+  add column if not exists hasta_visita integer check (hasta_visita is null or hasta_visita >= 1),
+  add column if not exists solo_con_cuenta boolean not null default false,
+  add column if not exists servicio_slug text;
+
+
+===============================================================================
+  BLOQUE 6 de 7 — Función: cuánto recargo arrastra un cliente
+
+  (una función por bloque: el editor no admite dos $$ juntas)
+===============================================================================
+
+create or replace function public.penalizacion_pendiente(p_email text, p_telefono text)
+returns numeric as $penalizacion$
+  select coalesce(max(p.pct), 0)
+  from public.penalizaciones p
+  where p.consumida_en is null
+    and lower(trim(p.email)) = lower(trim(p_email))
+    and regexp_replace(p.telefono, '[^0-9]', '', 'g')
+        = regexp_replace(p_telefono, '[^0-9]', '', 'g');
+$penalizacion$ language sql security definer stable;
+
+
+===============================================================================
+  BLOQUE 7 de 7 — Función: cancelar con el enlace del correo
+===============================================================================
+
+create or replace function public.cancelar_con_token(p_token uuid)
+returns jsonb as $cancelar$
+declare
+  s record;
+  pol record;
+  horas_faltantes numeric;
+  penaliza boolean := false;
+  pierde boolean := false;
+begin
+  select * into s from public.sesiones where token_cancelacion = p_token;
+  if not found then
+    return jsonb_build_object('ok', false, 'motivo', 'no_encontrada');
+  end if;
+  if s.estado = 'cancelada' then
+    return jsonb_build_object('ok', false, 'motivo', 'ya_cancelada');
+  end if;
+  if s.fecha_cita is not null and s.fecha_cita < now() then
+    return jsonb_build_object('ok', false, 'motivo', 'ya_paso');
+  end if;
+
+  select * into pol from public.politica_citas where singleton;
+
+  if pol.activa and s.fecha_cita is not null then
+    horas_faltantes := extract(epoch from (s.fecha_cita - now())) / 3600.0;
+    penaliza := horas_faltantes < pol.cancelacion_horas;
+    pierde := pol.pierde_cupon and s.cupon_codigo is not null;
+  end if;
+
+  update public.sesiones
+     set estado = 'cancelada',
+         cancelada_en = now()
+   where id = s.id;
+
+  if penaliza and coalesce(trim(s.contacto_email), '') <> ''
+     and coalesce(trim(s.contacto_telefono), '') <> '' then
+    insert into public.penalizaciones (email, telefono, pct, origen_sesion_id)
+    values (lower(trim(s.contacto_email)), trim(s.contacto_telefono),
+            pol.cancelacion_pct, s.id);
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'penalizada', penaliza,
+    'pct', case when penaliza then pol.cancelacion_pct else 0 end,
+    'pierde_cupon', pierde,
+    'cupon', case when pierde then s.cupon_codigo else null end
+  );
+end;
+$cancelar$ language plpgsql security definer;
+
+
+===============================================================================
+  BLOQUE FINAL — Permisos de las funciones
+
+  No es opcional: sin esto el formulario público (que entra como `anon`) no
+  puede llamarlas, y el `search_path` fijo evita que una función con permisos
+  elevados se desvíe a otro esquema.
+===============================================================================
+
+alter function public.penalizacion_pendiente(text, text) set search_path = public, pg_temp;
+
+grant execute on function public.penalizacion_pendiente(text, text) to anon, authenticated;
+
+alter function public.cancelar_con_token(uuid) set search_path = public, pg_temp;
+
+grant execute on function public.cancelar_con_token(uuid) to anon, authenticated;
+
+create or replace function public.bloqueos_agregados(desde date, hasta date)
+returns table (
+  fecha date,
+  hora_inicio time,
+  hora_fin time,
+  cierra_local boolean,
+  peluqueros_bloqueados integer,
+  mensaje text
+) as $agregados$
+  select b.fecha,
+         b.hora_inicio,
+         b.hora_fin,
+         bool_or(b.peluquero_id is null),
+         count(distinct b.peluquero_id)::int,
+         coalesce(nullif(trim(min(b.mensaje)), ''), min(c.mensaje_dia_lleno))
+  from public.bloqueos b, public.disponibilidad_config c
+  where c.singleton
+    and b.fecha between desde and hasta
+  group by b.fecha, b.hora_inicio, b.hora_fin;
+$agregados$ language sql security definer stable;
+
+
+===============================================================================
+  BLOQUE DE CIERRE — Permisos de la última función
+===============================================================================
+
+alter function public.bloqueos_agregados(date, date) set search_path = public, pg_temp;
+
+grant execute on function public.bloqueos_agregados(date, date) to anon, authenticated;
+
+
+===============================================================================
+  COMPROBAR QUE QUEDÓ BIEN
+  (esto va en una consulta APARTE, cuando ya terminó todo lo de arriba)
+===============================================================================
+
+select
+  '1. servicios cargados' as revision,
+  count(*)::text || ' servicios' as resultado,
+  case when count(*) = 5 then 'OK' else 'REVISAR' end as estado
+from public.servicios_precio
+union all
+select
+  '2. servicios en cero (no cobran todavia)',
+  count(*) filter (where pct <> 0 or monto <> 0)::text || ' con ajuste',
+  case when count(*) filter (where pct <> 0 or monto <> 0) = 0 then 'OK' else 'REVISAR' end
+from public.servicios_precio
+union all
+select
+  '3. politica apagada (no cobra todavia)',
+  case when activa then 'ENCENDIDA' else 'apagada' end,
+  case when not activa then 'OK' else 'REVISAR' end
+from public.politica_citas
+union all
+select
+  '4. columna peluquero en citas',
+  count(*)::text || ' columna',
+  case when count(*) = 1 then 'OK' else 'REVISAR' end
+from information_schema.columns
+where table_schema = 'public' and table_name = 'sesiones' and column_name = 'peluquero_id'
+union all
+select
+  '5. token de cancelacion en todas las citas',
+  count(*) filter (where token_cancelacion is null)::text || ' sin token',
+  case when count(*) filter (where token_cancelacion is null) = 0 then 'OK' else 'REVISAR' end
+from public.sesiones
+union all
+select
+  '6. tipos de foto admitidos',
+  case when pg_get_constraintdef(oid) like '%comprobante%' then 'incluye comprobante' else 'sin comprobante' end,
+  case when pg_get_constraintdef(oid) like '%comprobante%' then 'OK' else 'REVISAR' end
+from pg_constraint
+where conrelid = 'public.fotos_sesion'::regclass and conname = 'fotos_sesion_tipo_check'
+union all
+select
+  '7. condiciones de cupon',
+  count(*)::text || ' de 9 columnas',
+  case when count(*) = 9 then 'OK' else 'REVISAR' end
+from information_schema.columns
+where table_schema = 'public' and table_name = 'cupones'
+  and column_name in ('vigente_desde','vigente_hasta','max_usos','usos',
+                      'dias_anticipacion_min','desde_visita','hasta_visita',
+                      'solo_con_cuenta','servicio_slug')
+union all
+select
+  '8. funciones ejecutables por anon',
+  count(*)::text || ' de 3',
+  case when count(*) = 3 then 'OK' else 'REVISAR' end
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname in ('penalizacion_pendiente','cancelar_con_token','bloqueos_agregados')
+  and has_function_privilege('anon', p.oid, 'execute')
+order by 1;
+
+
+===============================================================================
+  DESPUÉS DE APLICAR ESTO
+
+  1. Mergear el PR. Las tablas solas no cambian nada hasta que el código
+     que las usa esté desplegado.
+  2. Verificar la URL pública, no el merge: `main` no es producción.
+  3. Configurar en el panel lo que quiera cobrar. Todo está en 0 y la
+     política está apagada, así que hasta entonces nada cambia para el
+     cliente.
+  4. La política de atrasos NO conviene encenderla hasta que el formulario
+     se la muestre al cliente antes de reservar. Cobrar algo que nadie
+     comunicó se paga en la puerta del local.
+===============================================================================

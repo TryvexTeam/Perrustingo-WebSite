@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import type { CitaSemana } from "@/lib/agenda";
 import { ESTADO_COLOR, ESTADO_LABEL } from "@/lib/citas";
 import { formatCLP } from "@/lib/reserva";
-import { cambiarEstadoCita, guardarNotasEquipo } from "@/app/dashboard/citas/actions";
+import {
+  cambiarEstadoCita,
+  estadoAtrasoAction,
+  guardarNotasEquipo,
+  marcarLlegadaAction,
+  resolverRecargoAction,
+  type EstadoAtraso,
+} from "@/app/dashboard/citas/actions";
 import { avisarPerroListoAction } from "@/app/dashboard/citas/aviso-actions";
 import { createClient } from "@/lib/supabase/client";
 import { FotosCita } from "@/components/admin/FotosCita";
@@ -53,6 +60,14 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
   const sesionId = cita.sesion?.id;
   const perroId = cita.sesion?.perro_id;
 
+  /* Llegada real y recargo por atraso (migración 035).
+     Se piden al servidor y no vienen con la cita: la vista `sesiones_equipo`
+     tiene una lista fija de columnas (migración 030) y no incluye
+     `llegada_en` ni los recargos, así que desde este navegador no existen. */
+  const [atraso, setAtraso] = useState<EstadoAtraso | null>(null);
+  const [atrasoOcupado, setAtrasoOcupado] = useState(false);
+  const [atrasoError, setAtrasoError] = useState("");
+
   /* Notas de visitas anteriores del mismo perrito (RLS: solo el equipo llega
      a este panel). Las fotos las carga <FotosCita>, que además las sube. */
   useEffect(() => {
@@ -79,8 +94,51 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
     }
   }, [sesionId, perroId]);
 
+  /* El estado del atraso se lee al abrir la ficha. Un fallo acá no se pinta
+     como error: si la migración 035 todavía no está aplicada, la sección
+     simplemente no aparece en vez de llenar el panel de alarmas. */
+  useEffect(() => {
+    if (!sesionId) return;
+    let vigente = true;
+    estadoAtrasoAction(sesionId).then((res) => {
+      if (vigente && res.success && res.estado) setAtraso(res.estado);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [sesionId]);
+
   const sesion = cita.sesion;
   if (!sesion) return null;
+
+  const marcarLlegada = () => {
+    setAtrasoError("");
+    setAtrasoOcupado(true);
+    startTransition(async () => {
+      const res = await marcarLlegadaAction(sesion.id);
+      setAtrasoOcupado(false);
+      // La llegada ya marcada devuelve el estado real junto al error: se
+      // muestra el estado, que es más útil que insistir con el reclamo.
+      if (res.estado) setAtraso(res.estado);
+      if (!res.success && !res.estado) {
+        setAtrasoError(res.error ?? "No se pudo marcar la llegada.");
+      }
+    });
+  };
+
+  const resolverRecargo = (cobrar: boolean) => {
+    setAtrasoError("");
+    setAtrasoOcupado(true);
+    startTransition(async () => {
+      const res = await resolverRecargoAction(sesion.id, cobrar);
+      setAtrasoOcupado(false);
+      if (!res.success) {
+        setAtrasoError(res.error ?? "No se pudo guardar la decisión.");
+        return;
+      }
+      if (res.estado) setAtraso(res.estado);
+    });
+  };
 
   const guardarNotas = () => {
     setNotasEstado("guardando");
@@ -227,6 +285,107 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {/* ── Llegada y recargo por atraso (migración 035) ──────────────────
+
+            El sistema PROPONE y el equipo CONFIRMA. Acá nunca se cobra solo:
+            hay dos botones separados, cobrar y perdonar, justamente para dejar
+            margen con el cliente de siempre o con el taco de verdad.
+
+            No aparece en las canceladas: a nadie que no vino se le mide el
+            atraso. */}
+        {atraso && cita.estado !== "cancelada" && (
+          <section className="mb-4 rounded-2xl border border-zinc-100 p-4">
+            <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-teal-dark">
+              Llegada del cliente
+            </h3>
+
+            {!atraso.llegadaEn ? (
+              <>
+                <p className="text-sm text-ink-soft">
+                  Sin marcar. Sin la hora real de llegada no hay de dónde sacar
+                  los minutos de atraso.
+                </p>
+                <button
+                  type="button"
+                  onClick={marcarLlegada}
+                  disabled={pending || atrasoOcupado}
+                  className="mt-3 w-full rounded-full border-2 border-teal px-5 py-2.5 font-display text-sm font-extrabold text-teal-dark transition-colors hover:bg-sky/40 disabled:opacity-50"
+                >
+                  {atrasoOcupado ? "Marcando…" : "Llegó 🐾"}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold text-ink">
+                  Llegó a las{" "}
+                  {new Date(atraso.llegadaEn).toLocaleTimeString("es-CL", {
+                    timeZone: "America/Santiago",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+                {/* La frase la redacta `lib/politica.ts`: el porqué del número
+                    se cuenta en un solo lugar. */}
+                <p className="mt-1 text-xs leading-relaxed text-ink-soft">
+                  {atraso.explicacion}
+                </p>
+
+                {atraso.aceptado === null && atraso.recargo > 0 && (
+                  <div className="mt-3 rounded-xl bg-cream px-3 py-3">
+                    <p className="text-xs font-bold leading-relaxed text-ink">
+                      Recargo propuesto: {formatCLP(atraso.recargo)}. Todavía no se
+                      cobra nada — usted decide.
+                    </p>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => resolverRecargo(true)}
+                        disabled={pending || atrasoOcupado}
+                        className="flex-1 rounded-full bg-teal px-4 py-2 text-xs font-extrabold text-white transition-colors hover:bg-teal-dark disabled:opacity-50"
+                      >
+                        Cobrar {formatCLP(atraso.recargo)}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => resolverRecargo(false)}
+                        disabled={pending || atrasoOcupado}
+                        className="flex-1 rounded-full border-2 border-teal px-4 py-2 text-xs font-extrabold text-teal-dark transition-colors hover:bg-sky/40 disabled:opacity-50"
+                      >
+                        Perdonar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {atraso.aceptado === null && atraso.recargo === 0 && (
+                  <p className="mt-2 text-xs font-semibold text-ink-soft">
+                    {atraso.politicaActiva
+                      ? "Sin recargo que cobrar."
+                      : "La política de atrasos está apagada: no se propone ningún monto."}
+                  </p>
+                )}
+
+                {atraso.aceptado === true && (
+                  <p className="mt-2 text-xs font-bold text-[#7a4d10]">
+                    Se cobra el recargo de {formatCLP(atraso.recargo)}.
+                  </p>
+                )}
+                {atraso.aceptado === false && (
+                  <p className="mt-2 text-xs font-bold text-teal-dark">
+                    Recargo perdonado. No se le cobra nada extra.
+                  </p>
+                )}
+              </>
+            )}
+
+            {atrasoError && (
+              <p role="alert" className="mt-2 text-xs font-semibold text-[#7a1030]">
+                {atrasoError}
+              </p>
+            )}
           </section>
         )}
 

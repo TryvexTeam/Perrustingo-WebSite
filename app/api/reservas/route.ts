@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { crearClienteServicio } from "@/lib/supabase/servicio";
 import { supabaseConfigurado } from "@/lib/citas";
 import { offsetNegocio, TZ_NEGOCIO } from "@/lib/agenda";
+import { hoyEnSantiago } from "@/lib/disponibilidad";
+import { evaluarCupon, type Cupon } from "@/lib/cupones";
+import { contarVisitasPrevias, obtenerCupon, registrarUsoCupon } from "@/lib/cuponesDatos";
 import { normalizarTelefono, validarContacto } from "@/lib/contacto";
 import {
   consumir,
@@ -22,6 +26,7 @@ import {
   type PerroCorreo,
 } from "@/lib/correoPlantillas";
 import {
+  obtenerBloqueosParciales,
   obtenerDisponibilidad,
   obtenerExcepciones,
   obtenerOcupacion,
@@ -223,18 +228,49 @@ export async function POST(request: NextRequest) {
      rechazaba, y con eso ninguna reserva con descuento de bienvenida podía
      completarse. Por eso el segundo camino: si el código no es un cupón pero
      la reserva trae oferta, se verifica que ESA oferta exista y esté activa,
-     y el porcentaje se toma de la tabla de ofertas. */
+     y el porcentaje se toma de la tabla de ofertas.
+
+     Desde el 4-ago el primer camino ya no es un `select` a secas: pasa por
+     `evaluarCupon` (lib/cupones.ts), que además de existir y estar activo
+     comprueba vigencia, tope de usos, anticipación, número de visita, cuenta
+     y servicio. Un cupón rechazado devuelve el MENSAJE del dominio —el que
+     explica qué le falta a la persona— y no un genérico que no se puede
+     accionar. */
   let cuponVerificado: { codigo: string; pct: number } | null = null;
+  /* El cupón del dominio se guarda para poder registrar el canje DESPUÉS de
+     que la cita quedó insertada: sumar el uso antes sería descontarle un canje
+     a alguien cuya reserva quizá nunca se creó. */
+  let cuponCanjeado: Cupon | null = null;
   if (cupon) {
-    const codigo = cupon.codigo.toUpperCase();
-    const { data: filaCupon } = await supabase
-      .from("cupones")
-      .select("codigo, descuento_pct")
-      .eq("codigo", codigo)
-      .maybeSingle();
+    const codigo = cupon.codigo.trim().toUpperCase();
+    const filaCupon = await obtenerCupon(supabase, codigo);
 
     if (filaCupon) {
-      cuponVerificado = { codigo: filaCupon.codigo, pct: filaCupon.descuento_pct };
+      /* El número de visita cuenta ESTA incluida: quien no tiene citas
+         completadas previas viene por primera vez. */
+      const visitasPrevias = await contarVisitasPrevias(
+        supabase,
+        contacto.email,
+        contacto.telefono
+      );
+      const veredicto = evaluarCupon(filaCupon, {
+        fechaCita: fechaDeseada,
+        hoy: hoyEnSantiago(),
+        numeroVisita: visitasPrevias + 1,
+        tieneCuenta: Boolean(user),
+        servicioSlug: servicio,
+      });
+
+      if (!veredicto.ok) {
+        return NextResponse.json(
+          { success: false, error: veredicto.mensaje },
+          { status: 400 }
+        );
+      }
+
+      // El porcentaje sale del dominio, nunca del navegador.
+      cuponVerificado = { codigo: filaCupon.codigo, pct: veredicto.descuentoPct };
+      cuponCanjeado = filaCupon;
     } else if (ofertaId) {
       const { data: filaOferta } = await supabase
         .from("ofertas")
@@ -292,6 +328,12 @@ export async function POST(request: NextRequest) {
       finDia.toISOString()
     );
 
+    /* Los bloqueos por hora y por peluquero también se comprueban acá y no
+       solo en la pantalla: si el formulario esconde la hora pero el endpoint
+       la acepta, basta con mandar el request a mano para reservar sobre el
+       día libre de alguien. */
+    const bloqueos = await obtenerBloqueosParciales(supabase, fechaDeseada, fechaDeseada);
+
     const veredicto = evaluarReserva({
       fecha: fechaDeseada,
       inicio,
@@ -300,6 +342,7 @@ export async function POST(request: NextRequest) {
       capacidad,
       ocupacion,
       excepciones,
+      bloqueos,
       // Una reserva de tres perritos ocupa tres lugares de ese bloque.
       cupos: perros.length,
     });
@@ -479,8 +522,57 @@ export async function POST(request: NextRequest) {
     if (fallo) parcial = true;
   }
 
+  /* ── El canje se registra recién ahora ─────────────────────────────────
+     Solo con la cita ya creada, y solo si el cupón tiene tope: sin tope el
+     contador no decide nada y un UPDATE por reserva sería ruido.
+
+     Va con el cliente de servicio a propósito. `cupones` solo tiene GRANT
+     SELECT para anon/authenticated: un UPDATE con el cliente público no
+     falla, pasa por RLS, toca cero filas y devuelve éxito — el tope quedaría
+     de adorno sin que nadie lo note. `registrarUsoCupon` devuelve si el
+     contador de verdad subió; un false se anota como reserva parcial (queda
+     rastro para el equipo) pero JAMÁS voltea la reserva: la cita ya existe y
+     el cliente no tiene por qué perderla por nuestra contabilidad. */
+  if (ids.length > 0 && cuponCanjeado && cuponCanjeado.maxUsos !== null) {
+    const servicio_ = crearClienteServicio();
+    if (!servicio_) {
+      console.warn(
+        `[reservas] cupón ${cuponCanjeado.codigo} usado sin poder contarlo: falta SUPABASE_SERVICE_ROLE_KEY.`
+      );
+      parcial = true;
+    } else {
+      const subio = await registrarUsoCupon(servicio_, cuponCanjeado);
+      if (!subio) {
+        console.warn(
+          `[reservas] el contador del cupón ${cuponCanjeado.codigo} no subió (carrera o permisos); el tope puede quedar corrido.`
+        );
+        parcial = true;
+      }
+    }
+  }
+
+  /* ── Recargo que arrastra el cliente ───────────────────────────────────
+     `penalizacion_pendiente` (migración 035) responde sí/no sin exponer la
+     tabla de contactos. Acá NO se cobra nada: se informa, para que la
+     persona sepa al reservar que su próxima cita trae recargo y el equipo lo
+     confirme en la puerta. Cobrar automáticamente sería decidir por ellos. */
+  let recargoPendientePct = 0;
+  if (ids.length > 0) {
+    const { data: pendiente, error: errPenal } = await supabase.rpc("penalizacion_pendiente", {
+      p_email: contacto.email,
+      p_telefono: contacto.telefono,
+    });
+    if (errPenal) {
+      console.warn("[reservas] no se pudo leer la penalización pendiente:", errPenal.message);
+    } else {
+      // `numeric` llega como string desde PostgREST: convertir, no asumir.
+      const n = Number(pendiente ?? 0);
+      recargoPendientePct = Number.isFinite(n) && n > 0 ? n : 0;
+    }
+  }
+
   return NextResponse.json(
-    { success: true, data: { ids, parcial } },
+    { success: true, data: { ids, parcial, recargoPendientePct } },
     { status: 201 }
   );
 }

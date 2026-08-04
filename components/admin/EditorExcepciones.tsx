@@ -27,6 +27,9 @@ interface EditorExcepcionesProps {
   excepcionesIniciales: ExcepcionEditable[];
   /** Texto general, para mostrar qué verá el cliente si no se escribe uno. */
   mensajePorDefecto: string;
+  /** Quiénes atienden, para poder tomarle el día a uno solo. Vacío = el
+      bloqueo solo puede ser de todo el local. */
+  peluqueros?: { id: string; nombre: string }[];
   /** Días de la semana (0=domingo … 6=sábado) con horario de atención. Al
       bloquear un rango se saltan los demás: cerrar un domingo que ya no se
       atiende no cambia nada y llena la lista. */
@@ -47,6 +50,12 @@ function fechaCorta(fecha: string): string {
   });
 }
 
+/** "14:00:00" → "14:00". Postgres devuelve `time` con segundos y mostrarlos
+    solo agrega ruido. */
+function hhmm(hora: string): string {
+  return hora.slice(0, 5);
+}
+
 /** "2026-08-12" → "martes 12 de agosto". Con la fecha partida a mano: pasar
     un YYYY-MM-DD por `new Date()` lo lee como UTC y en Chile muestra el día
     anterior. */
@@ -63,6 +72,7 @@ export function EditorExcepciones({
   excepcionesIniciales,
   mensajePorDefecto,
   diasAtendidos,
+  peluqueros = [],
 }: EditorExcepcionesProps) {
   const router = useRouter();
   const [excepciones, setExcepciones] = useState(excepcionesIniciales);
@@ -74,8 +84,17 @@ export function EditorExcepciones({
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState("");
 
+  /* Alcance del bloqueo: todo el día o unas horas, y de todo el local o de una
+     persona. Son dos ejes independientes — se puede cerrar el local dos horas,
+     o tomarle el día entero a un peluquero. */
+  const [porHoras, setPorHoras] = useState(false);
+  const [horaInicio, setHoraInicio] = useState("14:00");
+  const [horaFin, setHoraFin] = useState("18:00");
+  const [peluqueroId, setPeluqueroId] = useState("");
+
   const yaBloqueada = excepciones.some((e) => e.fecha === fecha);
   const esRango = hasta !== "" && hasta !== fecha;
+  const horasMalPuestas = porHoras && horaFin <= horaInicio;
 
   /* Qué va a pasar si aprieta el botón, contado antes de apretarlo. Un rango
      de fechas es justo el caso donde uno cree que bloquea una semana y
@@ -123,7 +142,17 @@ export function EditorExcepciones({
       setError("Elija una fecha.");
       return;
     }
+    if (horasMalPuestas) {
+      setError("La hora de término va antes que la de inicio.");
+      return;
+    }
     setOcupado(true);
+
+    // Las horas solo viajan si el alcance las pide: si no, el bloqueo es del
+    // día completo y las dos van vacías.
+    const horas = porHoras
+      ? { horaInicio, horaFin }
+      : { horaInicio: undefined, horaFin: undefined };
 
     if (esRango) {
       const res = await bloquearRangoAction({
@@ -132,6 +161,8 @@ export function EditorExcepciones({
         mensaje,
         notaInterna: nota,
         diasAtendidos,
+        ...horas,
+        peluqueroId: peluqueroId || undefined,
       });
       setOcupado(false);
       if (!res.success) {
@@ -158,34 +189,42 @@ export function EditorExcepciones({
       return;
     }
 
-    const nueva: ExcepcionEditable = { fecha, mensaje, notaInterna: nota };
+    const nueva: ExcepcionEditable = {
+      fecha,
+      mensaje,
+      notaInterna: nota,
+      ...horas,
+      peluqueroId: peluqueroId || undefined,
+    };
     const res = await bloquearFechaAction(nueva);
     setOcupado(false);
     if (!res.success) {
       setError(res.error ?? "No se pudo bloquear la fecha.");
       return;
     }
-    setExcepciones((prev) =>
-      [...prev.filter((e) => e.fecha !== fecha), nueva].sort((a, b) =>
-        a.fecha.localeCompare(b.fecha)
-      )
-    );
+    /* Se recarga del servidor en vez de reconstruir la lista acá: un mismo día
+       puede tener ahora varios bloqueos (distintas horas, distintas personas)
+       y la fila nueva necesita su id para poder liberarla después. */
+    router.refresh();
     setFecha("");
     setHasta("");
     setMensaje("");
     setNota("");
   };
 
-  const liberar = async (fechaALiberar: string) => {
+  const liberar = async (idOFecha: string, esId: boolean) => {
     setError("");
+    setAviso("");
     setOcupado(true);
-    const res = await liberarFechaAction(fechaALiberar);
+    const res = await liberarFechaAction(idOFecha, esId);
     setOcupado(false);
     if (!res.success) {
-      setError(res.error ?? "No se pudo liberar la fecha.");
+      setError(res.error ?? "No se pudo liberar el bloqueo.");
       return;
     }
-    setExcepciones((prev) => prev.filter((e) => e.fecha !== fechaALiberar));
+    setExcepciones((prev) =>
+      prev.filter((e) => (esId ? e.id !== idOFecha : e.id || e.fecha !== idOFecha))
+    );
   };
 
   return (
@@ -252,6 +291,89 @@ export function EditorExcepciones({
               Para un solo día, deje el segundo campo vacío. Para vacaciones,
               ponga el último día y se bloquea todo el tramo de una vez.
             </p>
+
+            {/* ── Alcance: qué horas y de quién ───────────────────────── */}
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <label className="flex items-center gap-2 text-sm font-bold text-ink">
+                <input
+                  type="checkbox"
+                  checked={porHoras}
+                  onChange={(e) => {
+                    setPorHoras(e.target.checked);
+                    setError("");
+                    setAviso("");
+                  }}
+                  disabled={ocupado}
+                  className="h-4 w-4 accent-teal"
+                />
+                Solo unas horas
+              </label>
+
+              {porHoras && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="time"
+                    aria-label="Hora de inicio del bloqueo"
+                    value={horaInicio}
+                    onChange={(e) => {
+                      setHoraInicio(e.target.value);
+                      setError("");
+                    }}
+                    disabled={ocupado}
+                    className="rounded-xl border-2 border-white bg-white px-3 py-2 text-sm font-bold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
+                  />
+                  <span className="text-xs font-bold text-ink-soft">a</span>
+                  <input
+                    type="time"
+                    aria-label="Hora de término del bloqueo"
+                    value={horaFin}
+                    onChange={(e) => {
+                      setHoraFin(e.target.value);
+                      setError("");
+                    }}
+                    disabled={ocupado}
+                    className="rounded-xl border-2 border-white bg-white px-3 py-2 text-sm font-bold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
+                  />
+                </div>
+              )}
+            </div>
+
+            {horasMalPuestas && (
+              <p className="mt-1.5 text-[11px] font-semibold text-[#7a1030]">
+                La hora de término va antes que la de inicio.
+              </p>
+            )}
+
+            {peluqueros.length > 0 && (
+              <div className="mt-4">
+                <label htmlFor="bloqueo-peluquero" className="text-sm font-bold text-ink">
+                  ¿A quién le corresponde?
+                </label>
+                <select
+                  id="bloqueo-peluquero"
+                  value={peluqueroId}
+                  onChange={(e) => {
+                    setPeluqueroId(e.target.value);
+                    setError("");
+                    setAviso("");
+                  }}
+                  disabled={ocupado}
+                  className="mt-2 block rounded-xl border-2 border-white bg-white px-3 py-2 text-sm font-bold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
+                >
+                  <option value="">Todo el local (cierra para todos)</option>
+                  {peluqueros.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      Solo {p.nombre}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-ink-soft">
+                  {peluqueroId
+                    ? "Se ofrece un cupo menos por hora en ese rato; el local sigue abierto."
+                    : "No se ofrece ningún horario en ese rato."}
+                </p>
+              </div>
+            )}
             {yaBloqueada && !esRango && (
               <p className="mt-1.5 text-[11px] font-semibold text-[#7a4d10]">
                 Esa fecha ya está bloqueada — guardar la reemplaza.
@@ -378,23 +500,52 @@ export function EditorExcepciones({
           <ul className="mt-3 space-y-2">
             {excepciones.map((e) => (
               <li
-                key={e.fecha}
+                /* La clave incluye horas y persona: un mismo día puede tener
+                   varios bloqueos y con la fecha sola React los confundiría. */
+                key={e.id ?? `${e.fecha}-${e.horaInicio ?? ""}-${e.peluqueroId ?? ""}`}
                 className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-cream px-4 py-3"
               >
                 <span className="text-sm font-extrabold text-ink first-letter:uppercase">
                   {fechaLarga(e.fecha)}
                 </span>
+
+                {/* Qué franja cubre. Sin horas, el día entero. */}
+                <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-bold text-ink-soft">
+                  {e.horaInicio && e.horaFin
+                    ? `${hhmm(e.horaInicio)} a ${hhmm(e.horaFin)}`
+                    : "todo el día"}
+                </span>
+
+                {/* De quién es. El bloqueo del local cierra para todos, así que
+                    se marca distinto: son cosas de gravedad muy diferente. */}
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                    e.peluqueroId
+                      ? "bg-sky/50 text-teal-ink"
+                      : "bg-[#fde4c8] text-[#7a4d10]"
+                  }`}
+                >
+                  {e.peluqueroId ? e.peluqueroNombre ?? "un peluquero" : "todo el local"}
+                </span>
+
                 {e.notaInterna && (
                   <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-bold text-ink-soft">
                     🔒 {e.notaInterna}
                   </span>
                 )}
-                <span className="basis-full text-[11px] leading-relaxed text-ink-soft">
-                  El cliente lee: “{e.mensaje.trim() || mensajePorDefecto}”
-                </span>
+
+                {/* El texto público solo aparece cuando de verdad lo va a leer
+                    alguien: un bloqueo de una persona no vacía el día, así que
+                    el cliente nunca ve ese mensaje. */}
+                {!e.peluqueroId && (
+                  <span className="basis-full text-[11px] leading-relaxed text-ink-soft">
+                    El cliente lee: “{e.mensaje.trim() || mensajePorDefecto}”
+                  </span>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => liberar(e.fecha)}
+                  onClick={() => liberar(e.id ?? e.fecha, Boolean(e.id))}
                   disabled={ocupado}
                   className="ml-auto rounded-full bg-white px-3 py-1.5 text-xs font-bold text-teal-dark transition-colors hover:bg-sky/40 disabled:opacity-50"
                 >

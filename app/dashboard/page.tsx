@@ -262,6 +262,8 @@ export default async function DashboardPage() {
               { label: "Usuarios", href: "/dashboard/usuarios", emoji: "👥", onlyAdmin: true },
               { label: "Disponibilidad", href: "/dashboard/disponibilidad", emoji: "🕘", onlyAdmin: true },
               { label: "Ofertas", href: "/dashboard/ofertas", emoji: "🎁", onlyAdmin: true },
+              { label: "Atrasos y cancelaciones", href: "/dashboard/politica", emoji: "⏱️", onlyAdmin: true },
+              { label: "Cupones", href: "/dashboard/cupones", emoji: "🏷️", onlyAdmin: true },
               { label: "Revisar reservas", href: "/dashboard/seguridad", emoji: "🛡️", onlyAdmin: true },
               { label: "Fotos guardadas", href: "/dashboard/fotos", emoji: "🖼️", onlyAdmin: true },
               { label: "Descargar respaldo", href: "/api/respaldo", emoji: "💾", onlyAdmin: true },
