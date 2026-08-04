@@ -22,6 +22,7 @@ import {
   type PerroCorreo,
 } from "@/lib/correoPlantillas";
 import {
+  obtenerBloqueosParciales,
   obtenerDisponibilidad,
   obtenerExcepciones,
   obtenerOcupacion,
@@ -292,6 +293,12 @@ export async function POST(request: NextRequest) {
       finDia.toISOString()
     );
 
+    /* Los bloqueos por hora y por peluquero también se comprueban acá y no
+       solo en la pantalla: si el formulario esconde la hora pero el endpoint
+       la acepta, basta con mandar el request a mano para reservar sobre el
+       día libre de alguien. */
+    const bloqueos = await obtenerBloqueosParciales(supabase, fechaDeseada, fechaDeseada);
+
     const veredicto = evaluarReserva({
       fecha: fechaDeseada,
       inicio,
@@ -300,6 +307,7 @@ export async function POST(request: NextRequest) {
       capacidad,
       ocupacion,
       excepciones,
+      bloqueos,
       // Una reserva de tres perritos ocupa tres lugares de ese bloque.
       cupos: perros.length,
     });

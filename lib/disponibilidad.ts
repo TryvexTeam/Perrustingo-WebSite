@@ -151,6 +151,20 @@ export function instanteDeBloque(fecha: string, minutos: number): string {
   return `${fecha}T${etiquetaHora(minutos)}:00${offsetNegocio(fecha)}`;
 }
 
+/** Minutos desde medianoche de un instante, LEÍDO EN SANTIAGO.
+ *
+ * Es el inverso de `instanteDeBloque`. Se pasa por `toLocaleTimeString` con la
+ * zona del negocio y no por `getHours()`: el servidor corre en UTC, así que
+ * las 15:00 de Chile se leerían como las 19:00 y un bloqueo de tarde se
+ * aplicaría a la hora equivocada. */
+export function minutosDeInstante(inicio: string): number {
+  const hhmmss = new Date(inicio).toLocaleTimeString("en-GB", {
+    timeZone: "America/Santiago",
+    hour12: false,
+  });
+  return aMinutos(hhmmss);
+}
+
 /** Clave canónica de un instante (UTC). El mismo momento se escribe de dos
     formas: Postgres lo devuelve en UTC y los bloques se arman con el offset
     de Santiago. Comparados como texto no coinciden nunca — y un horario
@@ -190,8 +204,48 @@ export function bloquesDelDia(
   return [...inicios].sort((a, b) => a - b);
 }
 
+/* ── Bloqueos parciales (migraciones 034/035) ───────────────────────────────
+   Un bloqueo puede cerrar el local unas horas, o dejar fuera a uno de los
+   peluqueros. Lo primero deja el bloque en cero; lo segundo le resta un cupo.
+   Sin esto, marcar el día libre de alguien no cambiaba nada para el cliente y
+   se seguía agendando gente que nadie podía atender. */
+export interface BloqueoParcial {
+  /** YYYY-MM-DD */
+  fecha: string;
+  /** "HH:MM[:SS]" — ausentes las dos = el día completo. */
+  horaInicio?: string | null;
+  horaFin?: string | null;
+  /** Cierra para todos, no solo para una persona. */
+  cierraLocal: boolean;
+  /** Cuántos peluqueros quedan fuera en esa franja. */
+  peluquerosBloqueados: number;
+}
+
+/** ¿Cuánta capacidad queda en un minuto concreto de un día? */
+export function capacidadEnMinuto(
+  fecha: string,
+  minuto: number,
+  capacidadBase: number,
+  bloqueos: BloqueoParcial[]
+): number {
+  let capacidad = capacidadBase;
+  for (const b of bloqueos) {
+    if (b.fecha !== fecha) continue;
+    // Sin horas, el bloqueo cubre el día entero.
+    const cubre =
+      !b.horaInicio || !b.horaFin
+        ? true
+        : minuto >= aMinutos(b.horaInicio) && minuto < aMinutos(b.horaFin);
+    if (!cubre) continue;
+    if (b.cierraLocal) return 0;
+    capacidad -= b.peluquerosBloqueados;
+  }
+  return Math.max(0, capacidad);
+}
+
 /** Bloques ofrecibles de un día: los que el local atiende, menos los que ya
-    están llenos, menos los que quedaron atrás si el día es hoy. */
+    están llenos, menos los que quedaron atrás si el día es hoy, menos los
+    bloqueados a mano. */
 export function bloquesDisponibles(
   fecha: string,
   tramos: Tramo[],
@@ -199,7 +253,8 @@ export function bloquesDisponibles(
   capacidad: number,
   ocupacion: Record<string, number>,
   ahora: Date = new Date(),
-  excepciones: Excepcion[] = []
+  excepciones: Excepcion[] = [],
+  bloqueos: BloqueoParcial[] = []
 ): Bloque[] {
   if (!cumpleLeadTime(fecha, config, ahora)) return [];
   // Una fecha bloqueada no ofrece nada, aunque el tramo semanal la atienda.
@@ -223,7 +278,10 @@ export function bloquesDisponibles(
     .map((m) => {
       const inicio = instanteDeBloque(fecha, m);
       const usados = tomados[claveInstante(inicio)] ?? 0;
-      return { inicio, etiqueta: etiquetaHora(m), libres: Math.max(0, capacidad - usados) };
+      // La capacidad se resuelve POR BLOQUE: un peluquero bloqueado de 14 a 16
+      // no debe restar cupo a las 10 de la mañana.
+      const cap = capacidadEnMinuto(fecha, m, capacidad, bloqueos);
+      return { inicio, etiqueta: etiquetaHora(m), libres: Math.max(0, cap - usados) };
     })
     .filter((b) => b.libres > 0);
 }
@@ -263,11 +321,13 @@ export function evaluarReserva(params: {
   cupos?: number;
   ahora?: Date;
   excepciones?: Excepcion[];
+  bloqueos?: BloqueoParcial[];
 }): Veredicto {
   const { fecha, inicio, tramos, config, capacidad, ocupacion } = params;
   const cupos = params.cupos ?? 1;
   const ahora = params.ahora ?? new Date();
   const excepciones = params.excepciones ?? [];
+  const bloqueos = params.bloqueos ?? [];
 
   if (!FORMATO_FECHA.test(fecha)) {
     return { ok: false, motivo: "fecha_invalida", mensaje: "La fecha no es válida." };
@@ -306,8 +366,17 @@ export function evaluarReserva(params: {
   }
 
   const usados = normalizarOcupacion(ocupacion)[claveInstante(inicio)] ?? 0;
-  if (usados + cupos > capacidad) {
-    const libres = Math.max(0, capacidad - usados);
+
+  /* La capacidad de ESTE bloque, no la del local: si Rodolfo se tomó la tarde,
+     las horas de la tarde valen uno menos. Esta comprobación tiene que vivir
+     acá y no solo en la pantalla — si el formulario esconde la hora pero el
+     endpoint la acepta, basta con mandar el request a mano para reservar sobre
+     el día libre de alguien. */
+  const minutoDelBloque = minutosDeInstante(inicio);
+  const capacidadDelBloque = capacidadEnMinuto(fecha, minutoDelBloque, capacidad, bloqueos);
+
+  if (usados + cupos > capacidadDelBloque) {
+    const libres = Math.max(0, capacidadDelBloque - usados);
     return {
       ok: false,
       motivo: "sin_cupo",

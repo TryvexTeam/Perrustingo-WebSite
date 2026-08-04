@@ -33,6 +33,30 @@ export interface ExcepcionEditable {
   /** Vacío = usar el texto general de la config. */
   mensaje: string;
   notaInterna: string;
+  /** Identificador de la fila en `bloqueos`. Ausente en las que vienen de la
+      tabla vieja `disponibilidad_excepciones`, que se liberan por fecha. */
+  id?: string;
+  /** "HH:MM". Ausentes las dos = el día completo. */
+  horaInicio?: string;
+  horaFin?: string;
+  /** De quién es el bloqueo. Ausente = de todo el local. */
+  peluqueroId?: string;
+  /** Solo para mostrar en la lista; no se guarda. */
+  peluqueroNombre?: string;
+}
+
+/** Valida el par de horas. Devuelve el error, o null si están bien.
+    Las dos o ninguna: media pareja describe un rango sin final.
+    Usa la constante `HORA` que ya define este archivo más abajo (acepta
+    segundos, como los devuelve Postgres). */
+function revisarHoras(inicio?: string, fin?: string): string | null {
+  const hayInicio = Boolean(inicio);
+  const hayFin = Boolean(fin);
+  if (!hayInicio && !hayFin) return null;
+  if (hayInicio !== hayFin) return "Indique la hora de inicio y la de término, o ninguna de las dos.";
+  if (!HORA.test(inicio!) || !HORA.test(fin!)) return "Hora inválida.";
+  if (fin! <= inicio!) return "La hora de término va antes que la de inicio.";
+  return null;
 }
 
 /* Escrituras de la disponibilidad (PRP-001 Fase 5). Guard admin + RLS,
@@ -235,7 +259,23 @@ function fechasDelRango(desde: string, hasta: string): string[] {
   return fechas;
 }
 
-/** Bloquea una fecha, o actualiza el texto si ya estaba bloqueada. */
+/** Traduce el error de Postgres a algo que se pueda leer y accionar. */
+function explicarError(code?: string, porDefecto = "No se pudo guardar."): string {
+  if (code === "42P01") return "Falta aplicar la migración 034 en la base de datos.";
+  if (code === "42501") return "La base de datos rechazó el cambio (permisos).";
+  if (code === "23505") return "Ese bloqueo ya existe.";
+  return porDefecto;
+}
+
+/**
+ * Bloquea una fecha — el día completo o solo unas horas, del local o de un
+ * peluquero.
+ *
+ * Escribe en `bloqueos` (migración 034) y no en `disponibilidad_excepciones`:
+ * la tabla vieja tiene la fecha como clave primaria, así que solo admite un
+ * bloqueo por día, sin horas y sin dueño. La función `excepciones_en_rango`
+ * lee de ambas, de modo que lo que ya estaba cargado sigue vigente.
+ */
 export async function bloquearFechaAction(
   excepcion: ExcepcionEditable
 ): Promise<ResultadoAccion> {
@@ -246,6 +286,9 @@ export async function bloquearFechaAction(
     return { success: false, error: "Fecha inválida." };
   }
 
+  const errorHoras = revisarHoras(excepcion.horaInicio, excepcion.horaFin);
+  if (errorHoras) return { success: false, error: errorHoras };
+
   const mensaje = excepcion.mensaje.trim();
   if (mensaje.length > 200) {
     return { success: false, error: "El mensaje no puede pasar de 200 caracteres." };
@@ -255,28 +298,23 @@ export async function bloquearFechaAction(
     return { success: false, error: "La nota no puede pasar de 200 caracteres." };
   }
 
-  const { error } = await sesion.supabase.from("disponibilidad_excepciones").upsert(
+  const { error } = await sesion.supabase.from("bloqueos").upsert(
     {
       fecha: excepcion.fecha,
+      hora_inicio: excepcion.horaInicio || null,
+      hora_fin: excepcion.horaFin || null,
+      peluquero_id: excepcion.peluqueroId || null,
       // Vacío se guarda como NULL, no como "": así la función de la base
       // cae en el texto general en vez de mostrarle una cadena vacía al
       // cliente.
       mensaje: mensaje || null,
       nota_interna: nota || null,
     },
-    { onConflict: "fecha" }
+    { onConflict: "fecha,hora_inicio,hora_fin,peluquero_id" }
   );
 
   if (error) {
-    return {
-      success: false,
-      error:
-        error.code === "42P01"
-          ? "Falta aplicar la migración 026 en la base de datos."
-          : error.code === "42501"
-            ? "La base de datos rechazó el cambio (permisos)."
-            : "No se pudo bloquear la fecha.",
-    };
+    return { success: false, error: explicarError(error.code, "No se pudo bloquear la fecha.") };
   }
 
   revalidatePath("/dashboard/disponibilidad");
@@ -309,6 +347,11 @@ export async function bloquearRangoAction(rango: {
       demás se omiten: bloquear un día que ya no tiene horario no cambia nada
       para el cliente y llena la lista de fechas inútiles. */
   diasAtendidos: number[];
+  /** Horas del bloqueo. Ausentes = el día completo. */
+  horaInicio?: string;
+  horaFin?: string;
+  /** De quién es. Ausente = de todo el local. */
+  peluqueroId?: string;
 }): Promise<ResultadoRango> {
   const sesion = await exigirAdmin();
   if ("error" in sesion) return { success: false, error: sesion.error };
@@ -319,6 +362,9 @@ export async function bloquearRangoAction(rango: {
   if (rango.hasta < rango.desde) {
     return { success: false, error: "La fecha de término va antes que la de inicio." };
   }
+
+  const errorHoras = revisarHoras(rango.horaInicio, rango.horaFin);
+  if (errorHoras) return { success: false, error: errorHoras };
 
   const mensaje = rango.mensaje.trim();
   if (mensaje.length > 200) {
@@ -354,27 +400,22 @@ export async function bloquearRangoAction(rango: {
     };
   }
 
-  const { error } = await sesion.supabase.from("disponibilidad_excepciones").upsert(
+  const { error } = await sesion.supabase.from("bloqueos").upsert(
     aBloquear.map((fecha) => ({
       fecha,
+      hora_inicio: rango.horaInicio || null,
+      hora_fin: rango.horaFin || null,
+      peluquero_id: rango.peluqueroId || null,
       // Vacío se guarda como NULL para que la función de la base caiga en el
       // texto general, igual que en el bloqueo de a una.
       mensaje: mensaje || null,
       nota_interna: nota || null,
     })),
-    { onConflict: "fecha" }
+    { onConflict: "fecha,hora_inicio,hora_fin,peluquero_id" }
   );
 
   if (error) {
-    return {
-      success: false,
-      error:
-        error.code === "42P01"
-          ? "Falta aplicar la migración 026 en la base de datos."
-          : error.code === "42501"
-            ? "La base de datos rechazó el cambio (permisos)."
-            : "No se pudieron bloquear las fechas.",
-    };
+    return { success: false, error: explicarError(error.code, "No se pudieron bloquear las fechas.") };
   }
 
   revalidatePath("/dashboard/disponibilidad");
@@ -386,11 +427,30 @@ export async function bloquearRangoAction(rango: {
   };
 }
 
-/** Vuelve a abrir una fecha. */
-export async function liberarFechaAction(fecha: string): Promise<ResultadoAccion> {
+/**
+ * Vuelve a abrir un bloqueo.
+ *
+ * Recibe el id cuando la fila vive en `bloqueos`, y la fecha cuando viene de
+ * la tabla vieja. Los bloqueos por hora comparten fecha con otros del mismo
+ * día, así que borrar "por fecha" se llevaría los que no eran: por eso el id
+ * manda cuando existe.
+ */
+export async function liberarFechaAction(
+  fechaOId: string,
+  esId = false
+): Promise<ResultadoAccion> {
   const sesion = await exigirAdmin();
   if ("error" in sesion) return { success: false, error: sesion.error };
 
+  if (esId) {
+    const { error } = await sesion.supabase.from("bloqueos").delete().eq("id", fechaOId);
+    if (error) return { success: false, error: "No se pudo liberar el bloqueo." };
+    revalidatePath("/dashboard/disponibilidad");
+    revalidatePath("/reserva");
+    return { success: true };
+  }
+
+  const fecha = fechaOId;
   if (!FECHA.test(fecha)) return { success: false, error: "Fecha inválida." };
 
   const { error } = await sesion.supabase

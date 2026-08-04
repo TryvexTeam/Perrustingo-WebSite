@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   CONFIG_DEFAULT,
   MENSAJE_DIA_LLENO_DEFAULT,
+  type BloqueoParcial,
   type DisponibilidadConfig,
   type Excepcion,
   type Tramo,
@@ -101,6 +102,39 @@ export async function obtenerDisponibilidad(supabase: Cliente): Promise<Disponib
     // asume 1 (el local atiende a alguien).
     capacidad: typeof capacidad === "number" && capacidad > 0 ? capacidad : 1,
   };
+}
+
+/** Bloqueos parciales del rango: horas cerradas del local y peluqueros que
+    quedan fuera. La función de la DB devuelve el CONTEO de bloqueados, nunca
+    quién es quién: la agenda de cada trabajador no sale de su calendario. */
+export async function obtenerBloqueosParciales(
+  supabase: Cliente,
+  desde: string,
+  hasta: string
+): Promise<BloqueoParcial[]> {
+  const { data, error } = await supabase.rpc("bloqueos_agregados", { desde, hasta });
+
+  /* Si la 035 todavía no está aplicada, la función no existe y la lista queda
+     vacía: el formulario sigue ofreciendo cupos como antes en vez de caerse.
+     Ofrecer de más es recuperable —el equipo reagenda—; caerse deja al local
+     sin tomar reservas. */
+  if (error || !data) return [];
+
+  return (data as FilaBloqueoAgregado[]).map((b) => ({
+    fecha: (b.fecha as string).slice(0, 10),
+    horaInicio: b.hora_inicio,
+    horaFin: b.hora_fin,
+    cierraLocal: b.cierra_local,
+    peluquerosBloqueados: b.peluqueros_bloqueados ?? 0,
+  }));
+}
+
+interface FilaBloqueoAgregado {
+  fecha: string;
+  hora_inicio: string | null;
+  hora_fin: string | null;
+  cierra_local: boolean;
+  peluqueros_bloqueados: number | null;
 }
 
 /** Citas ya tomadas por bloque, en el rango pedido. La función de la DB
