@@ -161,11 +161,21 @@ $$ language sql security definer stable;
 alter function public.bloqueos_en_rango(date, date) set search_path = public, pg_temp;
 grant execute on function public.bloqueos_en_rango(date, date) to anon, authenticated;
 
-/* `excepciones_en_rango` (026) se mantiene y pasa a leer de la tabla nueva,
-   porque el formulario ya la llama. Ahora solo devuelve los bloqueos que
-   cierran el DÍA COMPLETO para TODO el local: son los únicos que dejan una
-   fecha sin ninguna hora. Los parciales ya no vacían el día — se resuelven
-   por capacidad, hora por hora. */
+/* `excepciones_en_rango` (026) se mantiene porque el formulario ya la llama.
+   Devuelve los días que quedan CERRADOS ENTEROS: bloqueo de todo el local sin
+   horas. Los parciales ya no vacían el día — se resuelven por capacidad, hora
+   por hora.
+
+   LEE DE LAS DOS TABLAS, y eso no es duplicación por descuido. Esta migración
+   se aplica sobre una producción cuyo panel todavía escribe los días libres en
+   `disponibilidad_excepciones`. Si esta función leyera solo de `bloqueos`,
+   entre aplicar el SQL y desplegar el panel nuevo quedaría una ventana en la
+   que Rodolfo cierra un día y el cliente sigue viendo cupos: la peor forma de
+   fallar, porque nadie se entera hasta que llegan dos perros a la vez. Con la
+   unión, el día cerrado se respeta lo escriba quien lo escriba.
+
+   El `union` (sin `all`) descarta el duplicado natural: la fecha copiada arriba
+   está en las dos tablas. */
 create or replace function public.excepciones_en_rango(desde date, hasta date)
 returns table (fecha date, mensaje text) as $$
   select b.fecha,
@@ -174,8 +184,13 @@ returns table (fecha date, mensaje text) as $$
   where c.singleton
     and b.peluquero_id is null
     and b.hora_inicio is null
-    and b.fecha >= desde
-    and b.fecha <= hasta;
+    and b.fecha between desde and hasta
+  union
+  select e.fecha,
+         coalesce(nullif(trim(e.mensaje), ''), c.mensaje_dia_lleno)
+  from public.disponibilidad_excepciones e, public.disponibilidad_config c
+  where c.singleton
+    and e.fecha between desde and hasta;
 $$ language sql security definer stable;
 
 alter function public.excepciones_en_rango(date, date) set search_path = public, pg_temp;
