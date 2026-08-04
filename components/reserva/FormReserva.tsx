@@ -321,7 +321,11 @@ function MiniCalendario({
           ›
         </button>
       </div>
-      <div className="grid grid-cols-7 gap-1 text-center">
+      {/* Celdas fluidas: el ancho lo manda la columna, no un tamaño fijo.
+          Con `h-9 w-9` la grilla medía 276px mínimos y se desbordaba bajo
+          los ~340px de ancho (iPhone SE). `aspect-square` conserva el
+          círculo y `max-w-9` evita que crezcan de más en pantallas anchas. */}
+      <div className="grid grid-cols-7 gap-0.5 text-center sm:gap-1">
         {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
           <span key={i} className="text-[11px] font-bold text-ink/40">{d}</span>
         ))}
@@ -340,7 +344,7 @@ function MiniCalendario({
               disabled={deshabilitado}
               onClick={() => onChange(iso(dia))}
               aria-pressed={seleccionado}
-              className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-[background-color,color,transform] duration-150 active:scale-90 ${
+              className={`mx-auto flex aspect-square w-full max-w-9 items-center justify-center rounded-full text-sm font-bold transition-[background-color,color,transform] duration-150 active:scale-90 ${
                 seleccionado
                   ? "bg-teal text-white"
                   : deshabilitado
