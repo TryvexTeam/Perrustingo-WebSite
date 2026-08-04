@@ -658,6 +658,10 @@ export function textoDeAjuste(ajuste: AjustePrecio): string {
 export interface AjustesPrecioConfig {
   recargosPelo: Partial<Record<TipoPelo, AjustePrecio>>;
   recargosTemperamento: Record<string, AjustePrecio>;
+  /* Contextura (migración 033). Se siembra en 0 a propósito: la capacidad
+     queda instalada y el precio no se mueve hasta que el dueño ponga sus
+     números en el panel. Un ajuste en 0 no aparece en el desglose. */
+  recargosContextura: Record<string, AjustePrecio>;
   pctPorZona: number;
   maxPctZonas: number;
   descuentoCachorro: AjustePrecio;
@@ -673,6 +677,12 @@ export const AJUSTES_PRECIO_DEFAULT: AjustesPrecioConfig = {
   recargosTemperamento: {
     no_se_deja: { etiqueta: "No se deja atender", pct: 15 },
     complicado: { etiqueta: "Complicado o bravo", pct: 25 },
+  },
+  // En 0 hasta que el dueño los defina — ver migración 033.
+  recargosContextura: {
+    delgado: { etiqueta: "Contextura delgada", pct: 0 },
+    normal: { etiqueta: "Contextura normal", pct: 0 },
+    robusto: { etiqueta: "Contextura robusta", pct: 0 },
   },
   pctPorZona: 3,
   maxPctZonas: 12,
@@ -716,6 +726,16 @@ export function calcularEstimado(
 
   const recargoTemp = config.recargosTemperamento[data.temperamentoGeneral];
   if (recargoTemp) ajustes.push(recargoTemp);
+
+  /* Contextura y altura (migración 033). Ambas nacen en 0 y se configuran en
+     el panel, así que se filtra el ajuste neutro: un "Contextura normal +0%"
+     en el desglose es ruido — le dice al cliente que le cobran algo por eso
+     cuando no le cobran nada. El de altura llega ya resuelto en
+     `ajustesExtra`, porque depende de los tramos que vienen de la base. */
+  const recargoContextura = config.recargosContextura[data.contextura];
+  if (recargoContextura && (recargoContextura.pct !== 0 || (recargoContextura.monto ?? 0) !== 0)) {
+    ajustes.push(recargoContextura);
+  }
 
   const zonas = [
     data.conPatitas, data.conHocico, data.conUnas, data.conCola,

@@ -18,13 +18,26 @@ import { CampoValorAjuste } from "./CampoValorAjuste";
 const CATEGORIA_LABEL: Record<string, string> = {
   pelo: "Recargo por tipo de pelo",
   temperamento: "Recargo por temperamento",
+  contextura: "Recargo por contextura",
   zona_sensible: "Zonas sensibles",
   cachorro: "Descuento cachorro",
   primera_cita: "Descuento primera cita",
 };
 
-const ORDEN_CATEGORIAS = ["pelo", "temperamento", "zona_sensible", "cachorro", "primera_cita"];
+const ORDEN_CATEGORIAS = [
+  "pelo",
+  "temperamento",
+  "contextura",
+  "zona_sensible",
+  "cachorro",
+  "primera_cita",
+];
 
+/* El orden manda, pero no puede DECIDIR qué se ve: antes esta función
+   filtraba por `ORDEN_CATEGORIAS` y una categoría nueva en la base
+   desaparecía del panel sin decir nada — el dueño no podría configurar algo
+   que sí se le está cobrando al cliente. Ahora lo conocido va primero, en el
+   orden pedido, y lo que no esté en la lista se muestra igual, al final. */
 function agrupar(filas: FilaAjustePrecioAdmin[]): [string, FilaAjustePrecioAdmin[]][] {
   const grupos = new Map<string, FilaAjustePrecioAdmin[]>();
   for (const f of filas) {
@@ -32,7 +45,9 @@ function agrupar(filas: FilaAjustePrecioAdmin[]): [string, FilaAjustePrecioAdmin
     lista.push(f);
     grupos.set(f.categoria, lista);
   }
-  return ORDEN_CATEGORIAS.filter((c) => grupos.has(c)).map((c) => [c, grupos.get(c)!]);
+  const conocidas = ORDEN_CATEGORIAS.filter((c) => grupos.has(c));
+  const resto = [...grupos.keys()].filter((c) => !ORDEN_CATEGORIAS.includes(c)).sort();
+  return [...conocidas, ...resto].map((c) => [c, grupos.get(c)!]);
 }
 
 export function EditorAjustesPrecio() {

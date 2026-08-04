@@ -66,6 +66,7 @@ function filasAConfig(filas: FilaAjuste[]): AjustesPrecioConfig {
   const config: AjustesPrecioConfig = {
     recargosPelo: {},
     recargosTemperamento: {},
+    recargosContextura: {},
     pctPorZona: AJUSTES_PRECIO_DEFAULT.pctPorZona,
     maxPctZonas: AJUSTES_PRECIO_DEFAULT.maxPctZonas,
     descuentoCachorro: AJUSTES_PRECIO_DEFAULT.descuentoCachorro,
@@ -85,6 +86,9 @@ function filasAConfig(filas: FilaAjuste[]): AjustesPrecioConfig {
         break;
       case "temperamento":
         config.recargosTemperamento[fila.clave] = ajuste;
+        break;
+      case "contextura":
+        config.recargosContextura[fila.clave] = ajuste;
         break;
       case "zona_sensible":
         if (fila.clave === "por_zona") config.pctPorZona = fila.pct;
