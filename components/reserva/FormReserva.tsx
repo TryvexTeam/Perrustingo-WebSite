@@ -34,6 +34,8 @@ import { CATALOGO_RAZAS, razaImagen, TAMANO_IMAGEN } from "@/lib/razas";
 import { useTarifas } from "@/lib/tarifas";
 import { useTramos } from "@/lib/tramosDatos";
 import { precioDe } from "@/lib/tramos";
+import { useTramosAltura } from "@/lib/tramosAlturaDatos";
+import { ajusteDeAltura } from "@/lib/tramosAltura";
 import { useAjustesPorTamano } from "@/lib/ajustesPrecio";
 import { fotoValida, subirFotoReserva } from "@/lib/fotos";
 import { WHATSAPP_NUMBER, hayWhatsAppConfigurado } from "@/lib/site";
@@ -519,6 +521,7 @@ export function FormReserva({
 
   const tarifas = useTarifas();
   const tramos = useTramos();
+  const tramosAltura = useTramosAltura();
   const ajustes = useAjustesPorTamano();
   // Los descuentos globales (cupón, primera cita) NO son por tamaño: se
   // muestran una sola vez para toda la reserva, que puede tener perritos
@@ -793,6 +796,13 @@ export function FormReserva({
       if (baseCachorro) extra.push(cfg.descuentoCachorro);
       if (descuentoGlobal) extra.push(descuentoGlobal);
 
+      /* Ajuste por altura (migración 033). Se resuelve acá y no dentro de
+         `calcularEstimado` porque depende de los tramos que vienen de la base.
+         La altura es opcional en el formulario: si no la pusieron, o si el
+         tramo está en 0%, `ajusteDeAltura` devuelve null y no se cobra nada. */
+      const ajusteAltura = ajusteDeAltura(tramosAltura, parseFloat(d.alturaCmd));
+      if (ajusteAltura) extra.push(ajusteAltura);
+
       return {
         /* El precio base sale del TRAMO por peso (migración 026), no del tamaño.
            Ése era el defecto que encontró el cliente probando la página: un
@@ -817,8 +827,8 @@ export function FormReserva({
     },
     // `tramos` va en las dependencias o el estimado se queda con la tabla que
     // había al montar: el admin cambiaría un precio y el formulario seguiría
-    // cotizando el viejo hasta recargar.
-    [tarifas, tramos, ajustes, descuentoGlobal]
+    // cotizando el viejo hasta recargar. Lo mismo para `tramosAltura`.
+    [tarifas, tramos, tramosAltura, ajustes, descuentoGlobal]
   );
 
   const actual = estimadoDe(data);

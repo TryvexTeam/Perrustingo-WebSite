@@ -6,6 +6,7 @@ import { TARIFAS_DEFAULT, type Tarifas } from "@/lib/tarifas";
 import type { FilaAjustePrecioAdmin } from "@/lib/ajustesPrecio";
 import { admiteMontoFijo, TAMANOS, type TamanoKey, type TipoAjuste } from "@/lib/reserva";
 import { validar as validarTramos, type Tramo } from "@/lib/tramos";
+import { validarAltura, type TramoAltura } from "@/lib/tramosAltura";
 
 interface ResultadoAccion {
   success: boolean;
@@ -336,6 +337,85 @@ export async function guardarTramosAction(tramos: Tramo[]): Promise<ResultadoAcc
     return {
       success: false,
       error: `Los tramos nuevos quedaron guardados, pero no pude eliminar los antiguos: ${errorBorrado.message}`,
+    };
+  }
+
+  revalidatePath("/dashboard/tarifas");
+  revalidatePath("/reserva");
+  return { success: true };
+}
+
+/* ── Tramos de ajuste por altura (migración 033) ───────────────────────────
+   El formulario ya preguntaba la altura y no hacía nada con ella. Mismo modelo
+   que los tramos de peso —borde inferior, el superior se deriva— pero acá la
+   fila ajusta el precio en vez de fijarlo.
+
+   De fábrica hay una sola franja desde 0 cm con 0%: la altura queda conectada
+   sin mover el precio, hasta que el dueño ponga sus cortes. */
+
+/** Guarda la tabla completa de tramos de altura. Solo admin; la RLS de
+    `tramos_altura` exige lo mismo del lado de la base. */
+export async function guardarTramosAlturaAction(
+  tramos: TramoAltura[]
+): Promise<ResultadoAccion> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Sesión expirada." };
+
+  const { data: perfil } = await supabase
+    .from("perfiles")
+    .select("rol")
+    .eq("id", user.id)
+    .single();
+  if (perfil?.rol !== "admin") {
+    return { success: false, error: "Sin permisos." };
+  }
+
+  // Mismo dominio que usa el formulario público, no una copia: dos reglas de
+  // validación que se separan es cómo entra una tabla que el panel acepta y el
+  // cotizador no sabe leer.
+  const problemas = validarAltura(tramos);
+  if (problemas.length > 0) {
+    return { success: false, error: problemas.join(" ") };
+  }
+
+  // El insert va ANTES del borrado, igual que en los tramos de peso: si se
+  // borrara primero y fallara el insert, la altura quedaría sin tramos. Acá el
+  // daño sería menor que en el precio base (sin tramos simplemente no se
+  // ajusta), pero el orden correcto no cuesta nada.
+  const filas = tramos.map((t) => ({
+    nombre: t.nombre.trim(),
+    desde_cm: t.desdeCm,
+    pct: t.pct,
+    activo: true,
+  }));
+
+  const { data: guardadas, error: errorInsert } = await supabase
+    .from("tramos_altura")
+    .upsert(filas, { onConflict: "desde_cm" })
+    .select("id, desde_cm");
+
+  if (errorInsert) return { success: false, error: errorInsert.message };
+  if (!guardadas || guardadas.length !== filas.length) {
+    return {
+      success: false,
+      error: `Guardé ${guardadas?.length ?? 0} de ${filas.length} tramos de altura. No borro los anteriores hasta que estén todos.`,
+    };
+  }
+
+  const bordesVigentes = tramos.map((t) => t.desdeCm);
+  const { error: errorBorradoAltura } = await supabase
+    .from("tramos_altura")
+    .delete()
+    .not("desde_cm", "in", `(${bordesVigentes.join(",")})`);
+
+  if (errorBorradoAltura) {
+    return {
+      success: false,
+      error: `Los tramos de altura nuevos quedaron guardados, pero no pude eliminar los antiguos: ${errorBorradoAltura.message}`,
     };
   }
 
