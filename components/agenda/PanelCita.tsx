@@ -6,12 +6,16 @@ import type { CitaSemana } from "@/lib/agenda";
 import { ESTADO_COLOR, ESTADO_LABEL } from "@/lib/citas";
 import { formatCLP } from "@/lib/reserva";
 import {
+  asignarPeluqueroAction,
   cambiarEstadoCita,
   estadoAtrasoAction,
+  estadoCierreAction,
   guardarNotasEquipo,
   marcarLlegadaAction,
+  registrarPrecioCobradoAction,
   resolverRecargoAction,
   type EstadoAtraso,
+  type EstadoCierre,
 } from "@/app/dashboard/citas/actions";
 import { avisarPerroListoAction } from "@/app/dashboard/citas/aviso-actions";
 import { createClient } from "@/lib/supabase/client";
@@ -68,6 +72,19 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
   const [atrasoOcupado, setAtrasoOcupado] = useState(false);
   const [atrasoError, setAtrasoError] = useState("");
 
+  /* Cierre de la cita: lo cobrado y el peluquero asignado.
+     Viaja por server action por lo mismo que el atraso — `peluquero_id` no
+     está en la lista de columnas de `sesiones_equipo` (migración 030), así que
+     desde este navegador ese campo sencillamente no existe. */
+  const [cierre, setCierre] = useState<EstadoCierre | null>(null);
+  /* Lo que la persona escribió. Vive aparte de `cierre` a propósito: mientras
+     alguien está tecleando, el número de la pantalla es SUYO y ninguna
+     respuesta del servidor se lo puede pisar. */
+  const [cobrado, setCobrado] = useState("");
+  const [cierreEstado, setCierreEstado] = useState<"idle" | "guardando" | "ok" | "error">("idle");
+  const [cierreError, setCierreError] = useState("");
+  const [asignando, setAsignando] = useState(false);
+
   /* Notas de visitas anteriores del mismo perrito (RLS: solo el equipo llega
      a este panel). Las fotos las carga <FotosCita>, que además las sube. */
   useEffect(() => {
@@ -108,6 +125,23 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
     };
   }, [sesionId]);
 
+  /* El cierre se lee al abrir la ficha. El campo del monto arranca con lo que
+     YA se había registrado, o vacío: nunca precargado con la sugerencia. Un
+     input que viene lleno con una cifra del sistema se guarda sin mirarlo, y
+     entonces el número que termina en las analíticas no lo decidió nadie. */
+  useEffect(() => {
+    if (!sesionId) return;
+    let vigente = true;
+    estadoCierreAction(sesionId).then((res) => {
+      if (!vigente || !res.success || !res.estado) return;
+      setCierre(res.estado);
+      setCobrado(res.estado.precioCobrado === null ? "" : String(res.estado.precioCobrado));
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [sesionId]);
+
   const sesion = cita.sesion;
   if (!sesion) return null;
 
@@ -137,6 +171,56 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
         return;
       }
       if (res.estado) setAtraso(res.estado);
+    });
+  };
+
+  const guardarCobrado = () => {
+    setCierreError("");
+    const limpio = cobrado.trim();
+    if (limpio === "") {
+      setCierreEstado("error");
+      setCierreError("Escriba lo que se cobró. Si no cobró nada, ponga 0.");
+      return;
+    }
+    /* Se valida acá para no gastar un viaje, pero el servidor vuelve a
+       validar: esta comprobación es comodidad, no el control. */
+    const monto = Number(limpio);
+    if (!Number.isInteger(monto)) {
+      setCierreEstado("error");
+      setCierreError("Solo pesos enteros, sin puntos ni decimales.");
+      return;
+    }
+    setCierreEstado("guardando");
+    startTransition(async () => {
+      const res = await registrarPrecioCobradoAction(sesion.id, monto);
+      if (!res.success) {
+        setCierreEstado("error");
+        setCierreError(res.error ?? "No se pudo guardar el monto.");
+        return;
+      }
+      setCierreEstado("ok");
+      if (res.estado) {
+        setCierre(res.estado);
+        setCobrado(res.estado.precioCobrado === null ? "" : String(res.estado.precioCobrado));
+      }
+      // El dashboard y las analíticas leen `precio_final`: sin esto seguirían
+      // mostrando el ingreso viejo detrás del panel.
+      router.refresh();
+    });
+  };
+
+  const asignarPeluquero = (peluqueroId: string) => {
+    setCierreError("");
+    setAsignando(true);
+    startTransition(async () => {
+      const res = await asignarPeluqueroAction(sesion.id, peluqueroId || null);
+      setAsignando(false);
+      if (!res.success) {
+        setCierreError(res.error ?? "No se pudo asignar la cita.");
+        return;
+      }
+      if (res.estado) setCierre(res.estado);
+      router.refresh();
     });
   };
 
@@ -389,6 +473,148 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
           </section>
         )}
 
+        {/* ── Cierre: lo que se cobró y quién atiende ───────────────────────
+
+            Los dos datos que faltaban. `precio_final` no se escribía en
+            ninguna parte, así que los ingresos del dashboard se calculaban
+            sobre el estimado que armó el navegador; y `peluquero_id` estaba
+            en la base desde la 035 sin que nadie la llenara.
+
+            Los dos precios se muestran juntos y el estimado no se toca: la
+            diferencia entre lo prometido y lo cobrado es el dato.
+
+            No aparece en las canceladas: a una cita que no ocurrió no se le
+            cobra ni se le asigna a nadie. */}
+        {cierre && cita.estado !== "cancelada" && (
+          <section className="mb-4 rounded-2xl border border-zinc-100 p-4">
+            <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-teal-dark">
+              Cierre de la cita
+            </h3>
+
+            <div className="flex items-baseline justify-between gap-3 text-sm">
+              <span className="font-semibold text-ink-soft">Estimado al reservar</span>
+              <span className="font-bold text-ink">
+                {cierre.precioEstimado === null ? "—" : formatCLP(cierre.precioEstimado)}
+              </span>
+            </div>
+            {cierre.recargoCobrado > 0 && (
+              <div className="mt-1 flex items-baseline justify-between gap-3 text-sm">
+                <span className="font-semibold text-ink-soft">Recargo por atraso aceptado</span>
+                <span className="font-bold text-[#7a4d10]">
+                  + {formatCLP(cierre.recargoCobrado)}
+                </span>
+              </div>
+            )}
+
+            <label className="mt-3 block text-xs font-bold text-ink-soft" htmlFor="monto-cobrado">
+              Lo que se cobró de verdad
+            </label>
+            <div className="mt-1 flex gap-2">
+              <input
+                id="monto-cobrado"
+                type="number"
+                inputMode="numeric"
+                step={1}
+                min={0}
+                value={cobrado}
+                onChange={(e) => {
+                  setCobrado(e.target.value);
+                  setCierreEstado("idle");
+                  setCierreError("");
+                }}
+                placeholder="Ej: 38000"
+                className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold text-ink outline-none focus:border-teal"
+              />
+              <button
+                type="button"
+                disabled={pending || cierreEstado === "guardando"}
+                onClick={guardarCobrado}
+                className="flex-none rounded-full bg-teal px-4 py-2 text-xs font-extrabold text-white transition-colors hover:bg-teal-dark disabled:opacity-50"
+              >
+                {cierreEstado === "guardando" ? "Guardando…" : "Guardar"}
+              </button>
+            </div>
+
+            {/* El sistema PROPONE. El botón solo escribe la cifra en el campo:
+                todavía hay que apretar Guardar. Nada se cobra ni se fija solo,
+                que es la regla del dueño para el recargo y vale igual acá. */}
+            {cierre.sugerido !== null && String(cierre.sugerido) !== cobrado.trim() && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCobrado(String(cierre.sugerido));
+                  setCierreEstado("idle");
+                  setCierreError("");
+                }}
+                className="mt-2 text-xs font-bold text-teal-dark underline underline-offset-2"
+              >
+                Usar el sugerido: {formatCLP(cierre.sugerido)}
+                {cierre.recargoCobrado > 0 ? " (estimado + recargo)" : ""}
+              </button>
+            )}
+
+            <p className="mt-2 text-xs leading-relaxed text-ink-soft">
+              {cierre.precioCobrado === null
+                ? "Todavía no se registra ningún cobro. El estimado no cuenta como plata que entró."
+                : `Registrado: ${formatCLP(cierre.precioCobrado)}. El estimado queda tal cual, para poder comparar.`}
+            </p>
+
+            {cierreEstado === "ok" && (
+              <p className="mt-1 text-xs font-bold text-teal-dark">✓ Cobro guardado.</p>
+            )}
+
+            {/* Asignación. Solo el admin elige (decisión del dueño, 4-ago);
+                el trabajador ve a quién le tocó. */}
+            <div className="mt-4 border-t border-zinc-100 pt-3">
+              <label className="block text-xs font-bold text-ink-soft" htmlFor="peluquero-cita">
+                Peluquero a cargo
+              </label>
+              {cierre.puedeAsignar ? (
+                <select
+                  id="peluquero-cita"
+                  value={cierre.peluqueroId ?? ""}
+                  disabled={pending || asignando}
+                  onChange={(e) => asignarPeluquero(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold text-ink outline-none focus:border-teal disabled:opacity-50"
+                >
+                  <option value="">Sin asignar</option>
+                  {cierre.peluqueros.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="mt-1 text-sm font-semibold text-ink">
+                  {/* Sin id = sin asignar. Con id pero sin nombre = asignada a
+                      alguien cuyo perfil esta sesión no puede leer; decirlo
+                      así, y no "Sin asignar", que sería falso. */}
+                  {cierre.peluqueroId === null
+                    ? "Sin asignar"
+                    : (cierre.peluqueroNombre ?? "Asignada (nombre no visible desde esta cuenta)")}
+                  <span className="ml-2 text-xs font-semibold text-ink-soft">
+                    (la asigna el administrador)
+                  </span>
+                </p>
+              )}
+              {cierre.puedeAsignar && cierre.peluqueros.length === 0 && (
+                <p className="mt-1 text-xs font-semibold text-ink-soft">
+                  No hay nadie marcado como peluquero todavía. Márquelo en Usuarios.
+                </p>
+              )}
+              {asignando && (
+                <p className="mt-1 text-xs font-semibold text-ink-soft">Asignando…</p>
+              )}
+            </div>
+
+            {cierreError && (
+              <p role="alert" className="mt-2 text-xs font-semibold text-[#7a1030]">
+                {cierreError}
+              </p>
+            )}
+          </section>
+        )}
+
         {/* Notas del equipo sobre esta cita */}
         <section className="mb-4 rounded-2xl border border-zinc-100 p-4">
           <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-teal-dark">
@@ -507,6 +733,18 @@ export function PanelCita({ cita, onCerrar }: PanelCitaProps) {
                 </p>
               )}
             </div>
+          )}
+
+          {/* Registrar el cobro tiene que ser parte de cerrar la cita, no un
+              trámite aparte que nadie hace. Se avisa acá, pegado al botón —
+              pero no se bloquea: a veces se cobra después, y un candado haría
+              que la cita quede abierta en vez de que el monto quede escrito. */}
+          {cierre && cierre.precioCobrado === null &&
+            ["en_proceso", "completada"].includes(cita.estado) && (
+            <p className="rounded-xl bg-cream px-4 py-2 text-xs font-bold leading-relaxed text-ink">
+              Falta registrar lo que se cobró. Sin ese dato, los ingresos del
+              panel salen del precio estimado y no de la plata real.
+            </p>
           )}
 
           {cita.estado === "en_proceso" && (
