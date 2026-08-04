@@ -152,7 +152,8 @@ export function CalendarioSemanal({
     [lunes]
   );
 
-  /** Índice de un día dentro de la semana laboral (lunes = 0). Domingo no se atiende. */
+  /** Días transcurridos desde el lunes (lunes = 0 … domingo = 6). No es
+      `Date.getDay()`, que empieza en domingo. */
   const indiceEnSemana = (fecha: Date) => (fecha.getDay() + 6) % 7;
 
   /** Deja el día `indice` pegado al borde izquierdo del área deslizable. */
@@ -172,9 +173,9 @@ export function CalendarioSemanal({
   useEffect(() => {
     if (yaCentrado.current || anchoColumna === null) return;
     yaCentrado.current = true;
-    const idxHoy = indiceEnSemana(hoy);
-    if (idxHoy >= DIAS_SEMANA.length) return; // domingo
-    desplazarADia(idxHoy - Math.floor(diasVisibles / 2), "auto");
+    // Con la semana completa (lun-dom) cualquier día cae dentro del arreglo,
+    // así que ya no hay que descartar el domingo.
+    desplazarADia(indiceEnSemana(hoy) - Math.floor(diasVisibles / 2), "auto");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anchoColumna, hoy]);
 
@@ -208,8 +209,7 @@ export function CalendarioSemanal({
 
   const irHoy = () => {
     setSemanaOffset(0);
-    const idxHoy = Math.min(indiceEnSemana(hoy), DIAS_SEMANA.length - 1);
-    desplazarADia(idxHoy - Math.floor(diasVisibles / 2));
+    desplazarADia(indiceEnSemana(hoy) - Math.floor(diasVisibles / 2));
   };
 
   const esHoyVisible = (fecha: Date) =>
@@ -329,7 +329,14 @@ export function CalendarioSemanal({
             scrollPaddingLeft: ANCHO_GUTTER,
           }}
         >
-          <div>
+          {/* `max-content` cuando las columnas van en píxeles, y no es un
+              detalle: sin esto el envoltorio se queda en el ancho visible y
+              las columnas lo desbordan. La columna de horas es `sticky`, y un
+              sticky solo se desplaza dentro de su contenedor — al pasar del
+              ancho del envoltorio se acababa el recorrido y la hora se iba de
+              la pantalla. Con seis días no se notaba porque el scroll máximo
+              quedaba justo por debajo de ese límite; el domingo lo destapó. */}
+          <div style={{ width: anchoColumna === null ? undefined : "max-content" }}>
             {/* Cabecera de días */}
             <div
               className="grid border-b border-ink/10"
