@@ -102,6 +102,12 @@ export default async function DisponibilidadPage() {
             <EditorExcepciones
               excepcionesIniciales={excepciones}
               mensajePorDefecto={config.mensajeDiaLleno}
+              /* Los días que de verdad se atienden, para que bloquear un
+                 rango de vacaciones no llene la lista con domingos que ya
+                 no tenían cupo. */
+              diasAtendidos={[
+                ...new Set(tramos.filter((t) => t.activo).map((t) => t.diaSemana)),
+              ]}
             />
           </div>
         </div>
