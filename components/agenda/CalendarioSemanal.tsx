@@ -315,9 +315,11 @@ export function CalendarioSemanal({
           </button>
         </div>
 
-        {/* Cabecera y cuerpo comparten UN solo contenedor de scroll: si cada
-            uno tuviera el suyo, al deslizar se desincronizarían y aparecería
-            un margen vacío al costado. */}
+        {/* Cabecera y cuerpo comparten UN solo contenedor de scroll. Si el
+            cuerpo tuviera el suyo con `overflowX: hidden`, se quedaría en el
+            ancho visible (un hijo block toma el ancho del padding box, no del
+            scrollWidth) y su contenido quedaría recortado ahí: al deslizar
+            aparecerían los días en la cabecera y debajo, nada. */}
         <div
           ref={scrollRef}
           className="overflow-x-auto overscroll-x-contain rounded-3xl bg-white shadow-sm [scrollbar-width:thin]"
