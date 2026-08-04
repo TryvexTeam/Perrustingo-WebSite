@@ -25,6 +25,12 @@ import { BUCKET_FOTOS, rutaDeFoto } from "@/lib/fotosComun";
 
 export const dynamic = "force-dynamic";
 
+/* Lista BLANCA, no negra, y eso importa: este endpoint sirve fotos sin
+   sesión, saltándose RLS con la clave de servicio. Cualquier tipo que se
+   agregue a la tabla queda fuera hasta que alguien lo ponga acá a propósito.
+   `comprobante` (migración 035) lleva datos de pago y NO debe salir nunca por
+   esta puerta — si algún día hace falta, no se agrega sin resolver antes quién
+   puede verlo. */
 const TIPOS_PERMITIDOS = new Set(["antes", "referencia", "despues"]);
 
 export async function GET(

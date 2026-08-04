@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { subirFotoResultado, rutaDeFoto, firmarFotos } from "@/lib/fotos";
-import { registrarFotoResultado } from "@/app/dashboard/citas/fotos-actions";
+import { registrarFotoResultado, type TipoFoto } from "@/app/dashboard/citas/fotos-actions";
 
 /* Las fotos de una cita: lo que trajo el cliente y lo que dejó el equipo
    (PRP-002 F3).
@@ -67,7 +67,19 @@ const ETIQUETA: Record<string, string> = {
   durante: "📷 Durante",
   despues: "✨ Resultado",
   referencia: "✂️ Corte deseado",
+  extra: "📷 Otra",
+  comprobante: "🧾 Comprobante",
 };
+
+/* Lo que el equipo puede subir. Antes solo se podía "Resultado": una foto del
+   antes o un detalle a mitad de trabajo no tenían dónde ir. */
+const SUBIBLES: { tipo: TipoFoto; label: string }[] = [
+  { tipo: "despues", label: "✨ Resultado" },
+  { tipo: "antes", label: "📷 Al llegar" },
+  { tipo: "durante", label: "📷 Durante" },
+  { tipo: "extra", label: "📷 Otra" },
+  { tipo: "comprobante", label: "🧾 Comprobante de pago" },
+];
 
 export function FotosCita({ sesionId, estado }: FotosCitaProps) {
   const [fotos, setFotos] = useState<FotoSesion[]>([]);
@@ -75,6 +87,10 @@ export function FotosCita({ sesionId, estado }: FotosCitaProps) {
   const [enlaces, setEnlaces] = useState<Record<string, string>>({});
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState("");
+  /* Qué se está subiendo. Se elige ANTES de abrir el explorador: preguntarlo
+     después, con el archivo ya elegido, es un paso más para alguien que tiene
+     al perrito en la mesa. */
+  const [tipoASubir, setTipoASubir] = useState<TipoFoto>("despues");
   const entrada = useRef<HTMLInputElement>(null);
 
   const cargar = useCallback(async () => {
@@ -123,7 +139,7 @@ export function FotosCita({ sesionId, estado }: FotosCitaProps) {
       return;
     }
 
-    const registro = await registrarFotoResultado(sesionId, ruta);
+    const registro = await registrarFotoResultado(sesionId, ruta, tipoASubir);
     setSubiendo(false);
     if (entrada.current) entrada.current.value = "";
 
@@ -140,7 +156,10 @@ export function FotosCita({ sesionId, estado }: FotosCitaProps) {
     return ruta ? enlaces[ruta] ?? null : null;
   };
 
-  const delCliente = fotos.filter((f) => f.tipo !== "despues");
+  /* El comprobante va aparte de las fotos del perrito: lleva datos de pago y
+     no tiene nada que hacer entre el antes y el después. */
+  const comprobantes = fotos.filter((f) => f.tipo === "comprobante");
+  const delCliente = fotos.filter((f) => f.tipo !== "despues" && f.tipo !== "comprobante");
   const resultado = fotos.filter((f) => f.tipo === "despues");
   const faltaResultado = resultado.length === 0;
   const yaSeAtendio = estado === "completada" || estado === "en_proceso";
@@ -206,12 +225,71 @@ export function FotosCita({ sesionId, estado }: FotosCitaProps) {
         </p>
       )}
 
+      {/* Comprobantes de pago — sección propia, con su marca visual, para que
+          nadie los confunda con las fotos del perrito ni los mande al cliente
+          por error. */}
+      {comprobantes.length > 0 && (
+        <>
+          <p className="mb-2 mt-4 text-[11px] font-bold text-ink-soft">
+            🧾 Comprobantes de pago{" "}
+            <span className="font-normal">— uso interno, no se le muestran al cliente</span>
+          </p>
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            {comprobantes.map((f) => (
+              <Miniatura
+                key={f.id}
+                enlace={enlaceDe(f)}
+                alt="Comprobante de pago"
+                pie={`🧾 Comprobante${
+                  f.created_at
+                    ? ` · ${new Date(f.created_at).toLocaleDateString("es-CL", {
+                        day: "numeric",
+                        month: "short",
+                      })}`
+                    : ""
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
       {error && (
         <p
           role="alert"
           className="mb-3 rounded-xl bg-[#fbdbe7] px-3 py-2 text-xs font-semibold text-[#7a1030]"
         >
           {error}
+        </p>
+      )}
+
+      {/* Qué se va a subir. Se elige ANTES de abrir la cámara: preguntarlo
+          después, con la foto ya tomada, es un paso más para alguien que tiene
+          al perrito en la mesa. */}
+      <label
+        htmlFor={`tipo-foto-${sesionId}`}
+        className="mb-1.5 block text-[11px] font-bold text-ink-soft"
+      >
+        Qué vas a subir
+      </label>
+      <select
+        id={`tipo-foto-${sesionId}`}
+        value={tipoASubir}
+        onChange={(e) => setTipoASubir(e.target.value as TipoFoto)}
+        disabled={subiendo}
+        className="mb-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
+      >
+        {SUBIBLES.map((s) => (
+          <option key={s.tipo} value={s.tipo}>
+            {s.label}
+          </option>
+        ))}
+      </select>
+
+      {tipoASubir === "comprobante" && (
+        <p className="mb-2 rounded-xl bg-cream px-3 py-2 text-[11px] leading-relaxed text-ink-soft">
+          🔒 El comprobante queda para uso interno: no aparece en la galería que
+          ve el cliente.
         </p>
       )}
 
@@ -236,9 +314,7 @@ export function FotosCita({ sesionId, estado }: FotosCitaProps) {
       >
         {subiendo
           ? "Subiendo…"
-          : resultado.length > 0
-            ? "Agregar otra foto del resultado"
-            : "📸 Subir foto del resultado"}
+          : `📸 Subir ${SUBIBLES.find((s) => s.tipo === tipoASubir)?.label.replace(/^\S+\s/, "").toLowerCase() ?? "foto"}`}
       </label>
     </section>
   );
