@@ -17,11 +17,18 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { notificarTramosActualizados, obtenerTramos } from "@/lib/tramosDatos";
 import { guardarTramosAction } from "@/app/dashboard/tarifas/actions";
-import { ordenar, precioDe, rangoLegible, validar, type Tramo } from "@/lib/tramos";
+import { hastaKg, ordenar, precioDe, validar, type Tramo } from "@/lib/tramos";
 import { formatCLP } from "@/lib/reserva";
 
 /** Pesos con los que se prueba la tabla en vivo, incluido el caso que falló. */
 const PESOS_PRUEBA = [2, 4, 6.5, 8, 12, 18, 30, 50, 70];
+
+/* Los pesos se escriben con coma, como en Chile. Sin esto la tabla mezclaba
+   las dos notaciones en la misma fila —"9.1" en el desde y "9,9" en el
+   hasta— porque una venía de `String(n)` y la otra de un formateo. */
+function conComa(n: number): string {
+  return String(Math.round(n * 10) / 10).replace(".", ",");
+}
 
 export function EditorTramos() {
   const [tramos, setTramos] = useState<Tramo[]>([]);
@@ -59,6 +66,41 @@ export function EditorTramos() {
         return campo === "desdeKg" ? { ...t, desdeKg: n } : { ...t, precio: Math.round(n) };
       })
     );
+  }
+
+  /**
+   * Edita el "hasta" de un tramo moviendo el "desde" del siguiente.
+   *
+   * No son dos números: son el MISMO borde visto desde cada lado. Por eso
+   * editar el límite de arriba de un tramo corre el arranque del que sigue, y
+   * por eso sigue siendo imposible dejar un peso sin precio — que era la razón
+   * por la que este campo no se podía tocar. Lo que cambia es que ahora se
+   * puede empujar el borde desde cualquiera de los dos lados.
+   *
+   * Lo que se escribe es el último peso INCLUIDO (4,9), como se lee en la
+   * página; el borde real es el siguiente décimo (5,0). El redondeo es
+   * necesario: 4.9 + 0.1 da 5.000000000000001 en coma flotante, y ese sobrante
+   * se guardaría tal cual en la base.
+   */
+  function actualizarHasta(id: string, valor: string) {
+    setGuardado(false);
+    const v = valor.trim() === "" ? NaN : Number(valor.replace(",", "."));
+    if (!Number.isFinite(v)) return;
+    const borde = Math.round((v + 0.1) * 10) / 10;
+    setTramos((prev) => {
+      const orden = ordenar(prev);
+      const i = orden.findIndex((t) => t.id === id);
+      // El último tramo es abierto por arriba: no tiene "hasta" que mover.
+      if (i === -1 || i === orden.length - 1) return prev;
+      /* Un "hasta" por debajo del propio "desde" no rompe el cálculo —la
+         tabla se reordena y sigue sin huecos— pero el tramo de abajo salta de
+         lugar y queda cobrándole a un peso que no tiene nada que ver con su
+         nombre. Se ignora en vez de reordenar a espaldas del que edita: para
+         mover un tramo de sitio está el campo "desde". */
+      if (borde <= orden[i].desdeKg) return prev;
+      const siguienteId = orden[i + 1].id;
+      return prev.map((t) => (t.id === siguienteId ? { ...t, desdeKg: borde } : t));
+    });
   }
 
   function agregar() {
@@ -114,9 +156,9 @@ export function EditorTramos() {
         Precio según el peso
       </h2>
       <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-ink-soft">
-        Cada tramo indica <strong>desde</strong> qué peso rige. El límite de arriba sale del tramo
-        siguiente, así que ningún perrito puede quedar sin precio. Los cambios se ven al instante en
-        el formulario de reserva.
+        Edite el <strong>desde</strong> o el <strong>hasta</strong>, el que le acomode: son el mismo
+        borde visto de cada lado, así que mover uno corre el otro y ningún perrito puede quedar sin
+        precio. Los cambios se ven al instante en el formulario de reserva.
       </p>
 
       <div className="mt-5 overflow-x-auto">
@@ -125,14 +167,16 @@ export function EditorTramos() {
             <tr className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink-soft">
               <th className="px-3 py-1">Nombre</th>
               <th className="px-3 py-1">Desde (kg)</th>
-              <th className="px-3 py-1">Rango que cubre</th>
+              <th className="px-3 py-1">Hasta (kg)</th>
               <th className="px-3 py-1">Precio</th>
               <th className="px-3 py-1 sr-only">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {ordenados.map((t) => {
+            {ordenados.map((t, i) => {
               const conProblema = problemas.some((p) => p.id === t.id);
+              const bordeSuperior = hastaKg(ordenados, t.id);
+              const esUltimo = i === ordenados.length - 1;
               return (
                 <tr key={t.id} className={conProblema ? "bg-red-50" : "bg-cream/60"}>
                   <td className="rounded-l-xl px-3 py-2">
@@ -147,12 +191,27 @@ export function EditorTramos() {
                     <input
                       aria-label={`Peso desde el que rige ${t.nombre}`}
                       inputMode="decimal"
-                      value={String(t.desdeKg)}
+                      value={conComa(t.desdeKg)}
                       onChange={(e) => actualizar(t.id, "desdeKg", e.target.value)}
                       className="w-24 rounded-lg border border-ink/15 bg-white px-2.5 py-1.5 text-sm tabular-nums text-ink"
                     />
                   </td>
-                  <td className="px-3 py-2 text-sm text-ink-soft">{rangoLegible(ordenados, t.id)}</td>
+                  <td className="px-3 py-2">
+                    {esUltimo ? (
+                      /* El último tramo cubre de su peso hacia arriba: no
+                         tiene "hasta" que editar. Para cerrarlo habría que
+                         agregar otro tramo, y ahí el borde aparece solo. */
+                      <span className="text-sm text-ink-soft">sin límite</span>
+                    ) : (
+                      <input
+                        aria-label={`Peso hasta el que rige ${t.nombre}`}
+                        inputMode="decimal"
+                        value={bordeSuperior === null ? "" : conComa(bordeSuperior - 0.1)}
+                        onChange={(e) => actualizarHasta(t.id, e.target.value)}
+                        className="w-24 rounded-lg border border-ink/15 bg-white px-2.5 py-1.5 text-sm tabular-nums text-ink"
+                      />
+                    )}
+                  </td>
                   <td className="px-3 py-2">
                     <input
                       aria-label={`Precio de ${t.nombre}`}

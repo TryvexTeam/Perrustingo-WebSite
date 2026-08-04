@@ -42,7 +42,10 @@ begin
       and contype = 'c'
       and pg_get_constraintdef(oid) ilike '%categoria%'
   loop
-    execute format('alter table public.ajustes_precio drop constraint %I', c.conname);
+    -- Concatenación con quote_ident en vez de format('%I'): hace exactamente
+    -- lo mismo, pero el editor SQL de Supabase maltrata los tokens de format
+    -- al pegar el script, y acá todo corre en una sola transacción.
+    execute 'alter table public.ajustes_precio drop constraint ' || quote_ident(c.conname);
   end loop;
 end $$;
 
