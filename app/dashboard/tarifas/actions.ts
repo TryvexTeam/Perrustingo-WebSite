@@ -7,6 +7,7 @@ import type { FilaAjustePrecioAdmin } from "@/lib/ajustesPrecio";
 import { admiteMontoFijo, TAMANOS, type TamanoKey, type TipoAjuste } from "@/lib/reserva";
 import { validar as validarTramos, type Tramo } from "@/lib/tramos";
 import { validarAltura, type TramoAltura } from "@/lib/tramosAltura";
+import type { AjusteServicio } from "@/lib/serviciosPrecio";
 
 interface ResultadoAccion {
   success: boolean;
@@ -416,6 +417,78 @@ export async function guardarTramosAlturaAction(
     return {
       success: false,
       error: `Los tramos de altura nuevos quedaron guardados, pero no pude eliminar los antiguos: ${errorBorradoAltura.message}`,
+    };
+  }
+
+  revalidatePath("/dashboard/tarifas");
+  revalidatePath("/reserva");
+  return { success: true };
+}
+
+/* ── Ajuste por servicio (migración 035) ───────────────────────────────────
+   Hasta ahora el servicio elegido no tocaba el precio: un spa completo y un
+   solo-uñas del mismo perro costaban igual. Nace todo en 0, así que esta
+   acción es la que le da valor. */
+
+/** Guarda los ajustes por servicio. Solo admin; la RLS de `servicios_precio`
+    exige lo mismo del lado de la base. */
+export async function guardarServiciosPrecioAction(
+  servicios: AjusteServicio[]
+): Promise<ResultadoAccion> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Sesión expirada." };
+
+  const { data: perfil } = await supabase
+    .from("perfiles")
+    .select("rol")
+    .eq("id", user.id)
+    .single();
+  if (perfil?.rol !== "admin") {
+    return { success: false, error: "Sin permisos." };
+  }
+
+  /* Se valida acá y no solo en la pantalla: un porcentaje que deje el precio
+     en negativo cobraría al revés, y un NaN lo volvería incalculable sin que
+     nadie entienda por qué. */
+  for (const s of servicios) {
+    if (!Number.isFinite(s.pct) || s.pct < -100) {
+      return {
+        success: false,
+        error: `"${s.nombre}": el porcentaje no es válido (un -100% dejaría el servicio gratis, menos que eso cobraría al revés).`,
+      };
+    }
+    if (!Number.isFinite(s.monto) || !Number.isInteger(s.monto)) {
+      return { success: false, error: `"${s.nombre}": el monto debe ser un número entero.` };
+    }
+  }
+
+  /* Solo se actualiza lo que ya existe: los servicios los siembra la
+     migración, así que un slug nuevo desde el panel sería un servicio que la
+     web no muestra en ninguna parte. */
+  const { error } = await supabase.from("servicios_precio").upsert(
+    servicios.map((s) => ({
+      slug: s.slug,
+      nombre: s.nombre,
+      pct: s.pct,
+      monto: s.monto,
+      activo: true,
+    })),
+    { onConflict: "slug" }
+  );
+
+  if (error) {
+    return {
+      success: false,
+      error:
+        error.code === "42P01"
+          ? "Falta aplicar la migración 035 en la base de datos."
+          : error.code === "42501"
+            ? "La base de datos rechazó el cambio (permisos)."
+            : "No se pudieron guardar los servicios.",
     };
   }
 

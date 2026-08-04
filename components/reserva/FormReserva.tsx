@@ -36,6 +36,7 @@ import { useTramos } from "@/lib/tramosDatos";
 import { precioDe } from "@/lib/tramos";
 import { useTramosAltura } from "@/lib/tramosAlturaDatos";
 import { ajusteDeAltura } from "@/lib/tramosAltura";
+import { ajusteDeServicio, useServiciosPrecio } from "@/lib/serviciosPrecio";
 import { useAjustesPorTamano } from "@/lib/ajustesPrecio";
 import { fotoValida, subirFotoReserva } from "@/lib/fotos";
 import { WHATSAPP_NUMBER, hayWhatsAppConfigurado } from "@/lib/site";
@@ -554,6 +555,7 @@ export function FormReserva({
   const tarifas = useTarifas();
   const tramos = useTramos();
   const tramosAltura = useTramosAltura();
+  const serviciosPrecio = useServiciosPrecio();
 
   /* Qué días tienen horario, para apagar en el calendario los que no. Arranca
      vacío y con eso el calendario no apaga ninguno: hasta saberlo, dejar
@@ -855,6 +857,13 @@ export function FormReserva({
       const ajusteAltura = ajusteDeAltura(tramosAltura, parseFloat(d.alturaCmd));
       if (ajusteAltura) extra.push(ajusteAltura);
 
+      /* Ajuste por servicio (migración 035). Hasta ahora el servicio elegido no
+         tocaba el precio: un spa completo y un solo-uñas del mismo perro
+         costaban igual. El servicio se elige una vez para toda la reserva, no
+         por perrito, así que llega de `servicio` y no de `d`. */
+      const ajusteServicio = ajusteDeServicio(serviciosPrecio, servicio);
+      if (ajusteServicio) extra.push(ajusteServicio);
+
       return {
         /* El precio base sale del TRAMO por peso (migración 026), no del tamaño.
            Ése era el defecto que encontró el cliente probando la página: un
@@ -877,10 +886,14 @@ export function FormReserva({
         esManual,
       };
     },
-    // `tramos` va en las dependencias o el estimado se queda con la tabla que
-    // había al montar: el admin cambiaría un precio y el formulario seguiría
-    // cotizando el viejo hasta recargar. Lo mismo para `tramosAltura`.
-    [tarifas, tramos, tramosAltura, ajustes, descuentoGlobal]
+    /* `tramos` va en las dependencias o el estimado se queda con la tabla que
+       había al montar: el admin cambiaría un precio y el formulario seguiría
+       cotizando el viejo hasta recargar. Lo mismo para `tramosAltura` y
+       `serviciosPrecio`.
+
+       Y `servicio` también: sin él, elegir otro servicio no recalcularía nada
+       y el cliente vería el precio del anterior. */
+    [tarifas, tramos, tramosAltura, serviciosPrecio, servicio, ajustes, descuentoGlobal]
   );
 
   const actual = estimadoDe(data);
