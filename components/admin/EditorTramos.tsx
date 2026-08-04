@@ -10,7 +10,7 @@
  *
  * Aquí se cambian los cortes y los valores sin tocar código. Cada tramo declara
  * solo DESDE qué peso rige; el "hasta" se calcula del siguiente, así que no hay
- * forma de dejar un peso sin precio por error. Ver lib/tramos.ts y migración 026.
+ * forma de dejar un peso sin precio por error. Ver lib/tramos.ts y migración 032.
  */
 
 import { useEffect, useMemo, useState } from "react";

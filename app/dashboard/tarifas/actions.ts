@@ -266,7 +266,7 @@ export async function guardarAjustesPrecioAction(
   return { success: true };
 }
 
-/* ── Tramos de precio por peso (migración 026) ─────────────────────────────
+/* ── Tramos de precio por peso (migración 032) ─────────────────────────────
    Pedido del cliente el 27-jul: los cinco tamaños fijos cobraban de menos en
    los bordes —un perrito de 8 kg salía $20.000 cuando corresponden $25.000 a
    $30.000— y ajustar eso obligaba a un despliegue. Con esta acción los cortes y

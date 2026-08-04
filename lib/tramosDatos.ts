@@ -5,7 +5,7 @@
    cálculo y las validaciones se prueban sin base ni red; aquí solo vive el
    acarreo de filas.
 
-   Ver migración 026. La escritura está en app/dashboard/tarifas/actions.ts
+   Ver migración 032. La escritura está en app/dashboard/tarifas/actions.ts
    (server action, rol admin exigido) — este módulo es solo lectura. */
 
 import { useEffect, useState } from "react";
