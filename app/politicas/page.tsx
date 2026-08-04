@@ -13,8 +13,8 @@ const SECCIONES = [
   {
     titulo: "Política de servicio",
     puntos: [
-      "Confirmamos el precio final antes de comenzar, según el tamaño, el peso y el estado del pelo del perro.",
-      "Si el perro presenta conducta difícil durante la sesión (nervios, mordidas, movimiento constante), podemos aplicar un recargo y siempre informamos el motivo.",
+      "Confirmamos el precio final antes de comenzar, según el tamaño, el peso y el estado del pelo.",
+      "Si el perro o la perra presenta conducta difícil durante la sesión (nervios, mordidas, movimiento constante), podemos aplicar un recargo y siempre informamos el motivo.",
       "Con perros sin baño por períodos prolongados podemos requerir trabajo adicional con recargo; lo conversamos contigo antes.",
       "Nos tomamos entre 2 y 3 horas en promedio por sesión completa.",
     ],
@@ -22,7 +22,7 @@ const SECCIONES = [
   {
     titulo: "Política de reservas",
     puntos: [
-      "Gestionamos las reservas por WhatsApp: indícanos nombre, raza o tamaño del perro y el servicio.",
+      "Las reservas se hacen desde la web. Una vez reservada, nuestra atención al cliente te contacta por WhatsApp para confirmar.",
       "Recibimos citas hasta las 17:00. Los miércoles son nuestro día de mayor demanda.",
       "Si no puedes asistir, avísanos con anticipación para que liberemos el cupo a otra familia.",
     ],
@@ -47,7 +47,7 @@ export default function PoliticasPage() {
             Políticas de {SITE.name}
           </h1>
           <p className="mt-3 text-ink-soft">
-            Reglas claras para que tu perro y tú tengan la mejor experiencia.
+            Reglas claras para que tu perro o perra y tú tengan la mejor experiencia.
           </p>
           {SECCIONES.map((seccion) => (
             <section key={seccion.titulo} className="mt-10">

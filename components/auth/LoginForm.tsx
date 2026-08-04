@@ -30,7 +30,7 @@ export function LoginForm() {
         password,
       });
       if (err) {
-        setError("Correo o contrasena incorrectos. Intentalo de nuevo.");
+        setError("Correo o contraseña incorrectos. Inténtalo de nuevo.");
         return;
       }
       router.push(next && next.startsWith("/") ? next : "/dashboard");
@@ -66,12 +66,19 @@ export function LoginForm() {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Tu contrasena"
+          placeholder="Tu contraseña"
           className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-[15px] text-ink outline-none transition focus:border-teal-dark focus:ring-2 focus:ring-teal-dark/20"
         />
-        <div className="mt-1.5 text-right">
-          <Link href="/recuperar-contrasena" className="text-xs text-teal-dark hover:underline">
-            Olvide mi contrasena
+        <div className="-mb-2 mt-0.5 text-right">
+          {/* py-2: con 14px de alto era el enlace mas dificil de tocar del
+              sitio, y es el que busca quien ya esta frustrado porque no
+              puede entrar. -mb-2 devuelve el espacio para no mover el
+              formulario. */}
+          <Link
+            href="/recuperar"
+            className="inline-flex items-center py-2 text-xs text-teal-dark hover:underline"
+          >
+            Olvidé mi contraseña
           </Link>
         </div>
       </div>
@@ -96,7 +103,7 @@ export function LoginForm() {
           href={next ? `/registro?next=${encodeURIComponent(next)}` : "/registro"}
           className="font-bold text-teal-dark hover:underline"
         >
-          Registrate gratis
+          Regístrate gratis
         </Link>
       </p>
     </form>

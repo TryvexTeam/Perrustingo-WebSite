@@ -6,15 +6,15 @@ import { Reveal } from "@/components/ui/Reveal";
 const PREGUNTAS = [
   {
     q: "¿Necesito hacer reserva o puedo llegar sin cita?",
-    a: "Trabajamos solo con cita previa para garantizar atención personalizada y sin esperas. Puedes agendar por WhatsApp o usando nuestro formulario de reserva inteligente.",
+    a: "Trabajamos solo con cita previa para garantizar atención personalizada y sin esperas. Agenda con el formulario de reserva inteligente: te toma un minuto y queda con el precio estimado. Al terminar te ponemos en contacto con nuestra atención al cliente por WhatsApp.",
   },
   {
     q: "¿Cuánto tiempo tarda el servicio?",
-    a: "Depende del tamaño y el estado del pelo. Un Mini/Toy puede tomar 1 hora; un perro Gigante con pelo enredado puede tomar 3–4 horas. Te avisamos por WhatsApp cuando tu perro esté listo.",
+    a: "Depende del tamaño y el estado del pelo. Un Mini/Toy puede tomar 1 hora; uno Gigante con pelo enredado puede tomar 3–4 horas. Te avisamos por WhatsApp apenas esté listo.",
   },
   {
     q: "¿Por qué los precios son estimados y pueden variar?",
-    a: "El precio de la web es un estimado para que agendes con confianza. El valor final depende del estado real del pelo, el comportamiento y el tamaño de tu perro, y se confirma en la puerta, siempre antes de comenzar. Además premiamos la constancia: un perrito que viene con frecuencia o que recibe mantención en casa (cepillado, desenredado) requiere menos trabajo, y eso se nota en el precio.",
+    a: "El precio de la web es un estimado para que agendes con confianza. El valor final depende del estado real del pelo, el comportamiento y el tamaño, y se confirma en la puerta, siempre antes de comenzar. Además premiamos la constancia: quien viene con frecuencia o que recibe mantención en casa (cepillado, desenredado) requiere menos trabajo, y eso se nota en el precio.",
   },
   {
     q: "¿El precio se puede cambiar el día del servicio?",
@@ -25,20 +25,20 @@ const PREGUNTAS = [
     a: "No siempre. Un cachorro de raza grande (por ejemplo un Pastor Alemán de 6 meses) todavía no alcanza su peso adulto, así que el estimado por peso puede quedar corto. En esos casos usamos la tabla de su raza y ajustamos el valor en puerta según su desarrollo.",
   },
   {
-    q: "¿Qué pasa si mi perro no se deja atender?",
-    a: "Trabajamos con paciencia y sin sujeción abdominal. Si tu perro tiene zonas problemáticas, indícalo en la reserva para prepararnos. En casos muy difíciles puede aplicar un recargo por tiempo adicional, que siempre te comunicamos antes.",
+    q: "¿Qué pasa si mi perro o perra no se deja atender?",
+    a: "Trabajamos con paciencia y sin sujeción abdominal. Si tiene zonas problemáticas, indícalo en la reserva para prepararnos. En casos muy difíciles puede aplicar un recargo por tiempo adicional, que siempre te comunicamos antes.",
   },
   {
     q: "¿Puedo quedarme durante el servicio?",
-    a: "Preferimos que los papás esperen afuera — los perros suelen comportarse mejor cuando el dueño no está presente. Puedes esperar en un lugar cercano y nosotros te avisamos por WhatsApp para que lo vengas a buscar.",
+    a: "Preferimos que los papás esperen afuera — los perros suelen comportarse mejor cuando su familia no está presente. Puedes esperar en un lugar cercano y te avisamos por WhatsApp apenas puedas venir a buscarlo.",
   },
   {
-    q: "¿Atienden perros con problemas de salud?",
+    q: "¿Atienden perros y perras con problemas de salud?",
     a: "Sí, pero necesitamos saberlo de antemano. Indícanos en la reserva si tiene uñas encarnadas, alergias, problemas de piel u otras condiciones para adaptar los productos y el manejo.",
   },
   {
     q: "¿Con qué productos trabajan?",
-    a: "Usamos productos de peluquería canina profesional, hipoalergénicos y aptos para pieles sensibles. Si tienes algún shampú o acondicionador específico de tu perro, puedes traerlo.",
+    a: "Usamos productos de peluquería canina profesional, hipoalergénicos y aptos para pieles sensibles. Si tienes algún shampú o acondicionador específico en casa, puedes traerlo.",
   },
   {
     q: "¿Tienen estacionamiento?",

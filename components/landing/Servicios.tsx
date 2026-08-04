@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Reveal } from "@/components/ui/Reveal";
+import { SERVICIOS_PAGINA } from "@/lib/servicios";
 
 interface Servicio {
   /** Ancla — las cards de "¿Qué incluye?" enlazan aquí */
@@ -71,7 +72,7 @@ export function Servicios() {
             Nuestros servicios
           </p>
           <h2 className="mt-2 text-center font-display text-3xl font-extrabold tracking-tight md:text-4xl">
-            Todo lo que tu perro necesita
+            Todo lo que tu perro o perra necesita
           </h2>
         </Reveal>
         <Reveal className="mt-9">
@@ -82,6 +83,28 @@ export function Servicios() {
                   <CardServicio key={s.id} s={s} />
                 ))}
               </div>
+            ))}
+          </div>
+        </Reveal>
+
+        {/* Puerta a las paginas de cada servicio (27-jul, SEO local). Sin
+            estos enlaces esas paginas quedan huerfanas: nadie las encuentra
+            navegando, y Google las trata como si no importaran. Van al final
+            y en texto pequeno a proposito — el camino principal sigue siendo
+            tocar una foto y reservar. */}
+        <Reveal className="mt-10">
+          <p className="text-center text-xs font-extrabold uppercase tracking-[0.18em] text-ink-soft">
+            Conoce cada servicio en detalle
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2.5">
+            {SERVICIOS_PAGINA.map((s) => (
+              <Link
+                key={s.slug}
+                href={`/servicios/${s.slug}`}
+                className="rounded-full border-2 border-teal/25 px-5 py-2.5 text-sm font-extrabold text-teal-dark transition-colors hover:border-teal/50 hover:bg-sky/30"
+              >
+                {s.nombre}
+              </Link>
             ))}
           </div>
         </Reveal>

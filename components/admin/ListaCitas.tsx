@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CitaSemana } from "@/lib/agenda";
 import { ESTADO_COLOR, ESTADO_LABEL, type EstadoCita } from "@/lib/citas";
 import { formatCLP } from "@/lib/reserva";
@@ -8,6 +8,8 @@ import { PanelCita } from "@/components/agenda/PanelCita";
 
 interface ListaCitasProps {
   citas: CitaSemana[];
+  /** Cita que debe abrirse sola al entrar, si la URL trae `?cita=<id>`. */
+  citaInicial?: string;
 }
 
 const FILTROS: (EstadoCita | "todas")[] = [
@@ -20,9 +22,23 @@ const FILTROS: (EstadoCita | "todas")[] = [
 ];
 
 /** Lista de citas del equipo con filtro por estado y panel de gestión. */
-export function ListaCitas({ citas }: ListaCitasProps) {
+export function ListaCitas({ citas, citaInicial }: ListaCitasProps) {
   const [filtro, setFiltro] = useState<EstadoCita | "todas">("todas");
   const [citaAbierta, setCitaAbierta] = useState<CitaSemana | null>(null);
+
+  /* Abrir directo la ficha que pide la URL (PRP-002 F6).
+
+     Sin esto, `/dashboard/citas?cita=<id>` mostraba la lista completa y el
+     equipo tenía que buscar a mano — que es lo que hacía el enlace "Ver
+     ficha" de la vista de hoy y lo que iba a hacer el enlace del mensaje de
+     WhatsApp: prometer una ficha y entregar una lista. */
+  useEffect(() => {
+    if (!citaInicial) return;
+    const encontrada = citas.find((c) => c.sesion?.id === citaInicial);
+    if (encontrada) setCitaAbierta(encontrada);
+    // Solo al entrar: si el equipo cierra el panel, no debe reabrirse solo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [citaInicial]);
 
   const visibles =
     filtro === "todas" ? citas : citas.filter((c) => c.estado === filtro);

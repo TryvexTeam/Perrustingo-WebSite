@@ -21,8 +21,14 @@ import { FAQ } from "@/components/landing/FAQ";
 import { Resenas } from "@/components/landing/Resenas";
 import { Servicios } from "@/components/landing/Servicios";
 import { Tamanos } from "@/components/landing/Tamanos";
+import { obtenerPromosServer } from "@/lib/promosServer";
 
-export default function Home() {
+/* Los anuncios se leen en el servidor (tabla `promos`, migración 011) y
+   bajan por props: así salen en el HTML inicial y los ve un buscador.
+   La página sigue siendo estática — ver lib/promosServer.ts. */
+export default async function Home() {
+  const promos = await obtenerPromosServer();
+
   return (
     <>
       <SiteMenu />
@@ -36,19 +42,19 @@ export default function Home() {
         <Hero />
         <Servicios />
         <EnVivoLanding />
-        <PromoBanner slot="tras-servicios" id="proximamente" />
+        <PromoBanner slot="tras-servicios" promos={promos} id="proximamente" />
         <AntesDespues />
         <Banner />
         <ComoTrabajamos />
         <Resenas />
-        <PromoBanner slot="tras-resenas" />
+        <PromoBanner slot="tras-resenas" promos={promos} />
         <Advertencias />
         <Tamanos />
-        <PromoBanner slot="tras-tamanos" />
+        <PromoBanner slot="tras-tamanos" promos={promos} />
         <Precios />
         <InfoInteres />
         <Beneficios />
-        <PromoBanner slot="pre-footer" />
+        <PromoBanner slot="pre-footer" promos={promos} />
         <FAQ />
         <Publicidad />
       </main>

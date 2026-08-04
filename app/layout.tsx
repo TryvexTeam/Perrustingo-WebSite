@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { SITE, SITE_URL, WHATSAPP_NUMBER, hayWhatsAppConfigurado } from "@/lib/site";
 import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import { CookieBanner } from "@/components/layout/CookieBanner";
 import { ServiceWorkerRegister } from "@/components/layout/ServiceWorkerRegister";
@@ -17,15 +18,30 @@ const figtree = Figtree({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://perrustingo.cl"),
-  title: "Perrustingo — Peluquería Canina en Renca",
+  metadataBase: new URL(SITE_URL),
+  /* El canonical faltaba. Sin él, `perrustingo.com`, `www.perrustingo.com`
+     y cualquier URL con parámetros compiten entre sí por la misma posición
+     en vez de sumar. */
+  alternates: { canonical: "/" },
+  /* Verificación de Google Search Console (27-jul). Es lo que le permite a
+     Google confirmar que este sitio es nuestro y aceptar el sitemap; sin
+     ella, no hay forma de pedirle que indexe ni de ver por qué palabras nos
+     encuentran. No se puede borrar: si desaparece, la propiedad se cae. */
+  verification: { google: "SzuR0lfq8KqMbMKR_FyckfkUDpvRIx1bEDVMqz-f17M" },
+  title: {
+    default: "Peluquería Canina en Renca — Perrustingo",
+    template: "%s · Perrustingo",
+  },
+  /* El orden importa: quien busca no escribe "Perrustingo" —todavía no nos
+     conoce—, escribe "peluquería canina en Renca". Lo que se busca va
+     primero, la marca después. */
   description:
-    "Bañamos, cortamos y consentimos a tu perro en Renca, Santiago. 4.6★ en Google con más de 135 opiniones. Agenda tu cita por WhatsApp.",
+    "Peluquería canina en Renca: baño, corte y cuidado para tu perro o perra. Atendemos Renca, Cerro Navia, Quinta Normal y Pudahuel. 4.6★ con más de 135 opiniones. Agenda online.",
   openGraph: {
     title: "Perrustingo — Peluquería Canina en Renca",
     description:
-      "Bañamos, cortamos y consentimos a tu perro en Renca. 4.6★ · +135 opiniones en Google.",
-    url: "https://perrustingo.cl",
+      "Bañamos, cortamos y consentimos a tu perro o perra en Renca. 4.6★ · +135 opiniones en Google.",
+    url: SITE_URL,
     siteName: "Perrustingo",
     images: [
       {
@@ -42,7 +58,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Perrustingo — Peluquería Canina en Renca",
     description:
-      "Bañamos, cortamos y consentimos a tu perro en Renca. 4.6★ · +135 opiniones en Google.",
+      "Bañamos, cortamos y consentimos a tu perro o perra en Renca. 4.6★ · +135 opiniones en Google.",
     images: ["/hero/hero-bg.png"],
   },
 };
@@ -57,10 +73,14 @@ const jsonLd = {
   "@type": "LocalBusiness",
   name: "Perrustingo",
   description:
-    "Peluquería canina en Renca, Santiago. Baño, corte y cuidado integral para tu perro.",
-  url: "https://perrustingo.cl",
-  telephone: "+4915237152283",
-  image: "https://perrustingo.cl/logo.png",
+    "Peluquería canina en Renca, Santiago. Baño, corte y cuidado integral para tu perro o perra.",
+  url: SITE_URL,
+  /* El teléfono sale del entorno. Antes estaba escrito acá el número alemán
+     de prueba: Google lo leía como el teléfono oficial del negocio y podía
+     mostrarlo en los resultados. Si no hay número configurado no se declara
+     ninguno — un dato ausente es mucho menos dañino que uno falso. */
+  ...(hayWhatsAppConfigurado() ? { telephone: `+${WHATSAPP_NUMBER}` } : {}),
+  image: `${SITE_URL}/logo.jpeg`,
   priceRange: "$$",
   address: {
     "@type": "PostalAddress",
@@ -73,6 +93,37 @@ const jsonLd = {
     "@type": "GeoCoordinates",
     latitude: -33.4035606,
     longitude: -70.7133999,
+  },
+  /* Las comunas que se atienden de verdad. Para una búsqueda local, esto es
+     lo que le dice a Google a quién mostrarle el sitio: no basta con estar
+     en Renca, hay que decir hasta dónde se llega. */
+  areaServed: [
+    { "@type": "City", name: "Renca" },
+    { "@type": "City", name: "Cerro Navia" },
+    { "@type": "City", name: "Quinta Normal" },
+    { "@type": "City", name: "Pudahuel" },
+    { "@type": "City", name: "Santiago" },
+  ],
+  /* `sameAs` es lo que une esta página con el perfil de Google Maps y las
+     redes: sin ese puente, para el buscador son tres negocios distintos con
+     el mismo nombre en vez de uno solo con reputación acumulada. */
+  sameAs: [SITE.instagram, SITE.facebook, SITE.mapsUrl],
+  /* Los servicios, en el lenguaje que Google entiende. Es lo que permite
+     aparecer en "baño y corte para perros en Renca" y no solo en el nombre
+     del negocio. */
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "Servicios de peluquería canina",
+    itemListElement: [
+      "Baño completo para perros",
+      "Baño y corte de pelo",
+      "Corte de uñas",
+      "Spa canino",
+      "Limpieza de oídos y glándulas",
+    ].map((nombre) => ({
+      "@type": "Offer",
+      itemOffered: { "@type": "Service", name: nombre },
+    })),
   },
   openingHoursSpecification: [
     {

@@ -244,10 +244,18 @@ export default async function DashboardPage() {
           {/* Acciones rápidas */}
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
             {[
+              { label: "Hoy en el local", href: "/dashboard/hoy", emoji: "☀️" },
               { label: "Ver todas las citas", href: "/dashboard/citas", emoji: "📅" },
               { label: "Agenda semanal", href: "/agenda", emoji: "🗓️" },
+              { label: "Analíticas", href: "/dashboard/analiticas", emoji: "📊" },
               { label: "Tarifas", href: "/dashboard/tarifas", emoji: "💰", onlyAdmin: true },
               { label: "Anuncios", href: "/dashboard/anuncios", emoji: "📣", onlyAdmin: true },
+              { label: "Usuarios", href: "/dashboard/usuarios", emoji: "👥", onlyAdmin: true },
+              { label: "Disponibilidad", href: "/dashboard/disponibilidad", emoji: "🕘", onlyAdmin: true },
+              { label: "Ofertas", href: "/dashboard/ofertas", emoji: "🎁", onlyAdmin: true },
+              { label: "Revisar reservas", href: "/dashboard/seguridad", emoji: "🛡️", onlyAdmin: true },
+              { label: "Fotos guardadas", href: "/dashboard/fotos", emoji: "🖼️", onlyAdmin: true },
+              { label: "Descargar respaldo", href: "/api/respaldo", emoji: "💾", onlyAdmin: true },
             ]
               .filter((a) => !a.onlyAdmin || perfil.rol === "admin")
               .map((accion) => (
@@ -261,6 +269,18 @@ export default async function DashboardPage() {
                 </a>
               ))}
           </div>
+
+          {/* El plan gratuito de Supabase NO incluye respaldos (verificado en
+              el panel el 26-jul). Decirlo acá, donde está el botón, en vez de
+              dejar que alguien asuma que "seguro el proveedor los tiene". */}
+          {perfil.rol === "admin" && (
+            <p className="mt-4 rounded-2xl bg-[#fde4c8] px-5 py-4 text-xs leading-relaxed text-[#7a4d10]">
+              💾 <strong>El plan actual de la base de datos no hace respaldos
+              automáticos.</strong> Si se pierden los datos, no hay de dónde
+              recuperarlos. Descargue el respaldo cada cierto tiempo y guárdelo
+              fuera del computador del local.
+            </p>
+          )}
         </div>
       </main>
       <Footer />

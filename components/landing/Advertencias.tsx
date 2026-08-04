@@ -6,19 +6,19 @@ const AVISOS = [
     foto: "/cards/foto-precio.png",
     titulo: "Precio según tamaño y estado",
     detalle:
-      "Calculamos el valor final según el tamaño, el peso y el estado del pelo de tu perro. Te confirmamos el precio antes de empezar.",
+      "Calculamos el valor final según el tamaño, el peso y el estado del pelo. Te confirmamos el precio antes de empezar.",
   },
   {
     foto: "/equipo-trabajador.jpg",
-    titulo: "Conducta del perro",
+    titulo: "Conducta durante la sesión",
     detalle:
-      "Si tu perro se pone nervioso o difícil durante la sesión, podemos aplicar un recargo. Siempre te avisamos con el motivo.",
+      "Si tu perro o perra se pone nervioso durante la sesión, podemos aplicar un recargo. Siempre te avisamos con el motivo.",
   },
   {
     foto: "/cards/foto-tiempos.png",
     titulo: "Tiempos de trabajo",
     detalle:
-      "Nos tomamos entre 2 y 3 horas en promedio por sesión completa. Trabajamos con calma para que tu perro se sienta seguro.",
+      "Nos tomamos entre 2 y 3 horas en promedio por sesión completa. Trabajamos con calma para que se sienta seguro en todo momento.",
   },
 ];
 

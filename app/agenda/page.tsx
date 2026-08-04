@@ -10,7 +10,7 @@ import { supabaseConfigurado, type BloqueOcupado, type SesionEquipo } from "@/li
 export const metadata: Metadata = {
   title: "Agenda — Perrustingo",
   description:
-    "Revisa la disponibilidad de la semana y reserva la hora perfecta para tu perro.",
+    "Revisa la disponibilidad de la semana y reserva la hora perfecta para tu perro o perra.",
 };
 
 export const dynamic = "force-dynamic";

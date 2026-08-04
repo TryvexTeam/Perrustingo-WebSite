@@ -22,7 +22,7 @@ export default function LoginPage() {
               Iniciar sesión
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-              Accede para ver tu historial, datos de tu perro y agendar más rápido.
+              Accede para ver tu historial, datos de tu perro o perra y agendar más rápido.
             </p>
           </div>
           <Suspense>

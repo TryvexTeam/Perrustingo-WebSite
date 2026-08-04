@@ -7,13 +7,13 @@ const PILARES = [
     foto: "/cards/foto-casita.png",
     titulo: "Atención en nuestro hogar",
     detalle:
-      "Atendemos en un domicilio particular acondicionado según los últimos estándares técnicos. Trabajamos solo con cita previa, así encontramos un horario conveniente y ni tú ni tu perro tienen que esperar.",
+      "Atendemos en un domicilio particular acondicionado según los últimos estándares técnicos. Trabajamos solo con cita previa, así encontramos un horario conveniente y ni tú ni tu perro o perra tienen que esperar.",
   },
   {
     foto: "/cards/foto-pluma.png",
     titulo: "Libertad y cero estrés",
     detalle:
-      "No usamos jaula de secado, brazo de sujeción ni correa abdominal. Tu perro no tiene que estar sujeto y quieto todo el tiempo: tiene total libertad para moverse y sentarse.",
+      "No usamos jaula de secado, brazo de sujeción ni correa abdominal. No tiene que estar sujeto y quieto todo el tiempo: tiene total libertad para moverse y sentarse.",
   },
   {
     foto: "/equipo-trabajadora.jpg",
@@ -33,7 +33,7 @@ export function ComoTrabajamos() {
             Así trabajamos
           </p>
           <h2 className="mt-2 text-center font-display text-3xl font-extrabold tracking-tight md:text-4xl">
-            Queremos que tu perro espere con ilusión su visita
+            Queremos que espere con ilusión su visita
           </h2>
         </Reveal>
         <div className="mt-10 grid gap-5 md:grid-cols-3">

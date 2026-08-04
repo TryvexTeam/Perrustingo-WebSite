@@ -8,6 +8,7 @@ import {
   type FilaAjustePrecioAdmin,
 } from "@/lib/ajustesPrecio";
 import { guardarAjustesPrecioAction } from "@/app/dashboard/tarifas/actions";
+import { CampoValorAjuste } from "./CampoValorAjuste";
 
 /* Editor de recargos/descuentos del formulario — antes fijos en código
    (lib/reserva.ts), ahora en la tabla `ajustes_precio` (migración 007).
@@ -57,7 +58,7 @@ export function EditorAjustesPrecio() {
   const actualizar = (
     categoria: string,
     clave: string,
-    cambios: Partial<Pick<FilaAjustePrecioAdmin, "pct" | "etiqueta" | "activo">>
+    cambios: Partial<Pick<FilaAjustePrecioAdmin, "pct" | "etiqueta" | "activo" | "tipo" | "monto">>
   ) => {
     setFilas((prev) =>
       prev.map((f) =>
@@ -135,18 +136,15 @@ export function EditorAjustesPrecio() {
                           maxLength={60}
                           className="min-w-0 flex-1 rounded-xl border-2 border-transparent bg-cream px-2.5 py-1.5 text-sm font-semibold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
                         />
-                        <div className="ml-auto flex items-center gap-1.5">
-                          <input
-                            type="number"
-                            value={f.pct}
-                            onChange={(e) =>
-                              actualizar(f.categoria, f.clave, { pct: parseFloat(e.target.value) || 0, activo: true })
-                            }
-                            disabled={cargando || guardando}
-                            className="w-20 rounded-xl border-2 border-white bg-cream px-2.5 py-1.5 text-right text-sm font-extrabold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
-                          />
-                          <span className="text-sm font-bold text-ink-soft">%</span>
-                        </div>
+                        <CampoValorAjuste
+                          id={`ajuste-${f.categoria}-${f.clave}`}
+                          categoria={f.categoria}
+                          tipo={f.tipo ?? "pct"}
+                          pct={f.pct}
+                          monto={f.monto}
+                          disabled={cargando || guardando}
+                          onCambiar={(c) => actualizar(f.categoria, f.clave, { ...c, activo: true })}
+                        />
                       </div>
                       <p className="mt-1.5 text-[11px] leading-relaxed text-ink-soft">
                         No es un recargo — es el máximo que puede sumar el
@@ -178,18 +176,15 @@ export function EditorAjustesPrecio() {
                     maxLength={60}
                     className="min-w-0 flex-1 rounded-xl border-2 border-transparent bg-white/70 px-2.5 py-1.5 text-sm font-semibold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
                   />
-                  <div className="ml-auto flex items-center gap-1.5">
-                    <input
-                      type="number"
-                      value={f.pct}
-                      onChange={(e) =>
-                        actualizar(f.categoria, f.clave, { pct: parseFloat(e.target.value) || 0 })
-                      }
-                      disabled={cargando || guardando}
-                      className="w-20 rounded-xl border-2 border-white bg-white px-2.5 py-1.5 text-right text-sm font-extrabold text-ink focus:border-teal focus:outline-none disabled:opacity-50"
-                    />
-                    <span className="text-sm font-bold text-ink-soft">%</span>
-                  </div>
+                  <CampoValorAjuste
+                    id={`ajuste-${f.categoria}-${f.clave}`}
+                    categoria={f.categoria}
+                    tipo={f.tipo ?? "pct"}
+                    pct={f.pct}
+                    monto={f.monto}
+                    disabled={cargando || guardando}
+                    onCambiar={(c) => actualizar(f.categoria, f.clave, c)}
+                  />
                 </div>
                 );
               })}

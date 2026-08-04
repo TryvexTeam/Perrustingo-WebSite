@@ -68,7 +68,7 @@ export function Hero() {
             ))}
           </div>
           <h1 className="rise-in font-display text-[2.7rem] font-extrabold leading-[1.08] tracking-[-0.03em] text-teal-ink [animation-delay:80ms] md:text-[3.8rem]">
-            Llega hecho un{" "}
+            Entra como un{" "}
             <span className="relative inline-block whitespace-nowrap">
               desastre
               <svg
@@ -87,17 +87,19 @@ export function Hero() {
               </svg>
             </span>
             ,<br />
-            se va hecho{" "}
+            sale como de{" "}
             <span className="relative inline-block whitespace-nowrap px-2">
               <span
                 aria-hidden="true"
                 className="absolute inset-x-0 inset-y-1 -rotate-1 rounded-lg bg-orange/70"
               />
-              <span className="relative">un rey.</span>
+              {/* "de realeza" y no "un rey": al salón llegan perros y perras,
+                  y el remate tiene que funcionar para las dos. */}
+              <span className="relative">realeza.</span>
             </span>
           </h1>
           <p className="rise-in mt-5 max-w-md text-lg leading-relaxed text-teal-ink/75 [animation-delay:160ms]">
-            Bañamos, cortamos y consentimos a tu perro en Renca. Dejamos cortes
+            Bañamos, cortamos y consentimos a tu perro o perra en Renca. Dejamos cortes
             parejos, oídos limpios y colitas felices desde hace años.
           </p>
           <div className="rise-in mt-8 flex flex-wrap items-center gap-4 [animation-delay:240ms]">

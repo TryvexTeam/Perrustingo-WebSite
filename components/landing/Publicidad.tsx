@@ -1,66 +1,58 @@
 import { Reveal } from "@/components/ui/Reveal";
+import { WHATSAPP_NUMBER, hayWhatsAppConfigurado } from "@/lib/site";
 
-const WHATSAPP_PUBLICIDAD = `https://wa.me/4915237152283?text=${encodeURIComponent(
+/* Invitación a publicitar en el sitio.
+
+   Hasta el 27-jul esto eran tres tarjetas —"Espacio A", "Espacio B",
+   "Espacio C"— de borde punteado, con un megáfono gris y sin nada dentro.
+   El señor Ignacio pidió sacarlas, y con razón: tres huecos vacíos seguidos
+   le dicen al visitante que el sitio está a medio hacer. Un salón que se ve
+   incompleto es un salón en el que se confía menos, y quien entra a este
+   sitio viene a reservar, no a comprar publicidad.
+
+   Queda la invitación, que sí sirve al negocio, en una franja de una línea:
+   ocupa la décima parte y dice exactamente lo mismo.
+
+   El enlace a WhatsApp se mantiene directo a propósito, y no pasa por el
+   formulario de reserva como el resto de los botones del sitio: acá escribe
+   un negocio que quiere pauta, no un cliente con un perrito que agendar. */
+
+const MENSAJE = encodeURIComponent(
   "Hola Perrustingo, me interesa publicitar mi negocio en su sitio web. ¿Podría darme más información?"
-)}`;
-
-const SPOTS = [
-  {
-    id: "pub-1",
-    label: "Espacio A",
-    desc: "Banner horizontal · visible en toda la página",
-  },
-  {
-    id: "pub-2",
-    label: "Espacio B",
-    desc: "Ideal para productos y servicios de mascotas",
-  },
-  {
-    id: "pub-3",
-    label: "Espacio C",
-    desc: "Alta visibilidad · comunidad dueños de perros",
-  },
-];
+);
 
 export function Publicidad() {
-  return (
-    <section className="bg-section-blend px-5 py-14">
-      <div className="mx-auto max-w-6xl">
-        <Reveal>
-          <p className="text-center text-xs font-extrabold uppercase tracking-[0.22em] text-teal-dark">
-            Espacios publicitarios
-          </p>
-          <h2 className="mt-2 text-center font-display text-2xl font-extrabold tracking-tight md:text-3xl">
-            ¿Tienes un negocio para mascotas?
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-center text-sm leading-relaxed text-ink-soft">
-            Llega directamente a los dueños de perros de Renca y Santiago.
-            Contáctanos para conocer disponibilidad y tarifas.
-          </p>
-        </Reveal>
+  /* Sin número configurado no se pinta el bloque. Antes había uno escrito
+     acá —el mismo número alemán de prueba que estaba en lib/site.ts— y
+     cualquiera que quisiera pautar le escribía a un desconocido. */
+  if (!hayWhatsAppConfigurado()) return null;
 
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {SPOTS.map((spot, i) => (
-            <Reveal key={spot.id} delay={i * 60}>
-              <a
-                href={WHATSAPP_PUBLICIDAD}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Consultar espacio publicitario ${spot.label}`}
-                className="group flex h-44 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-ink/15 bg-cream text-center transition-all duration-200 hover:border-teal/40 hover:bg-sky/30"
-              >
-                <span aria-hidden="true" className="text-4xl opacity-20 transition-opacity duration-200 group-hover:opacity-40">
-                  📢
-                </span>
-                <span className="font-display text-sm font-extrabold text-ink-soft">{spot.label}</span>
-                <span className="text-xs text-ink-soft/60">{spot.desc}</span>
-                <span className="mt-1 rounded-full bg-teal/10 px-3 py-1 text-xs font-bold text-teal-dark opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                  Consultar disponibilidad →
-                </span>
-              </a>
-            </Reveal>
-          ))}
-        </div>
+  return (
+    <section className="bg-section-blend px-5 py-12">
+      <div className="mx-auto max-w-3xl">
+        <Reveal>
+          <div className="flex flex-col items-center gap-4 rounded-3xl bg-cream px-6 py-8 text-center sm:flex-row sm:justify-between sm:gap-6 sm:text-left">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-teal-dark">
+                Espacios publicitarios
+              </p>
+              <h2 className="mt-1.5 font-display text-xl font-extrabold tracking-tight text-ink md:text-2xl">
+                ¿Tienes un negocio para mascotas?
+              </h2>
+              <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
+                Llega a las familias con perros y perras de Renca y Santiago.
+              </p>
+            </div>
+            <a
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${MENSAJE}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 rounded-full bg-teal px-6 py-3 font-display text-sm font-extrabold text-white shadow-[0_3px_0_rgba(6,58,64,.25)] transition-[background-color,transform] duration-150 hover:bg-teal-dark active:translate-y-0.5"
+            >
+              Consultar tarifas
+            </a>
+          </div>
+        </Reveal>
       </div>
     </section>
   );
