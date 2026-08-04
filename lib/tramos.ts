@@ -80,6 +80,44 @@ export function precioDe(tramos: readonly Tramo[], pesoKg: number): number | nul
 }
 
 /**
+ * El precio más barato dentro de un rango de pesos — el "desde" honesto.
+ *
+ * POR QUÉ EXISTE (4-ago): la landing agrupa los perritos en cinco categorías
+ * ("Pequeños 6–10 kg") y muestra un "desde", pero ese número salía de la tabla
+ * vieja por tamaño mientras el formulario ya cotizaba por tramos. Quedaron
+ * distintos: la portada prometía $20.000 para un perro de 8 kg y el formulario
+ * cobraba $25.000. No era por los recargos —esos se suman después y está bien
+ * que suban— sino porque el piso mismo estaba desactualizado.
+ *
+ * Un rango de la landing puede cruzar varios tramos (6–10 kg toca "Pequeño" y
+ * "Pequeño grande"), así que el "desde" es el MENOR de los que caen dentro. Se
+ * incluye el tramo que cubre el borde inferior aunque arranque antes: un perro
+ * de 6 kg paga lo que dice su tramo, empiece este en 5 o en 6.
+ *
+ * Devuelve `null` si no hay tramos: la landing muestra entonces su valor de
+ * respaldo en vez de un precio inventado.
+ */
+export function precioDesdeEnRango(
+  tramos: readonly Tramo[],
+  desdeKg: number,
+  hastaKg: number
+): number | null {
+  if (tramos.length === 0) return null;
+  const precios: number[] = [];
+
+  // El tramo que cubre el borde inferior, aunque haya arrancado antes.
+  const enBorde = tramoDe(tramos, desdeKg);
+  if (enBorde) precios.push(enBorde.precio);
+
+  // Y todos los que empiezan dentro del rango.
+  for (const t of ordenar(tramos)) {
+    if (t.desdeKg > desdeKg && t.desdeKg <= hastaKg) precios.push(t.precio);
+  }
+
+  return precios.length > 0 ? Math.min(...precios) : null;
+}
+
+/**
  * Hasta qué peso rige un tramo, derivado del siguiente. `null` = el último,
  * que es abierto por arriba.
  */
