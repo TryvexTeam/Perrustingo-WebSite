@@ -15,7 +15,7 @@ import {
   LIMITE_RESERVA_IP,
   LIMITE_RESERVA_TELEFONO,
 } from "@/lib/rateLimit";
-import { evaluarReserva } from "@/lib/disponibilidad";
+import { diaSemanaDe, evaluarReserva } from "@/lib/disponibilidad";
 import { formatRangoCLP } from "@/lib/reserva";
 import { cotizar, leerConfigCotizacion, type EntradaCotizacion } from "@/lib/cotizacion";
 import { WHATSAPP_NUMBER, hayWhatsAppConfigurado } from "@/lib/site";
@@ -30,8 +30,10 @@ import {
   obtenerBloqueosParciales,
   obtenerDisponibilidad,
   obtenerExcepciones,
+  obtenerHorariosEquipo,
   obtenerOcupacion,
 } from "@/lib/disponibilidadDatos";
+import { capacidadSegunHorarios } from "@/lib/horarios";
 
 /* POST /api/reservas v2 — reserva multi-perrito (1-3). Crea UNA sesión
    'pendiente' por perrito; si el usuario está logueado además guarda/actualiza
@@ -368,6 +370,11 @@ export async function POST(request: NextRequest) {
        día libre de alguien. */
     const bloqueos = await obtenerBloqueosParciales(supabase, fechaDeseada, fechaDeseada);
 
+    /* Y el horario propio de cada peluquero (039), por el mismo motivo: si la
+       pantalla oculta las horas en que no hay nadie pero el endpoint las
+       acepta, el recorte no sirve de nada. */
+    const horarios = await obtenerHorariosEquipo(supabase);
+
     const veredicto = evaluarReserva({
       fecha: fechaDeseada,
       inicio,
@@ -377,6 +384,7 @@ export async function POST(request: NextRequest) {
       ocupacion,
       excepciones,
       bloqueos,
+      capacidadPorHora: capacidadSegunHorarios(horarios, diaSemanaDe) ?? undefined,
       // Una reserva de tres perritos ocupa tres lugares de ese bloque.
       cupos: perros.length,
     });

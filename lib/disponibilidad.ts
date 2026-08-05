@@ -221,6 +221,17 @@ export interface BloqueoParcial {
   peluquerosBloqueados: number;
 }
 
+/* ── Horario propio de cada peluquero (migración 039) ───────────────────────
+   La capacidad base dejó de ser un número fijo del día: depende de la hora,
+   porque cada persona tiene su jornada. Se pasa como una función para que
+   `bloquesDisponibles` no tenga que saber de horarios — solo preguntar
+   "¿cuántos hay a esta hora?". Si nadie configuró nada, la de siempre.
+
+   El ORDEN importa: primero cuántos trabajan a esa hora (horario), después
+   cuántos de esos están bloqueados (día libre, hora médica). Al revés se
+   restaría gente que ni siquiera estaba trabajando. */
+export type CapacidadBase = (fecha: string, minuto: number) => number;
+
 /** ¿Cuánta capacidad queda en un minuto concreto de un día? */
 export function capacidadEnMinuto(
   fecha: string,
@@ -254,7 +265,11 @@ export function bloquesDisponibles(
   ocupacion: Record<string, number>,
   ahora: Date = new Date(),
   excepciones: Excepcion[] = [],
-  bloqueos: BloqueoParcial[] = []
+  bloqueos: BloqueoParcial[] = [],
+  /* Cuánta gente atiende a cada hora, según el horario de cada uno. Opcional a
+     propósito: sin esto se usa `capacidad`, que es exactamente lo que hacía
+     antes de la 039. Ninguna pantalla que no se actualice cambia de conducta. */
+  capacidadPorHora?: CapacidadBase
 ): Bloque[] {
   if (!cumpleLeadTime(fecha, config, ahora)) return [];
   // Una fecha bloqueada no ofrece nada, aunque el tramo semanal la atienda.
@@ -279,8 +294,10 @@ export function bloquesDisponibles(
       const inicio = instanteDeBloque(fecha, m);
       const usados = tomados[claveInstante(inicio)] ?? 0;
       // La capacidad se resuelve POR BLOQUE: un peluquero bloqueado de 14 a 16
-      // no debe restar cupo a las 10 de la mañana.
-      const cap = capacidadEnMinuto(fecha, m, capacidad, bloqueos);
+      // no debe restar cupo a las 10 de la mañana. Y desde la 039, tampoco
+      // cuenta a esa hora quien no trabaja en ese tramo.
+      const base = capacidadPorHora ? capacidadPorHora(fecha, m) : capacidad;
+      const cap = capacidadEnMinuto(fecha, m, base, bloqueos);
       return { inicio, etiqueta: etiquetaHora(m), libres: Math.max(0, cap - usados) };
     })
     .filter((b) => b.libres > 0);
@@ -322,6 +339,9 @@ export function evaluarReserva(params: {
   ahora?: Date;
   excepciones?: Excepcion[];
   bloqueos?: BloqueoParcial[];
+  /** Quién trabaja a esa hora (migración 039). Sin esto, la capacidad es la
+      plana de siempre — el comportamiento previo, intacto. */
+  capacidadPorHora?: CapacidadBase;
 }): Veredicto {
   const { fecha, inicio, tramos, config, capacidad, ocupacion } = params;
   const cupos = params.cupos ?? 1;
@@ -373,7 +393,13 @@ export function evaluarReserva(params: {
      endpoint la acepta, basta con mandar el request a mano para reservar sobre
      el día libre de alguien. */
   const minutoDelBloque = minutosDeInstante(inicio);
-  const capacidadDelBloque = capacidadEnMinuto(fecha, minutoDelBloque, capacidad, bloqueos);
+  /* Y desde la 039, quien no trabaja a esa hora tampoco cuenta. Va ANTES de
+     restar los bloqueos, por el mismo motivo que en `bloquesDisponibles`: al
+     revés se descontaría gente que ni siquiera estaba en turno. */
+  const base = params.capacidadPorHora
+    ? params.capacidadPorHora(fecha, minutoDelBloque)
+    : capacidad;
+  const capacidadDelBloque = capacidadEnMinuto(fecha, minutoDelBloque, base, bloqueos);
 
   if (usados + cupos > capacidadDelBloque) {
     const libres = Math.max(0, capacidadDelBloque - usados);
