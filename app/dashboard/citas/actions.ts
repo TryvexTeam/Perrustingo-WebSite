@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { crearClienteServicio } from "@/lib/supabase/servicio";
+import { esFallo, exigirCitaPropia, exigirEquipo } from "@/lib/citasAcceso";
 import { offsetNegocio } from "@/lib/agenda";
 import { eliminarEventoCita, upsertEventoCita } from "@/lib/google/calendar";
 import { BUCKET_FOTOS, rutaDeFoto } from "@/lib/fotosComun";
@@ -72,6 +73,12 @@ export async function cambiarEstadoCita(
   const servicio = crearClienteServicio();
   const lector = servicio ?? supabase;
   const escritor = servicio ?? supabase;
+
+  /* Que sea del equipo no basta: la cita tiene que ser suya. Ver el porqué en
+     lib/citasAcceso.ts — este lector se salta RLS, así que sin este chequeo
+     alcanzaría cualquier cita del local con solo tener su id. */
+  const permiso = await exigirCitaPropia(lector, citaId, perfil.rol, user.id);
+  if (esFallo(permiso)) return { success: false, error: permiso.error };
 
   const { data: cita, error: errorLectura } = await lector
     .from("sesiones")
@@ -225,7 +232,12 @@ export async function guardarNotasEquipo(
   /* Mismo caso que `cambiarEstadoCita`: sin lectura sobre `sesiones`, el
      UPDATE del peluquero no encuentra la fila y se pierde en silencio.
      La nota se guardaría "con éxito" y no quedaría escrita. */
-  const { data: tocadas, error } = await (crearClienteServicio() ?? supabase)
+  const escritorNotas = crearClienteServicio() ?? supabase;
+
+  const permiso = await exigirCitaPropia(escritorNotas, citaId, perfil.rol, user.id);
+  if (esFallo(permiso)) return { success: false, error: permiso.error };
+
+  const { data: tocadas, error } = await escritorNotas
     .from("sesiones")
     .update({ notas_equipo: notas.trim() || null, updated_at: new Date().toISOString() })
     .eq("id", citaId)
@@ -276,27 +288,10 @@ interface ResultadoAtraso extends ResultadoAccion {
   estado?: EstadoAtraso;
 }
 
-/** Guard de equipo idéntico al de `cambiarEstadoCita`: admin o trabajador.
-    Quien atiende en el mesón es quien ve llegar al cliente. */
-async function exigirEquipo(): Promise<
-  { supabase: Awaited<ReturnType<typeof createClient>> } | { error: string }
-> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Sesión expirada." };
-
-  const { data: perfil } = await supabase
-    .from("perfiles")
-    .select("rol")
-    .eq("id", user.id)
-    .single();
-  if (!perfil || !["admin", "trabajador"].includes(perfil.rol)) {
-    return { error: "Sin permisos." };
-  }
-  return { supabase };
-}
+/* El guard de equipo vive ahora en `lib/citasAcceso.ts`, junto al chequeo de
+   a quién pertenece cada cita. Estaba escrito tres veces en este archivo y las
+   tres devolvían solo la sesión, sin el id del usuario — que es justamente el
+   dato que hacía falta para saber si una cita era suya. */
 
 /** Arma el estado a partir de la fila y la política vigente. */
 function estadoDesdeFila(
@@ -340,6 +335,9 @@ export async function estadoAtrasoAction(citaId: string): Promise<ResultadoAtras
      'trabajador' no puede leer `sesiones` con su propia sesión. */
   const lector = crearClienteServicio() ?? sesion.supabase;
 
+  const permiso = await exigirCitaPropia(lector, citaId, sesion.rol, sesion.userId);
+  if (esFallo(permiso)) return { success: false, error: permiso.error };
+
   const { data: cita, error } = await lector
     .from("sesiones")
     .select("fecha_cita, llegada_en, recargo_atraso, recargo_aceptado")
@@ -371,6 +369,9 @@ export async function marcarLlegadaAction(citaId: string): Promise<ResultadoAtra
   const servicio = crearClienteServicio();
   const lector = servicio ?? sesion.supabase;
   const escritor = servicio ?? sesion.supabase;
+
+  const permiso = await exigirCitaPropia(lector, citaId, sesion.rol, sesion.userId);
+  if (esFallo(permiso)) return { success: false, error: permiso.error };
 
   const { data: cita, error: errorLectura } = await lector
     .from("sesiones")
@@ -469,6 +470,9 @@ export async function resolverRecargoAction(
   const servicio = crearClienteServicio();
   const lector = servicio ?? sesion.supabase;
   const escritor = servicio ?? sesion.supabase;
+
+  const permiso = await exigirCitaPropia(lector, citaId, sesion.rol, sesion.userId);
+  if (esFallo(permiso)) return { success: false, error: permiso.error };
 
   const { data: cita, error: errorLectura } = await lector
     .from("sesiones")
@@ -590,29 +594,11 @@ interface ResultadoCierre extends ResultadoAccion {
    analíticas de ingresos del mes. */
 const MAXIMO_COBRADO = 2_000_000;
 
-/** Mismo guard de equipo que `exigirEquipo`, pero además devuelve el rol:
-    registrar el cobro lo hace cualquiera del equipo —es quien está en el
-    mesón— y asignar la cita solo el admin. Sin el rol acá arriba habría que
-    volver a preguntarlo abajo. */
-async function exigirEquipoConRol(): Promise<
-  { supabase: Awaited<ReturnType<typeof createClient>>; rol: string } | { error: string }
-> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Sesión expirada." };
-
-  const { data: perfil } = await supabase
-    .from("perfiles")
-    .select("rol")
-    .eq("id", user.id)
-    .single();
-  if (!perfil || !["admin", "trabajador"].includes(perfil.rol)) {
-    return { error: "Sin permisos." };
-  }
-  return { supabase, rol: perfil.rol as string };
-}
+/* `exigirEquipoConRol` era una tercera copia del mismo guard, con la única
+   diferencia de devolver el rol. Ahora `exigirEquipo` (lib/citasAcceso.ts)
+   devuelve siempre rol y userId, así que registrar el cobro sigue siendo de
+   cualquiera del equipo y asignar la cita sigue siendo solo del admin, sin
+   necesidad de dos funciones que se tienen que mantener iguales a mano. */
 
 /** Traduce el error de Postgres. El 42501 se nombra con todas sus letras:
     en este proyecto una policy sobre una tabla sin GRANT ya se disfrazó tres
@@ -742,10 +728,16 @@ async function leerCierre(
 
 /** Lee el cierre de una cita: precios, recargo aceptado y quién la atiende. */
 export async function estadoCierreAction(citaId: string): Promise<ResultadoCierre> {
-  const sesion = await exigirEquipoConRol();
+  const sesion = await exigirEquipo();
   if ("error" in sesion) return { success: false, error: sesion.error };
 
   const lector = crearClienteServicio() ?? sesion.supabase;
+
+  /* El cierre trae precios y quién atiende. Un trabajador no puede pedir el de
+     una cita ajena solo por tener su id. */
+  const permiso = await exigirCitaPropia(lector, citaId, sesion.rol, sesion.userId);
+  if (esFallo(permiso)) return { success: false, error: permiso.error };
+
   return leerCierre(lector, sesion.supabase, citaId, sesion.rol === "admin");
 }
 
@@ -765,7 +757,7 @@ export async function registrarPrecioCobradoAction(
   citaId: string,
   monto: number
 ): Promise<ResultadoCierre> {
-  const sesion = await exigirEquipoConRol();
+  const sesion = await exigirEquipo();
   if ("error" in sesion) return { success: false, error: sesion.error };
 
   if (!Number.isFinite(monto) || !Number.isInteger(monto)) {
@@ -782,6 +774,11 @@ export async function registrarPrecioCobradoAction(
   }
 
   const escritor = crearClienteServicio() ?? sesion.supabase;
+
+  /* Registrar el cobro de una cita ajena movería las analíticas de ingresos y
+     dejaría el monto a nombre de quien no atendió. */
+  const permiso = await exigirCitaPropia(escritor, citaId, sesion.rol, sesion.userId);
+  if (esFallo(permiso)) return { success: false, error: permiso.error };
 
   const { data: tocadas, error } = await escritor
     .from("sesiones")
@@ -832,7 +829,7 @@ export async function asignarPeluqueroAction(
   citaId: string,
   peluqueroId: string | null
 ): Promise<ResultadoCierre> {
-  const sesion = await exigirEquipoConRol();
+  const sesion = await exigirEquipo();
   if ("error" in sesion) return { success: false, error: sesion.error };
   if (sesion.rol !== "admin") {
     return { success: false, error: "Solo un administrador puede asignar la cita." };

@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { crearClienteServicio } from "@/lib/supabase/servicio";
+import { esFallo, exigirCitaPropia } from "@/lib/citasAcceso";
 
 /* Registro de la foto del resultado (PRP-002 F3).
 
@@ -80,6 +82,18 @@ export async function registrarFotoResultado(
   if (!perfil || !["admin", "trabajador"].includes(perfil.rol)) {
     return { success: false, error: "Sin permisos." };
   }
+
+  /* Mismo criterio que el resto de las acciones sobre una cita: no se le
+     cuelgan fotos —ni menos un comprobante de pago— a la cita de un colega.
+     La lectura del dueño va por el cliente de servicio porque desde la 027 el
+     trabajador no alcanza `sesiones` con su propia sesión. Ver lib/citasAcceso.ts. */
+  const permiso = await exigirCitaPropia(
+    crearClienteServicio() ?? supabase,
+    citaId,
+    perfil.rol,
+    user.id
+  );
+  if (esFallo(permiso)) return { success: false, error: permiso.error };
 
   /* `.select()` para saber si la fila entró de verdad. Bajo RLS un INSERT sin
      permiso puede no fallar y no insertar nada; sin este conteo estaríamos

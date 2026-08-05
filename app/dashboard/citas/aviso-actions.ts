@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { crearClienteServicio } from "@/lib/supabase/servicio";
+import { esFallo, exigirCitaPropia } from "@/lib/citasAcceso";
 import { enviarCorreo, correoConfigurado } from "@/lib/correo";
 import { correoPerroListo } from "@/lib/correoPlantillas";
 
@@ -53,6 +54,15 @@ export async function avisarPerroListoAction(citaId: string): Promise<ResultadoA
       error: "El servidor no puede enviar el aviso (falta configuración).",
     };
   }
+
+  /* El chequeo de dueño va ANTES de leer el contacto, no después: acá el
+     riesgo no es solo mandar un correo indebido, es que la lectura misma
+     entrega el `contacto_email` que la vista `sesiones_equipo` le niega al
+     trabajador desde la 027. Sin este filtro, pedir el aviso de una cita ajena
+     era la forma de sacar por la puerta de atrás el dato que se protege por
+     delante. Ver lib/citasAcceso.ts. */
+  const permiso = await exigirCitaPropia(admin, citaId, perfil.rol, user.id);
+  if (esFallo(permiso)) return { success: false, error: permiso.error };
 
   const { data: cita } = await admin
     .from("sesiones")
