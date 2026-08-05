@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   bloquesDisponibles,
   excepcionDe,
+  diaSemanaDe,
   CONFIG_DEFAULT,
   MENSAJE_SIN_CUPO,
   type Bloque,
@@ -16,7 +17,9 @@ import {
   obtenerBloqueosParciales,
   obtenerExcepciones,
   obtenerOcupacion,
+  obtenerHorariosEquipo,
 } from "@/lib/disponibilidadDatos";
+import { capacidadSegunHorarios } from "@/lib/horarios";
 import { offsetNegocio } from "@/lib/agenda";
 
 /* Horarios reales de un día (PRP-001 Fase 5).
@@ -65,6 +68,10 @@ export function SelectorHorario({ fecha, valor, onChange }: SelectorHorarioProps
           // de alguien no le quitaba ni un cupo al cliente.
           obtenerBloqueosParciales(supabase, fecha, fecha),
         ]);
+        /* Quién trabaja a cada hora (migración 039). Va aparte y no bloquea al
+           resto: si la migración no está o nadie configuró su horario, vuelve
+           `null` y se usa la capacidad plana de siempre. */
+        const horarios = await obtenerHorariosEquipo(supabase);
         if (cancelado) return;
         setCapacidad(capacidad);
         /* Si el local bloqueó esta fecha, el mensaje lo pone Rodolfo. La
@@ -82,7 +89,8 @@ export function SelectorHorario({ fecha, valor, onChange }: SelectorHorarioProps
             ocupacion,
             new Date(),
             excepciones,
-            bloqueos
+            bloqueos,
+            capacidadSegunHorarios(horarios, diaSemanaDe) ?? undefined
           )
         );
       } catch {

@@ -261,6 +261,7 @@ export default async function DashboardPage() {
               { label: "Anuncios", href: "/dashboard/anuncios", emoji: "📣", onlyAdmin: true },
               { label: "Usuarios", href: "/dashboard/usuarios", emoji: "👥", onlyAdmin: true },
               { label: "Disponibilidad", href: "/dashboard/disponibilidad", emoji: "🕘", onlyAdmin: true },
+              { label: "Horarios del equipo", href: "/dashboard/horarios", emoji: "🧑‍🔧", onlyAdmin: true },
               { label: "Ofertas", href: "/dashboard/ofertas", emoji: "🎁", onlyAdmin: true },
               { label: "Atrasos y cancelaciones", href: "/dashboard/politica", emoji: "⏱️", onlyAdmin: true },
               { label: "Cupones", href: "/dashboard/cupones", emoji: "🏷️", onlyAdmin: true },

@@ -7,6 +7,7 @@ import {
   type Excepcion,
   type Tramo,
 } from "./disponibilidad";
+import type { HorarioAgregado } from "./horarios";
 
 /* Lectura de la disponibilidad desde Supabase. Separado del motor
    (lib/disponibilidad.ts) para que el cálculo se pueda probar sin base de
@@ -193,4 +194,52 @@ export async function obtenerExcepciones(
 /** Normaliza un instante a la clave con la que se consulta la ocupación. */
 export function claveOcupacion(inicioISO: string): string {
   return new Date(inicioISO).toISOString();
+}
+
+/* ── Horario propio de cada peluquero (migración 039) ────────────────────────
+   Dos funciones de la base, las dos agregadas: cuántos atienden en cada tramo
+   y cuántos peluqueros hay en total. Nunca quién es quién — el formulario
+   necesita el número para saber si queda cupo, no el nombre de nadie. */
+export interface HorariosDelEquipo {
+  agregados: HorarioAgregado[];
+  /** Peluqueros que no configuraron horario: cuentan a toda hora. */
+  sinHorario: number;
+  /** Total de peluqueros marcados. Es la capacidad de siempre. */
+  total: number;
+}
+
+export async function obtenerHorariosEquipo(supabase: Cliente): Promise<HorariosDelEquipo | null> {
+  const [{ data: filas, error: errorFilas }, { data: resumen, error: errorResumen }] =
+    await Promise.all([
+      supabase.rpc("horarios_agregados"),
+      supabase.rpc("peluqueros_resumen"),
+    ]);
+
+  /* Si la 039 no está aplicada, las funciones no existen. Se devuelve `null` y
+     quien llama sigue con la capacidad plana de antes: ofrecer como siempre es
+     recuperable —el equipo reagenda—, mientras que caerse deja al local sin
+     tomar reservas. Mismo criterio que `obtenerBloqueosParciales`. */
+  if (errorFilas || errorResumen) return null;
+
+  const fila = Array.isArray(resumen) ? resumen[0] : resumen;
+  const total = (fila as { total?: number } | null)?.total ?? 0;
+  const conHorario = (fila as { con_horario?: number } | null)?.con_horario ?? 0;
+
+  return {
+    agregados: ((filas as FilaHorarioAgregado[] | null) ?? []).map((h) => ({
+      diaSemana: h.dia_semana,
+      horaInicio: h.hora_inicio,
+      horaFin: h.hora_fin,
+      peluqueros: h.peluqueros ?? 0,
+    })),
+    sinHorario: Math.max(0, total - conHorario),
+    total,
+  };
+}
+
+interface FilaHorarioAgregado {
+  dia_semana: number;
+  hora_inicio: string;
+  hora_fin: string;
+  peluqueros: number | null;
 }
