@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { condicionesLegibles, validarCupon, type Cupon } from "@/lib/cupones";
+import {
+  condicionesLegibles,
+  servicioReconocido,
+  validarCupon,
+  type Cupon,
+} from "@/lib/cupones";
+import { SERVICIOS } from "@/lib/reserva";
 import {
   alternarCuponAction,
   crearCuponAction,
@@ -436,20 +442,33 @@ export function EditorCupones({ cuponesIniciales }: EditorCuponesProps) {
                 <label htmlFor={`servicio-${id}`} className={ETIQUETA_CAMPO}>
                   Solo para un servicio (opcional)
                 </label>
-                <input
+                <select
                   id={`servicio-${id}`}
-                  type="text"
-                  placeholder="cualquier servicio"
-                  value={cupon.servicioSlug ?? ""}
+                  value={servicioReconocido(cupon.servicioSlug) ?? (cupon.servicioSlug ?? "")}
                   onChange={(e) => actualizar(indice, { servicioSlug: e.target.value || null })}
                   disabled={trabajando}
-                  maxLength={60}
                   className={CAMPO}
-                />
+                >
+                  <option value="">Cualquier servicio</option>
+                  {SERVICIOS.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                  {/* Un cupón viejo pudo quedar con texto escrito a mano que no
+                      corresponde a ninguna opción. Se muestra tal cual para que
+                      el dueño VEA que está roto y lo cambie, en vez de que el
+                      desplegable lo reemplace en silencio por otra cosa. */}
+                  {cupon.servicioSlug && !servicioReconocido(cupon.servicioSlug) && (
+                    <option value={cupon.servicioSlug}>
+                      {cupon.servicioSlug} — no existe, elija otro
+                    </option>
+                  )}
+                </select>
                 <p className={AYUDA}>
-                  Escriba el nombre del servicio tal como aparece al reservar
-                  (por ejemplo &ldquo;Baño y corte&rdquo;). Vacío = sirve para
-                  cualquiera.
+                  {cupon.servicioSlug && !servicioReconocido(cupon.servicioSlug)
+                    ? "Este servicio no es ninguno de los que el cliente puede elegir al reservar, así que el cupón no se puede canjear. Elija uno de la lista."
+                    : "Solo estos son los servicios que el cliente puede elegir al reservar. “Cualquier servicio” = el cupón sirve para todos."}
                 </p>
               </div>
 

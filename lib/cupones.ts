@@ -22,6 +22,8 @@
  * calendario— y la resta de días se hace con las partes del string.
  */
 
+import { SERVICIOS } from "@/lib/reserva";
+
 export interface Cupon {
   codigo: string;
   descripcion: string;
@@ -254,6 +256,25 @@ function normalizarServicio(v: string): string {
     .toLowerCase();
 }
 
+/**
+ * El servicio guardado en el cupón, resuelto contra las opciones que el
+ * formulario ofrece de verdad. Devuelve null si no corresponde a ninguna.
+ *
+ * POR QUÉ HACE FALTA: `normalizarServicio` salva las tildes y los guiones
+ * —"bano-y-corte" contra "Baño y corte"— pero NO las palabras distintas. El
+ * panel pedía escribir el servicio a mano y su propio ejemplo de ayuda,
+ * "Baño y corte", no coincide con ninguna opción real: el formulario ofrece
+ * "Baño + corte de pelo". Un cupón configurado así se rechazaba SIEMPRE, y el
+ * cliente leía "este cupón sirve solo para Baño y corte" sin poder elegir
+ * nunca esa opción, porque no existe. El campo es ahora una lista cerrada y
+ * esta función es la que la hace cumplir en los dos lados.
+ */
+export function servicioReconocido(valor: string | null): string | null {
+  if (!valor || valor.trim() === "") return null;
+  const buscado = normalizarServicio(valor);
+  return SERVICIOS.find((s) => normalizarServicio(s) === buscado) ?? null;
+}
+
 /** Cómo se le explica una condición al dueño en el panel, en palabras simples. */
 export function condicionesLegibles(cupon: Cupon): string[] {
   const c: string[] = [];
@@ -325,6 +346,17 @@ export function validarCupon(cupon: Cupon): string[] {
     cupon.desdeVisita > cupon.hastaVisita
   ) {
     p.push("El rango de visitas está al revés: no hay ninguna visita que lo cumpla.");
+  }
+
+  /* Un servicio que no está entre los que ofrece el formulario deja el cupón
+     imposible de canjear: el cliente nunca podrá elegir esa opción. Antes esto
+     se guardaba sin chistar. Se avisa acá —y no solo en la pantalla— porque
+     esta es la misma validación que corre el servidor, y hay cupones viejos
+     que quedaron con texto libre. */
+  if (cupon.servicioSlug && cupon.servicioSlug.trim() !== "" && !servicioReconocido(cupon.servicioSlug)) {
+    p.push(
+      `"${cupon.servicioSlug}" no es uno de los servicios que se pueden elegir al reservar, así que el cupón no se podría canjear nunca. Elija uno de la lista o deje el campo en "cualquier servicio".`
+    );
   }
 
   return p;
