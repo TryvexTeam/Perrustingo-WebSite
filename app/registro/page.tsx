@@ -22,7 +22,7 @@ export default function RegistroPage() {
               Crea tu cuenta
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-              Guarda los datos de tu perro o perra y agenda más rápido la próxima vez.
+              Guarda los datos de tu perrito o perrita y agenda más rápido la próxima vez.
             </p>
           </div>
           <Suspense>
