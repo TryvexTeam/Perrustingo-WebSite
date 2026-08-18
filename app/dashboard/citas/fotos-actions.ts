@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { crearClienteServicio } from "@/lib/supabase/servicio";
 import { esFallo, exigirCitaPropia } from "@/lib/citasAcceso";
+import { TIPOS_FOTO, type TipoFoto } from "./fotos-tipos";
 
 /* Registro de la foto del resultado (PRP-002 F3).
 
@@ -16,30 +17,6 @@ interface Resultado {
   success: boolean;
   error?: string;
 }
-
-/* Los tipos que acepta el CHECK de la tabla (migración 035). Inventar un valor
-   nuevo acá reventaría en producción con un error críptico, así que la lista
-   vive en un solo lugar y se valida antes de escribir. */
-export const TIPOS_FOTO = [
-  "antes",
-  "durante",
-  "despues",
-  "referencia",
-  "extra",
-  "comprobante",
-] as const;
-
-export type TipoFoto = (typeof TIPOS_FOTO)[number];
-
-/* El comprobante NO es una foto del perrito: lleva datos de pago. Se separa
-   para que la galería del cliente no lo muestre nunca por descuido. */
-export const TIPOS_VISIBLES_CLIENTE: readonly TipoFoto[] = [
-  "antes",
-  "durante",
-  "despues",
-  "referencia",
-  "extra",
-];
 
 /* `<uid>/<archivo>`: la ruta que produce lib/fotos.ts y la única forma que
    la policy de storage acepta. Se valida acá porque, aunque la genere

@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { subirFotoResultado, rutaDeFoto, firmarFotos } from "@/lib/fotos";
-import { registrarFotoResultado, type TipoFoto } from "@/app/dashboard/citas/fotos-actions";
+import { registrarFotoResultado } from "@/app/dashboard/citas/fotos-actions";
+import type { TipoFoto } from "@/app/dashboard/citas/fotos-tipos";
 
 /* Las fotos de una cita: lo que trajo el cliente y lo que dejó el equipo
    (PRP-002 F3).
