@@ -77,18 +77,22 @@ const perroSchema = z.object({
      actualiza nada. */
   perroId: z.string().uuid().nullable().optional().default(null),
   /* Desde PRP-002 F4 el bucket es privado y lo que viaja es la RUTA del
-     objeto, no una URL. Se valida la forma: `<uid>/<archivo>`, sin saltos
-     de carpeta ni protocolos — es un dato que llega por la red y termina
-     escrito en la ficha del cliente. */
+     objeto, no una URL. Se valida la forma: `<uid>/<archivo>` o `anon/<archivo>`,
+     sin saltos de carpeta ni protocolos — es un dato que llega por la red y
+     termina escrito en la ficha del cliente.
+
+     La carpeta `anon/` es el camino sin cuenta: quien reserva sin sesión sube
+     a `anon/` (migración 023) y su foto debe llegar igual, porque el sistema
+     triangula al cliente por teléfono, correo y comuna — tenga cuenta o no. */
   fotoActualRuta: z
     .string()
-    .regex(/^[0-9a-f-]{36}\/[A-Za-z0-9._-]+$/, "Ruta de foto inválida")
+    .regex(/^(?:[0-9a-f-]{36}|anon)\/[A-Za-z0-9._-]+$/, "Ruta de foto inválida")
     .nullable()
     .optional()
     .default(null),
   fotoReferenciaRuta: z
     .string()
-    .regex(/^[0-9a-f-]{36}\/[A-Za-z0-9._-]+$/, "Ruta de foto inválida")
+    .regex(/^(?:[0-9a-f-]{36}|anon)\/[A-Za-z0-9._-]+$/, "Ruta de foto inválida")
     .nullable()
     .optional()
     .default(null),
